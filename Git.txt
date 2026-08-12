@@ -1,0 +1,1601 @@
+decentralised/distributed vs centralised 
+
+
+
+when starting shell script :
+----------------------------
+GIT:
+---
+Git is a distributed version control system used to track source code changes, collaborate with multiple team/developers, and manage application code efficiently and maintain version history.
+It supports branching, merging, conflict resolution, rollback, and distributed development workflows, making it a foundational tool in DevOps and CI/CD environments.”
+
+
+Real Example
+Suppose:5 developers working on same application
+Git helps : merge code collaboratively ,track changes,resolve conflicts,rollback issues
+
+Git Architecture:
+-----------------
+Working Directory  --> Where developers write/modify files in local machine
+       ↓
+Staging Area       --> when we do git add . --> files will come to this staging area (Temporary area before commit.) - files changes red to green after this
+       ↓
+Local Repository   --> Local Repository Stored in: .git directory. whe we do git commit files will come to this  Local Repository
+       ↓
+Remote Repository  --> git push -- push the code to the central repo like github,bit bucket
+
+
+it is a popular decentralised version control system 
+version control --> lets say some issue happened in latest version code in this case we can easily switch back to old version by using version tags
+track changes --> who did changes and why they did and what they changed we can see  
+review the changes --> our team members or managers will review and approve the changes then it will merged to main code 
+backup --> we can create differnet versions of code and maintain
+security --> we cant keep the code changes in employees laptops so that we store in online
+branching --> lets say we have a code in prodution and it is live so we cant change/deploy the code without testing so we push code to differnet branch and test and will update/deploy the latest version in prodution if all are good
+prodution --> main branch code and will create a new branch from master and change and push the code and test(development environments) and deploy(prod env) if all are good
+collaborate  --> will collaborate will multiple team mates
+
+
+
+Version Control
+Lets say some issue happened in latest version of code in production.
+In this case:✅ we can easily rollback/switch back to older version  of code which is already stable using Git history.
+Git maintains:commit history,code versions,snapshots of changes
+
+Track Changes
+Git helps us understand: who changed the code,what changes were done,when changes were done,why changes were done
+using: commits,commit messages,git logs we can track 
+ex: git log
+
+
+Review Changes
+Before merging code into main/master branch:✅ team members/reviewers/managers review the code changes.
+Usually done through: Pull Requests (PR) and Merge Requests (MR)
+After approval:
+✅ code gets merged into main branch.
+This improves: code quality,security,stability
+
+Backup 
+Git acts as code backup system.Code stored in remote repositories like: GitHub,GitLab,Bitbucket
+So even if: ❌ employee laptop crashes --> code is safely available in remote repository.
+
+Security
+We should not keep application code only in developers laptops.
+Git repositories provide:✅ centralized secure storage,✅ access control,✅ audit tracking,✅ backup & recovery
+Only authorized users can: clone,push,merge code.
+
+Branching
+Suppose production application is already live.
+We should NOT directly modify production/main branch code because: ❌ it may break live application.
+So developers: create separate feature/hotfix branch,implement changes,test changes,raise pull request,merge to production main branch after validation
+
+Production Workflow:
+--------------------
+	Main/Master Branch (Production Stable Code)
+            ↓
+	Create Feature Branch
+            ↓
+	Develop & Test Changes  in dev and test env's
+            ↓
+		Push Code
+            ↓
+		Code Review
+            ↓
+	Merge to Main Branch
+            ↓
+	Deploy to Production
+
+Collaboration
+Multiple developers can work on same project simultaneously using Git.
+Git helps:✅ collaborate safely,✅ avoid overwriting code,✅ merge changes efficiently
+Without Git: ❌ team collaboration becomes very difficult.
+
+Distributed Version Control
+Git is called distributed version control system because:
+✅ every developer has complete repository copy locally.
+So developers can:work offline,commit locally,maintain full history
+
+
+| File         | Purpose               |
+| ------------ | --------------------- |
+| `.git`       | Repository metadata   |
+| `.gitignore` | Ignore unwanted files |
+
+
+
+
+
+Authenticating to repository:
+--------------------------------------
+1)username/password - enter every time
+
+2)For ssh Authentication
+1)in github --> settings --> ssh and GPG keys section --> NEW ssh key --> add public key data (created by usinf ssh-keygen command) --> add ssh
+2)in file explorer --> windows C --> u will find .ssh folder open it -> create config file(without any extension) -> paste below code
+
+#GitHub account
+Host github.com
+  HostName github.com
+  User git
+  PreferredAuthentications publickey
+  IdentityFile /d/softwares/keygeneration/devops-sshkey
+
+location of private key --> /d/softwares/keygeneration/devops-sshkey
+
+commands:
+---------------
+git init                                                          		 ------> Initializes a new Git repository by creating a hidden .git directory that stores all version history and repository metadata.
+git status 											 	      		------> shows the current state of the repository, including modified files, staged files, untracked files, and the current branch status.
+git add . /git add <file name>                  		------> Moves all modified and new files or specific file from the Working Directory to the Staging Area, preparing them for commit.
+git config --global user.name "username"   ------> Configures the Git username globally, which is recorded as the author of commits.
+git config --global user.email "emailid"  		------> Configures the Git email globally, which is associated with commit history.
+git commit -m <commit msg>     					------> Creates a new commit by saving the staged changes into the local repository along with a commit message.
+																						A Git commit object contains the snapshot of files, author information, timestamp, parent commit reference, and commit message, uniquely identifying a version of the project.
+HEAD  																------> HEAD is a pointer that references the currently checked-out branch and its latest commit.
+git remote add origin <http url> 					------> Adds a remote repository named origin, allowing the local repository to communicate with a remote repository like GitHub.
+git remote set-url origin <ssh url> 				------> Updates the URL of an existing remote repository, commonly used to switch from HTTPS to SSH authentication.
+
+git push  															------> Uploads local commits from the local repository to the remote repository.
+or git push origin <branch name>                 ------> Pushes a specific local branch to the corresponding branch in the remote repository.
+git push -f or --force origin <branchname>  ------> Forcefully updates the remote branch by overwriting its history with the local branch history. It should be used carefully as it can overwrite others' work.
+
+
+git remote -v                 									------> Displays the configured remote repositories along with their fetch and push URLs.
+git clone <http url>                                          ------> Downloads complete repository. or Downloads a complete copy of remote repository into local, including all branches, commits, and version history.
+git pull                                                                ------> Downloads the latest changes from the remote repository and automatically merges them into the current local branch/code. It is equivalent to git fetch + git merge.
+
+git branch related:
+------------------------
+git branch <branch name>        						------> Creates a new branch from the current branch without switching to it.
+git checkout -b <branch name>                    ------> Creates a new branch and immediately switches to new branch 
+git branch                                                          ------> Lists all local branches in the repository and highlights the currently active branch.
+git branch -M <branch name>                       ------> Used to rename current branch name forcefully (-M = Move/Rename branch forcefully) and Even if target branch already exists: ✅ rename happens forcefully.
+
+git checkout<branch name>                          ------> Switches from the current branch to another existing branch/already created branch.
+git switch <branch-name>                             ------> Switches to an existing branch. It is the modern alternative to (git checkout) for branch switching.
+git merge <branch-name> 							   ------> Integrates/merges changes from the specified branch into the current branch while preserving commit history.
+
+
+Quick Interview Closing Statement
+
+Git workflow: Working Directory → Staging Area (git add) → Local Repository (git commit) → Remote Repository (git push). Git tracks every change using commits, making collaboration, branching, merging, rollback, and version management efficient.
+
+
+git fetch related :
+------------------
+git fetch --> Downloads latest changes from remote repository but does NOT merge into local branch code.
+
+Step 1: Assume GitHub has one repository. This is the code in GitHub.
+
+                GitHub (Remote Repository)
+
+                     main
+                       |
+A -------- B -------- C                             ---> A,B,C are commits
+
+Step 2: You clone the repository
+
+git clone <repo-url>
+
+Git creates two things on your machine.
+
+in ur laptop we have like below 
+
+Local Branch                 Remote Tracking Branch
+
+main  ----------------->     		origin/main
+   |                          						  |
+A ----- B ----- C          			A ----- B ----- C
+
+Notice carefully. You now have
+main → your working branch
+origin/main → Git's copy of what exists in GitHub
+
+Many beginners think origin/main is another branch they created. No. It is just Git's reference to the remote branch.
+
+
+Step 3: Another developer pushes code
+
+Suppose another developer pushes to
+
+GitHub : A ---- B ---- C ---- D
+
+Your laptop still has
+
+main : A ---- B ---- C
+origin/main : A ---- B ---- C          =============> You don't know about commit D yet.
+
+Step 4: Run git fetch
+
+git fetch ----> Git contacts GitHub. Downloads latest information.
+
+Now LOCAL MACHINE
+main : A ---- B ---- C
+origin/main : A ---- B ---- C ---- D
+
+Notice Only origin/main changed. 
+Your main didn't change. That is why fetch is safe.
+
+Step 5: Compare
+
+git diff main origin/main ---->  Git shows Only commit D is new.
+or
+
+git log main..origin/main   ---> Shows commitid and author and message so You can inspect before accepting it.
+
+Step 6: Merge   If everything looks good
+
+git merge origin/main
+Now 
+main : A ---- B ---- C ---- D
+origin/main : A ---- B ---- C ---- D                 ----------> Both become same.
+
+
+Now suppose YOU also made a commit
+
+main : A ---- B ---- C ---- X
+origin/main : A ---- B ---- C
+
+Someone else pushes
+GitHub : A ---- B ---- C ---- D
+
+Now Fetch ---> git fetch
+
+gives
+
+main : A ---- B ---- C ---- X
+origin/main : A ---- B ---- C ---- D
+
+Now you have two different histories.
+
+            X
+           /
+A --- B --- C
+           \
+            D
+
+Now Git cannot simply move forward.
+
+You must git merge origin/main or git rebase origin/main			
+
+
+Real Company Workflow
+
+This is what happens every day.
+
+Developer A
+      |
+      | Push
+      ↓
+GitHub (main)
+      ↑
+      |
+git fetch
+      |
+Developer B
+
+main               origin/main
+(old code)         (latest code)
+
+      ↓ review
+
+git merge origin/main
+or
+git rebase origin/main
+
+
+Easy way to remember
+main = My working branch.
+origin/main = Git's local snapshot of the remote main branch.
+git fetch = Update the snapshot (origin/main) only.
+git merge origin/main = Copy the snapshot changes into my working branch.
+
+
+Before Fetch
+main            → old code
+origin/main     → old code
+After Fetch
+main            → old code
+origin/main     → latest remote code
+After Merge
+main(our main)  → updated latest code
+
+Why Fetch Is Safer --> Because: ✅ developers can review code changes before merging into local branch and No automatic modification happens.
+
+
+Git Merge Conflict
+Occurs when same lines modified by multiple developers.Git asks manual resolution
+
+git log --> Shows commit history.
+git log --oneline --graph --all --> Check Difference Between Local & Remote
+
+
+
+
+
+
+
+
+
+
+
+
+Git Internals
+----------------
+Blob ---> Stores actual file content (file.txt). Git stores it as a Blob.
+Tree ---> Stores directory structure.
+Ex: 
+	Project
+		src/
+		main.java
+		pom.xml
+		Tree remembers folder hierarchy.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+while creating a repo in proj 
+protection policy
+require a pull request to merge code to main ---> with out pull request should not allow to modify changes directly in main branch and required no of approvers and code reviewers
+
+
+create new pr --> from feature branch to main branch developer creates pr that should be reviewd by approvars and approve the pr 
+while reviewrs cheching the feature branch code they can add the comments if they want to update or modify changes in code so that developer will check and modify based on the review comments and developers can discuss with reviewers and do changes and take approvals 
+
+sha code 40 characters -- universal unique if for the content like for every commit etc 
+
+echo "Hi this from git hub" ---> get some commit id 
+if u change the content commit id will change 
+for same content commit id will not change where ever u run in world and who ever run not only single persong if even multiple people run same command the commit id will be same
+echo "Hi this from GITHUB"
+even if add or remove content character or line etcc commit id will be changed 
+
+.git folder  ---> git will track everything from here -- in objects folder 
+
+git cat-file <commitid > -p   ---> u will get all the info like msg and who committed and structure etc...
+
+
+echo "Hi this from git hub" | git hash-object--stdin  --> it will print hash commit id 
+
+
+git log --oneline 
+
+
+
+
+
+
+
+
+
+merge vs rebase 
+
+Merge startegies:
+----------------------
+
+When a Pull Request (PR) is approved, there are generally three merge strategies used in Git platforms like GitHub and Azure DevOps:
+
+1)Create a Merge Commit (Merge)
+2)Rebase and Merge
+3)Squash and Merge
+
+1)create a merge :
+
+when ur mergiing content from feature branchto main branch it will create and extra commit always that will have two parents so that it can have the complete history
+merge will preserve the complete history  it is like chain structure 
+
+if u have two parents then it is megre commit 
+
+
+
+1) Create a Merge Commit (Merge)
+------------------------------------------------
+This is the default and safest strategy.
+
+How it works:
+
+Main
+
+A ---- B ---- C
+
+              \
+Feature        D ---- E ---- F
+
+1) we have already 3 commits in main branch and we have created a feature branch from main so u will get A ---- B ---- C so now we are commiting to feature branch multiple times it creates  D ---- E ---- F
+so the development is done and we raised a pr by selecting create a merge option once approved and merged to main it will create a extra merge 
+
+A ---- B ---- C -------- M
+              \         /
+Feature        D ---- E ---- F  commit 
+
+remain exactly the same. same commit id's forwared or whatever to main  branch along with new merge commit -------- M which is created by git Git only creates called merge commit 
+
+Characteristics:
+
+✅ Creates an extra merge commit.
+
+✅ Original commit IDs remain unchanged.
+
+✅ Preserves complete branch history.
+
+✅ Easy to understand who worked on which feature.
+
+History looks like a tree/branch structure.
+
+
+Merge Commit has two parents
+
+One parent points to ---> Main
+Another parent points to ----> Feature Branch
+
+That's why Merge Commit has two parent commits.
+
+Advantages
+
+✔ Preserves complete history ✔ Easier debugging ✔ Easy to rollback an entire feature ✔ Good for large teams
+
+Disadvantages ---> History becomes complex.
+
+Example
+
+       D---E---F
+      /         \
+A---B---C--------M
+
+Many branches make Git log harder to read.
+
+
+2) Rebase and Merge
+---------------------------
+Instead of creating a extra Merge Commit, Git moves feature branch commits on top of latest Main branch commits.
+
+Suppose Before Rebase
+
+Main :  A ---- B ---- C
+
+Feature : A ---- B ---- D ---- E ---- F
+
+Git first rebases Feature onto Main.
+
+A ---- B ---- C ---- D' ---- E' ---- F'        --> D' ---- E' ---- F'   when u merge commit ids of feature branch will be rewrited and new commits/commit ids will be there in main branch 	
+
+D ---- E ---- F --> these are old commit in featire branch -- thos will no longer available 
+
+Git creates
+
+D'
+
+E'
+
+F'
+
+with new commit IDs.This is called History Rewriting.
+
+Characteristics
+
+❌ No Merge Commit.
+
+✅ Linear history.
+
+A → B → C → D → E → F    -- with new commit ids 
+
+looks like everything happened one after another.
+
+Advantages
+
+Cleaner history , Easy to read Git log , Preferred in many projects
+
+Disadvantages
+
+History rewritten and Commit IDs change/new 
+
+Should not rebase shared/public branches because other developers may already be working on the original commits.
+
+| Merge                      | Rebase                   |
+| -------------------------- | ------------------------ |
+| Creates Merge Commit       | No Merge Commit          |
+| Original commit IDs remain | Commit IDs change        |
+| Preserves history          | Rewrites history         |
+| Tree structure             | Linear structure         |
+| Easier rollback            | Cleaner Git log          |
+| Safe for shared branches   | Avoid on shared branches |
+
+
+
+
+
+
+no extra commit will be created 
+
+lets say before rebase pr i have 3 commits to feature branch and created a pr -- using rebase merged into main --- so now those 3 commit id will not forward to main instead those commit id will be changed/rewrited to new commits and added to main branch
+
+but in merge --> extra commit id will be created along with 3 commit id thos commit ids will not change same commit id will be added to main branch commit but it just creates an extra commit 
+
+another in rebase if u see commit it will be seen like linear development happend there is no chain structure like merge but in merger there will be chain strucuture and also it contains 2 parents 
+
+it will not preserver the hostory but   when u do rebase pr merged into main branch commit id's will be rewrited/altered i.e., creates new commit ids 
+in github
+IN branch policies u can --- select require linear hostory option -- at that time we cannot use merge and squash u must use rebase pr merged to main
+
+
+3) Squash and Merge
+----------------------------
+
+Suppose Feature branch has ---> D --> E --> F  = Three commits.
+
+Git combines everything into one single commit.
+
+Result
+A ---- B ---- C ---- G
+
+where G  will always be a NEW commit ID and added on top of main branch commits -----> it contains all changes from D E F  and we cannot see D --> E --> F  commit ids in main branch 
+
+Characteristics : Only one commit reaches Main.
+
+Advantages : Simple history , Easy to read and One feature = One commit
+
+Disadvantages : Original commit history is lost.
+
+Cannot know intermediate commits.
+
+Ex lets say developer did 60 commits if u do above 2 merge and rebase those 60 will be added to main branch history that it will be not goodd so we do sqash to one commit 
+
+
+What is the difference between Merge and Rebase?
+
+Answer:
+
+"Merge combines one branch into another by creating a merge commit, preserving the complete branch history and keeping the original commit IDs unchanged. Rebase, on the other hand, rewrites the commit history by replaying feature branch commits on top of the target branch, resulting in new commit IDs and a clean linear history without a merge commit. Merge is generally preferred for shared branches because it preserves history, while rebase is useful for keeping the commit history clean before merging."
+
+A Git commit ID is a SHA hash calculated from the commit's content, parent commit, author, timestamp, and metadata. During a rebase, the parent commit changes because the commits are replayed on top of a different base branch. Since the parent is part of the hash calculation, Git generates new commit IDs."
+
+
+
+SCENARIO:
+--------------
+in rebase concept --- in main branch i have 3 commit and created feature branhces of two developers 1 and 2 now developer 1 complted code and created a rebase and approved and merged so creates a new commit id on top of main branch ryt but in developer 2 has only 3 commits from main branch if do the he will get error e=ryt at that time what will happen
+
+The answer is Yes, Developer 2 cannot directly merge after Developer 1 has rebased and merged.
+
+Example:
+
+Initial Situation
+
+Main : A ---- B ---- C
+
+Now two developers create feature branches.
+
+                 D1 ---- E1
+                /
+A ---- B ---- C
+                \
+                 D2 ---- E2
+Developer 1 and Developer 2 both started from commit C.
+
+
+Developer 1 uses Rebase & Merge ---> Developer 1 raises a PR ---->  Git performs git rebase main Nothing changes because Main hasn't changed yet.
+
+Then GitHub/Azure DevOps performs Rebase & Merge. ---> pr is approve for developer 1 and merged
+
+Now Main has moved ahead.
+Main becomes :  A ---- B ---- C ---- D1' ---- E1'            (D1' ---- E1'       --> dev 1 commits got from feature branch and merged with new commit ids 
+
+D1' ---- E1'    --> main branch commits with new commit id from feature   D1 ---- E1 old commit ids 
+
+because Git created new commit IDs.
+
+
+What Developer 2 Has
+
+Developer 2's local branch is still
+
+                 D2 ---- E2
+                /
+A ---- B ---- C
+
+Developer 2 doesn't know Main has changed.
+
+Developer 2 Creates PR Now Git compares
+
+Main : A ---- B ---- C ---- D1' ---- E1'
+
+Feature : A ---- B ---- C ---- D2 ---- E2
+
+They have diverged. Git will not simply perform the rebase automatically. Developer 2 must first update the branch.
+
+What Developer 2 Does
+
+First :   git fetch origin Now Git knows Main has changed. Then git rebase origin/main
+
+Result : Develope 2 feature branch commits into on top of main branch 
+A ---- B ---- C ---- D1' ---- E1' ---- D2' ---- E2'
+
+D2' ---- E2' ---> new commit ids on main branch 
+
+D2 ---- E2 --> old in feature branch 
+
+
+What if both developers modified the same file?
+
+Suppose
+Developer 1 :     name = "Arun";
+Developer 2 :     name = "Kumar";
+
+Now during --->  git rebase origin/main
+
+Git stops and says ----> CONFLICT (content):   because both modified the same lines in same file . Developer 2 resolves the conflict manually. then git add, commit and push 
+
+git add .
+git rebase --continue ---> Git continues replaying remaining commits.
+git push --force-with-lease    -->because rebase changed commit IDs.
+
+
+Visual Timeline : 
+Main
+
+A---B---C
+
+           \
+Dev1        D1---E1
+
+           \
+Dev2        D2---E2
+
+After Dev1 Rebase Merge
+
+Main
+
+A---B---C---D1'---E1'
+
+           \
+Dev2        D2---E2
+
+Developer 2 rebases
+
+Main
+
+A---B---C---D1'---E1'---D2'---E2'
+
+Interview Question
+
+Interviewer:
+Developer 1 already merged using Rebase. Developer 2 has an old branch. What should Developer 2 do?
+
+Answer:
+
+"Developer 2 should first synchronize the feature branch with the latest Main branch by running git fetch origin followed by git rebase origin/main. During the rebase, Git replays Developer 2's commits on top of the updated Main branch. If conflicts occur, they are resolved manually using git add and git rebase --continue. Since rebase rewrites commit history and creates new commit IDs, Developer 2 must push the updated branch using git push --force-with-lease before completing the Pull Request."
+
+conflicts occur only when changes overlap.
+
+One important correction
+You asked: "Developer 2 will get an error, right?"
+
+The answer is:
+Not always immediately.
+If Developer 2's changes don't overlap with Developer 1's changes, the rebase may complete automatically.
+If both modified the same lines or related history, Git pauses with a merge conflict, which Developer 2 must resolve before continuing the rebase.
+
+
+REBASE VS MERGE 
+if u are using rebase option use sqash and rebase so ---. 60 commits added to/creates to siingle commit id and that will be added on top of main branch 
+
+
+When to use which strategies:
+if a branch is developed by multiple developers ---> prefer merge  because if multiple people are doing changes u should have that history because u can see who did and ehat they did and why they did 
+so history preserves 
+
+The answer depends on the team's Git strategy and workflow. Let me explain with real-world scenarios.
+
+Branch types:
+---------------
+Main branch i s---- long live branch  --> production code 
+feature branch is(New features) --- short live branch once our code merged to main this branch is not required and even we can delete at the time of pr merge there wil an option u can select 
+Develop --> Integration branch
+Release ---> Testing before Production
+hotfix  -->Urgent production fixes
+
+whatever we need to deploy in production because of bugs -- we call them as Hotfix branch because immeadiately we need to solve the bug and push to main branch in production
+
+and other than main branch remaining branches we call it as mostly feature branches 
+
+Code is same across all environments but the configuration is diff ex : database url and appln urls and users and passwords and certificates and we get that configuration data from AWS SSM parameter store 
+
+Developers task and Devops engineer does not involved but we discuss all the things like process-- branching strategy etc.. based on that we can do some settings on github repo's 
+----------------------
+Developer push the code t Azure devops/git anf that will be merged to main branch in dev ----> we trigger pipeline for Devenv in CIT 1 there it will be like build and check sonarqube code quality,qyality gates and etc... and then take approva to deploy once it is good in CIT1 we deploy that code in SIT 1 Env thsis is for tester they will test all the things and rises bugs and they assign those bugs to associate once all fixed at the time of release we merge/sync that code with prod main branch and release if bugs found we will resolve them ASAP and deploy to DEV(CIT1) then directly push the code to prod and take the approvals  instead of SIT,UAT PRE-PROD only for Prod bugs like emergency defects  and every month there will be release 
+
+CIT1 -- SIT1(QA) --> UAT --> PRE-PRO --> PROD 
+
+Branching Strategy:
+------------------------
+
+
+Suppose you have a banking application.
+
+There are 20 developers.
+
+Main
+│
+├── Developer 1 → Login
+├── Developer 2 → Cart
+├── Developer 3 → Payment
+├── Developer 4 → Catalogue
+├── Developer 5 → User
+
+Every developer works on a separate feature branch.
+
+Strategy 1: Merge Commit
+Used When
+Large Enterprise Companies
+Banking Projects
+Insurance
+Healthcare
+Government Projects
+
+because they need
+
+Complete Audit History
+Rollback
+Compliance
+Traceability
+
+Every feature has
+Merge Commit
+Branch History
+Complete Audit
+
+Strategy 2: Rebase
+
+Used when
+
+History should be clean.
+
+Example
+
+Open Source Projects
+
+Small Teams
+
+Libraries
+
+Microservices
+
+Startups
+
+
+History becomes ----> A-B-C-D-E ------> Very easy to read. Looks like one person developed everything.
+
+
+Strategy 3: Squash Merge
+
+Very common nowadays.
+
+Suppose developer commits
+
+Fix
+
+Again Fix
+
+Again Fix
+
+Again
+
+Small Bug
+
+Formatting
+
+Sonar Fix
+
+Review Fix
+
+Final Fix
+
+10 commits.
+
+Manager doesn't want
+
+10 commits
+
+in Main.
+
+So Git combines
+
+10 commits
+
+↓
+
+1 commit
+
+History
+
+Feature Login Completed
+
+Very clean.
+
+
+What about Azure DevOps?
+
+Azure DevOps supports
+
+✓ Merge
+
+✓ Squash Merge
+
+✓ Rebase
+
+✓ Fast Forward
+
+Team Lead decides.
+
+What happens in Capgemini?
+
+Suppose you're working for Standard Chartered Bank.
+
+Developer creates
+
+feature/login
+
+↓
+
+Commit
+
+↓
+
+Push
+
+↓
+
+Pull Request
+
+↓
+
+Reviewer reviews
+
+↓
+
+Azure DevOps Pipeline
+
+Maven
+SonarQube
+Unit Test
+Security Scan
+
+↓
+
+Approval
+
+↓
+
+Merge
+
+In many enterprise projects, Merge Commit is chosen because complete history must be preserved for audits and troubleshooting. Some teams may choose Squash Merge if they want a cleaner main branch while still using pull requests.
+
+
+My Recommendation for Your Experience (Capgemini / DevOps 4+ Years)
+
+If an interviewer asks:
+
+Which merge strategy did you use?
+
+A strong answer would be:
+
+"In our Azure DevOps project, developers worked on feature branches and raised Pull Requests. Every PR triggered CI checks such as Maven build, unit tests, SonarQube quality gate, and security scans. After successful validation and peer review, the code was merged into the main branch. Our team preferred Merge Commit because it preserved complete branch history, making auditing, troubleshooting, and rollback easier in our banking project."
+
+If they ask:
+
+Do you know Rebase and Squash?
+
+You can add:
+
+"Yes. Rebase creates a clean linear history by replaying commits and rewriting commit IDs, while Squash Merge combines multiple feature commits into a single commit before merging. Although our project primarily used Merge Commit, I'm familiar with when Rebase and Squash are appropriate and their trade-offs."
+
+This answer demonstrates both practical project experience and knowledge of alternative Git workflows, which is exactly what interviewers look for.
+
+
+FAST-FORWARD MERGE :
+-------------------------------
+Fast Forward Merge happens when the target branch (usually main) has not received any new commits after the feature branch was created. Instead of creating a extra merge commit on top of main branch commits , Git simply moves the main branch pointer forward to the latest commit of the feature branch. i.e., --> it will add the commits in feature branch as it is on top of main branch with out changeing commit id 
+
+Simply :
+ it will add the feature branch commits/commit id's on top of main branch commits without changing/rewriting.creating new commit id of feature branch and even without creating the extra merge commit on top of main branch 
+ 
+ 
+ Why is it called "Fast Forward" ====> Git simply moves the pointer of the main branch forward. No merge commit. No history rewriting. No conflict (if no new changes exist on main).
+ 
+ Main
+ A ---- B ---- C
+ 
+ Developer creates feature branch
+
+                 D ---- E
+                /
+A ---- B ---- C
+
+Developer completes work. Meanwhile, Nobody has committed anything to Main.
+
+scenario 1: Nobody has committed anything to Main.
+--------------
+Main is still
+
+A ---- B ---- C
+
+Now execute
+git checkout main
+git merge feature-login
+
+Git notices : Main is directly behind Feature (A ---- B ---- C). So instead of creating a extra merge commit, Git simply moves Main pointer to feature branch commits 
+
+Result :  A ---- B ---- C ---- D ---- E
+
+Characteristics : ✅ No Merge Commit ✅ Commit IDs remain same ✅ No history rewriting ✅ Linear history ✅ Very fast
+
+Advantages
+
+Simple history,Easy to understand, No unnecessary Merge Commit, Cleaner Git log
+
+Disadvantages
+Branch history is lost and Later you cannot easily identify
+
+Which commits belonged to Feature Branch? Everything appears as if it was directly committed into Main.
+
+Merge vs Fast Forward
+------------------------------
+Normal Merge
+              D ---- E
+             /
+A ---- B ---- C -------- M
+
+Creates
+
+Merge Commit M
+
+History preserved.
+
+Fast Forward Merge
+A ---- B ---- C ---- D ---- E
+
+No Merge Commit.
+
+Just moves Main pointer.
+
+
+When Fast Forward is NOT Possible
+
+scenario 2: some body has committed something to Main.
+
+Developer creates feature branch at starting 
+
+                 D ---- E
+                /
+A ---- B ---- C
+
+Meanwhile another developer commits
+
+Main is not same at teh time developer clones commit added by another developer 
+
+A ---- B ---- C ---- X
+
+Now history becomesfor developer
+
+                 D ---- E
+                /
+A ---- B ---- C
+                \
+                 X
+				 
+
+Now Main and Feature have diverged/different. Git cannot simply move pointer. Fast Forward is impossible in this scenario. Git must : Create Merge Commit or Rebase first.				 
+
+
+
+Real Company Example
+-------------------------------
+Developer 1 ----> Creates feature-login
+
+Developer finishes in 20 minutes.
+
+Nobody committed anything to Main.
+
+Azure DevOps ---> Fast Forward Merge ---> Main simply points to latest commit.
+
+Another Example
+
+Developer 1 : feature-login
+Developer 2 : feature-payment ---> Developer 2 merges first to main. Main changes. Developer 1 now cannot Fast Forward.
+Developer 1 has to do 
+Git needs : Merge Commit or Rebase.
+
+
+IMPORTANT:
+-----------------
+Fast Forward is possible only when main branch is not commited anything so that developer can create this jusy main branch pointer poits to feature branch commits 
+
+Main : A -- B -- C
+
+A -- B -- C-- D -- E 
+
+ D -- E  --> feature branch commits 
+
+Now if somebody commited soe thing in main branch so developer doesnt has that commit related info so main branch is already moved to some commit id at that time Fast forward is not posible so he has to either merge approach or rebase approach 
+
+A -- B -- C-- X 
+
+now developer has  A -- B -- C- main branch commmits so un feature branch he had  D -- E so now main branch is move to X so this approach not possible 
+
+A -- B -- C-- X -- D -- E -- F (F -- extra merge commit if he uses merge approach ) and if he uses rebase just feature branch will be rewrites that commits to new ids and added on top of main branch 
+
+
+
+Interview Question
+Interviewer: When does Fast Forward Merge happen?
+
+Answer:
+"Fast Forward Merge happens when the target branch has not received any new commits after the feature branch was created. Since there is no branch divergence, Git simply moves the main/target branch pointer to the latest commit of the feature branch without creating a merge commit. This results in a clean linear history while preserving the original commit IDs."
+
+One Important Point (Often Asked)
+
+You might wonder:
+If Fast Forward doesn't create a Merge Commit, how do we force Git to create one?
+
+Use:  git merge --no-ff feature-login ------> This forces Git to create a merge commit even when a fast-forward merge is possible.
+
+
+
+Merge Conflict:
+--------------------
+
+what is conflict "?
+
+when u get ---> if git finds diff code changes in the same line number 
+
+Why does Merge Conflict happen?
+
+Git can automatically merge changes only if they don't overlap.
+
+Suppose
+Developer 1 changes  ----> String name = "Arun";
+Developer 2 changes  ----> String city = "Hyderabad";
+
+These are different lines Git merges automatically.
+
+
+Now suppose on same line 
+
+Developer 1 changes -----> String name = "Arun";
+Developer 2 changes -----> String name = "Kumar";
+
+Same line. Git doesn't know Which one is correct ---> So it stops. This is called Merge Conflict
+
+Ex:
+Developer 1 Changes line ---> String name = "Arun";
+
+Commits --> git commit -m "Updated username"
+Pushes --> git push and Merged into Main.
+
+
+Developer 2
+Meanwhile Changes ----> String name = "Kumar";
+
+Commits
+git commit -m "Updated username"
+
+Now tries pull because if there is any lates changes it will fetch because both developers takes the code at same time with same commits but developer 1 committed and pushed alread those changes where not there in developer 2 but developer also changing same line 
+
+git pull ---> Git says Auto-merging UserService.java
+
+CONFLICT (content): Merge conflict in UserService.java Automatic merge failed.
+
+What Git shows
+
+Git modifies the file.
+
+Example
+
+<<<<<<< HEAD
+String name = "Arun";
+=======
+String name = "Kumar";
+>>>>>>> feature-branch
+
+<<<<<<< HEAD    --> Current branch (main )
+
+=======          ---> seperator 
+
+>>>>>>> feature-branch ---> Incoming branch i.e., feature branch 
+
+How to Resolve --> Developer 2 has to solve this manually by cintacting developer 1 and they both have to decide what should be there  so then 
+
+String name = "Arun Kumar";
+
+Removes
+<<<<<<<
+=======
+>>>>>>>
+Now save.  then git add and git commit and push 
+
+If Rebase ----> git rebase --continue =====> Git continues replaying commits.
+
+Complete Flow
+Developer 1 ---> Commit  ---->  Push ---> Merged ---> Developer 2 ---> Pull ---> Conflict ---> Edit File ---> git add ---> git commit or git rebase --continue
+
+Types of Merge Conflicts
+
+1. Same Line Conflict
+
+Developer 1 ---> salary = 10000;
+Developer 2 ---> salary = 15000;
+
+Git cannot decide. Conflict.
+
+2. Delete vs Modify
+
+Developer 1 ---> Deletes ---> config.yml
+Developer 2 ---> Edits ---> config .yml
+
+Conflict.
+
+3. Rename vs Modify
+
+Developer 1 ----> Renames ----> User.java to Customer.java
+Developer 2 ---> Edits ---> in  User.java
+
+Conflict.
+
+4. Binary File Conflict
+
+Example : logo.png
+
+Developer 1 changes image.
+Developer 2 changes same image.
+
+Git cannot merge images. Conflict.
+
+git rebase --continue
+git merge --abort
+git rebase --abort
+
+
+
+Interview Example
+
+Suppose
+
+Main  :    A----B----C
+Developer 1  : A----B----C----D
+Developer 2  : A----B----C----E
+
+Both changed
+calculateSalary()
+
+Developer 1 merges.
+Main : A----B----C---D
+
+Developer 2
+git pull ---> Git says CONFLICT
+
+Developer 2 : Fixes calculateSalary()
+Runs
+git add . 
+git commit or git rebase --continue
+
+
+Interview Answer (4+ Years)
+
+Interviewer: Have you faced merge conflicts? How did you resolve them?
+
+"Yes, I have encountered merge conflicts when multiple developers modified the same file or the same lines of code. Git was unable to merge the changes automatically. I first pulled the latest changes, identified the conflicting sections marked by Git, manually resolved them after discussing with the concerned developer if needed, removed the conflict markers, staged the resolved files using git add, and then completed the operation with either git commit for a merge or git rebase --continue for a rebase. Finally, I validated the application and pushed the updated branch."
+
+
+
+
+
+
+Cherry Pick
+----------------
+Cherry-pick is used to copy a specific commit from one branch to another without merging the entire feature branch commits.
+
+Real Example
+------------------
+Main branch : A ---- B ---- C
+Feature branch : A ---- B ---- C ---- D ---- E ---- F
+
+Suppose only commit E contains an important bug fix.for now i want to push only E changes Instead of merging all commits i.e., (D ---- E ---- F) from feature branch
+
+copy only E.
+
+git checkout main
+git cherry-pick <commit-id-of-E>
+
+Now
+Main : A ---- B ---- C ---- E'   --------->  Git creates new commit id because it creates a new commit with the same changes.
+
+old commit id ---> just     E 
+new commit id ---> just   E'    --> diff ' this character
+
+When we use
+Production bug fix -----> Developer fixed bug in feature branch. Manager asks Move only bug fix to production. Cherry Pick is used.
+
+
+Git Stash
+------------
+Temporarily stores uncommitted changes without committing them.
+Useful when you need to switch branches immediately.
+
+Example : You're working feature-login
+Modified : Login.java
+
+Suddenly Production issue. Need to move hotfix branch But Git won't allow checkout.
+
+git stash ----> Working directory becomes clean.
+
+Switch ----> git checkout hotfix
+
+After finishing
+git checkout feature-login
+git stash pop ---> Changes return.
+
+commands:
+git stash: Saves your uncommitted changes to a temporary stack and clears your working directory.git 
+stash list: Displays all your saved stashes along with their tracking indexes.git 
+stash pop: Restores the most recent stashed changes to your workspace and deletes them from the stash list.
+git stash apply: Restores the stashed changes to your workspace but keeps them saved in the stash list for later reuse.
+git stash drop: Permanently deletes a specific stash entry from your stack without applying it.
+
+
+Git Reset
+-------
+Moves HEAD backward. Can remove commits. Used mostly on local branches.
+
+Example
+-----------
+A ---- B ---- C
+git reset --hard B
+
+Now :  A ---- B   ---->  Commit C disappears.
+
+Types
+-------
+1.Soft
+git reset --soft HEAD~1  ----->  Commit removed. Changes stay staged.
+
+2.Mixed (default)
+git reset HEAD~1 ----> Commit removed and Changes unstaged.
+
+3.Hard
+git reset --hard HEAD~1     --->  Commit removed. Changes deleted.
+
+
+Git Revert
+-------------
+Never deletes history. Creates a new commit which undoes previous commit changes.
+
+Example
+
+A ---- B ---- C
+git revert C
+
+Result
+
+A ---- B ---- C ---- D
+
+D reverses C.
+
+Git Tags:
+----------
+Used to mark important versions.typically to identify releases of code
+
+Example :  v1.0 , v2.0 , Release-2026
+
+git tag
+
+git tag v1.0
+
+git push origin v1.0
+
+git checkout v1.0
+
+Real Example
+------------------
+Application released.
+
+Tag : v1.0
+
+If issue occurs Checkout v1.0 
+
+
+Git Ignore
+-------------
+Tells Git Don't track these files.
+Ex: .gitignore file 
+target/ , .idea/ , *.class , *.log , node_modules/ and target folders and  .terraform folder etc...
+
+
+
+git diff :
+---------
+ Shows unstaged changes.
+ 
+Example : Modified :   Login.java  ---> Shows difference.
+ 
+ 
+ 
+git diff --staged : Shows staged changes.
+
+Ex : git diff --staged   after git add .      --------> Review before commit.
+
+
+
+
+git rm:
+--------
+Delete file from Git.
+Ex:
+git rm test.txt ----> Removes Working directory Git tracking.
+
+
+git mv:
+--------
+Rename files 
+Ex: 
+git mv old.java new.java  ------> Git tracks renames
+
+
+
+git clean:
+-----------
+Deletes untracked files. Remove temporary files.
+
+Preview -----> git clean -n
+Delete   ----->  git clean -f
+
+git show:
+-----------
+Displays commit details.
+Ex:
+
+git show
+git show HEAD
+git show commit-id
+
+Shows ---> Commit , Author , Files changed, Diff
+
+git blame :
+-------------
+git blame Shows Who modified each line.
+Ex: 
+git blame UserService.java
+
+o/p : John , Commit , Date , Code
+
+Real Example : In Production bug i want to know Who changed line.
+
+
+
+
+
+
+
+
+git reflog : reference log
+-------------
+Shows HEAD movement history.
+
+Even deleted commits appear.
+
+
+Git Reflog (Reference Log) records every movement of HEAD and branch references in the local repository. It helps recover commits even after reset, rebase, checkout, or branch deletion.
+
+Ex: git reflog
+
+Example:
+-----------
+A ---- B ---- C ---- D
+
+You accidentally run :  git reset --hard HEAD~2
+
+Now :  A ---- B ------>  Looks like C and D are deleted.
+
+But actually Git still remembers those commits because git reflog stores ----->   HEAD moved from D to B
+
+Then 
+git reflog 
+
+HEAD@{0}: reset: moving to HEAD~2
+
+HEAD@{1}: commit: Added Payment API
+
+HEAD@{2}: commit: Added Login API
+
+HEAD@{3}: checkout: moving from feature to main
+
+Now developer simply goes back.
+
+git checkout HEAD@{1}   or   git reset --hard HEAD@{1}     ---> everything comes back
+
+
+git log       -------->  Shows Commit history
+git reflog  --------> Shows Every HEAD movement  ----> Checkout , Merge , Rebase , Reset , Commit, Cherry-pick
+
+Interview Answer
+
+Git Reflog records every movement of HEAD locally. Even if commits disappear from normal Git history due to reset or rebase, reflog helps recover them. It is commonly used to recover accidentally deleted commits.
+
+Git Hooks:
+-------------
+Scripts that Git executes automatically whenever specific Git events occur.
+Ex: Before Commit, Ater Commit, Before push, After push, After Merge etc....
+
+stores at : .git/hooks         in .git folder when u do git init  ---> pre-commit.sample They are sample files.
+
+Git Hooks are automation scripts stored inside the .git/hooks directory. They execute automatically during Git events like commit, push, merge, or checkout. In enterprise projects they are used for running unit tests, code formatting, commit message validation, and security scans before allowing commits or pushes.
+
+
+Git Fetch vs Pull
+
+Git Fetch:
+------------
+Downloads latest changes from remote repo and Does NOT merge into current local code 
+
+Ex:
+Remote :  A ---- B ---- C ---- D
+Your Local : A ---- B ---- C
+Run :  git fetch    --->  it just downloads the remote branch updated code but does not merge into ur local code where ur working  So that u can review the changes and merger into local code
+to revire :   git diff main origin/main  ---> Review changes.
+
+If okay :      git merge origin/main  ------------>   	Now local updates.
+
+Git Pull : 
+----------
+Downloads latest changes from remote repo and automatically merge into current local code 
+
+Pull means ---> Fetch + Merge
+
+git pull ---->  git fetch + git merge
+
+
+Interview Answer
+
+Git Fetch only downloads changes from the remote repository and updates the remote tracking branch without modifying the local branch. Git Pull performs Fetch followed by Merge, automatically updating the local branch and possibly creating merge conflicts.
+
+Git Clone vs Fork
+
+Git Clone:
+------------
+Copies/downloads repository From remote To local machine.
+
+Ex: GitHub Account -----to ----->  laptop
+
+cmd : git clone URL
+
+Git Fork: 
+-----------
+
+Creates Your own copy On ur own GitHub account
+
+Ex: GitHub Account -----to ----->  Your GITHUB Account ---to ----> Laptop
+
+Interview Answer
+
+Clone copies a repository from a remote server to the local machine. Fork creates a separate copy of another repository under your own GitHub account, allowing you to contribute without write access to the original repository.
+
+
+
+
+git restore:
+--------------
+Used to Restore, Discard, Undo File changes.
+
+Ex 1: at working directory level
+You changed the file in the working directory. You did not run git add or git commit. Running this command completely deletes your new changes. The file goes back to the last committed version
+
+changed : System.out.println("Hello");
+
+Developer edits : System.out.println("Bye");   ----> Doesn't want it now 
+
+git restore Hello.java
+
+
+Ex:2 
+at staging area level means after git add :   You made changes and you already ran git add. The changes are now in the staging area. Running this command pulls the file out of the staging area. Your changes are not deleted; they are just moved back to your working directory.
+
+Restore staged file :   
+
+1)git restore --staged file.java    --->  now changes goes back to working directory 
+ 
+To delete them in working directory also 
+ 2)git restore <file>
+
+changes moves from ------------->  Staging ---> Working Directory --> deleted
+
+
+Interview Answer
+Git Restore is used to discard unwanted file modifications or unstage staged files without affecting commit history.
+
+
+
+Git Bisect:
+-------------
+git bisect is a debugging tool used to find the exact commit that introduced a bug. 
+It uses a binary search algorithm to split your commit history in half, drastically reducing the time it takes to find the problem.
+or
+Git Bisect uses Binary Search to identify Which commit introduced the bug.
+
+Ex:
+Suppose 100 commits. Bug introduced somewhere. Without Bisect Need to check 100 commits.
+
+With Binary Search Only log₂(100) ≈ 7 commits i.e., bisect
+
+Example
+A B C D E F G H ====>  Bug exists somewhere in this commits
+
+git bisect start
+git bisect bad
+git bisect good B
+
+
+Interview Answer
+
+Git Bisect performs a binary search on commit history to identify the exact commit that introduced a bug, significantly reducing debugging time in large repositories.
+
+
+HEAD:
+-------
+
+HEAD means Current Position
+
+Normally :   HEAD ----> main ---> Latest Commit
+
+Example
+
+A B C D    ===> HERE D ---> HEAD because it is the latest commit 
+ 
+
+Detached HEAD
+Suppose Developer ---> git checkout a2b34d  ---> Specific commit.
+
+Now
+
+HEAD -- points to--> Commit ---------- > NOT Branch
+
+Branch disappeared.
+
+main ----> D ----> HEAD ---> B       (a2b34d --> this is B's commit id)
+
+Now Developer commits.  -------> A B X
+But No branch points to  X
+
+Later Developer
+
+git checkout main
+Commit  X  --- > May become unreachable.
+
+
+
+
+Git Workflow in Your Project (Very Important)
+
+Since you have Capgemini DevOps experience, explain a real workflow:
+
+Create a feature branch from main.
+Implement code changes.
+Commit changes with meaningful messages.
+Push the branch to Azure DevOps/GitHub.
+Raise a Pull Request.
+Peer review is performed.
+CI pipeline runs Maven build, unit tests, SonarQube quality gate, and security scans.
+After approval, merge into main.
+Jenkins/Azure DevOps deploys to Dev → SIT → UAT → Production.
+
+This ties Git into the CI/CD practices expected from a DevOps engineer.

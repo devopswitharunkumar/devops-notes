@@ -1,0 +1,67 @@
+| Java Developer |----> remove everything related to java development/java domain
+
+Add below points for each project 
+
+Capgemini, SCB 
+---------------------
+Followed Agile methodologies by participating in sprint planning meetings and daily stand-up calls to enhance team collaboration, improve 
+development efficiency, and accelerate release cycles
+Collaborated and Enhanced AWS cloud architectures, covering VPC, EC2, EBS, Load Balancers, Lambda, Cloud Front, S3 buckets, RDS databases, 
+IAM, Autoscaling, Route53, to align with business needs
+Built and managed Infrastructure as Code (IaaC) using Terraform to provision and manage AWS services like EC2, S3, VPC, IAM, and EKS
+Consolidated all Shell, Terraform, and Ansible playbooks into Git repositories, enhancing version control, automation, and maintainability
+Enhanced CI/CD automation by implementing Jenkins shared libraries and supporting multibranch pipeline setups, reducing deployment time 
+by 40% and minimizing manual effort by 60% across four environments
+Collaborated closely with development teams to apply DevSecOps best practices, improving delivery processes and increasing release 
+frequency by 30%
+Streamlined code quality and security checks by integrating SAAT (SonarQube) into CI/CD pipelines for automated static code analysis, while 
+leveraging DAAST (Veracode) for manual dynamic security testing-ensuring early detection of vulnerabilities and adherence to secure coding 
+standards
+Standardized and optimized Docker image creation by following Docker best practices, leading to a 50% reduction in build times and ensuring 
+consistent, reliable deployments across environments
+Centralized container image management using Amazon ECR, establishing version control for microservices and enhancing application security 
+posture across the development lifecycle
+Automated application deployments on Kubernetes (EKS) using helm charts, achieving a 40% reduction in deployment time and a 15% weekly 
+drop in manual errors, while adhering to EKS upgrade procedures to ensure cluster stability
+Governed Kubernetes clusters on AWS (EKS), guaranteeing scalability, reliability, and high availability for containerized applications, resulting in 
+zero performance-related escalations
+Monitored application and infrastructure health using Prometheus and Grafana to ensure high availability
+
+
+
+
+
+
+
+
+For this project :   Capgemini, Prudential 
+----------------------------------------------------
+Played a key role in managing core AWS services like EC2, VPC, S3, RDS, IAM, and security groups to support cloud infrastructure
+Utilized Ansible to manage configurations across multiple environments by developing reusable roles and playbooks, automating post-VM deployment tasks, and ensuring standardized system setups
+Improved AWS resource provisioning with Terraform, increasing deployment speed and consistency by over 50%
+Implemented GitHub webhooks to trigger Jenkins CI/CD pipelines automatically, optimizing development workflows and reducing release cycle time by 20%
+Spearheaded the overhaul of Jenkins pipelines to automate software builds, testing, and deployments; resolved a reduction in deployment time by 25% increase in release frequency, and simplified storage management in nexus
+Developed and optimized Dockerfiles using Docker best practices to streamline image creation, improve build performance, ensure consistent deployments, and enhance application reliability across environments.
+Worked on Kubernetes-based deployment using helm charts to manage pods, services, and deployments, gaining hands-on experience and 
+contributing to increased system reliability
+Collaborated in Agile/Scrum teams, participating in sprint planning, deployments, and incident management to ensure reliable DevOps delivery 
+Supported production deployments, release activities, incident troubleshooting, and collaborated with development teams to improve application availability. 
+
+
+
+PROJECTS
+Roboshop Microservices - Cloud-Native DevOps Automation on AWS
+Cloud-Native Microservices | AWS | DevOps | Automation | Kubernetes | CI/CD | Security
+
+• Provisioned complete AWS infrastructure using Terraform, including modular VPC setup, EC2, EKS, IAM roles, Amazon ECR, and an Application 
+Load Balancer (ALB) across two Availability Zones to ensure high availability and traffic distribution.
+• Developed reusable Terraform modules for scalable and maintainable deployment of networking and compute components.
+• Created reusable Ansible roles to automate VM provisioning and software setup (Node.js, Java, Python, NGINX, Databases), ensuring consistent 
+Environment configuration.
+• Built Docker images for each microservice using custom Docker files and pushed them to Amazon ECR (Elastic Container Registry).
+• Deployed microservices to Amazon EKS (Elastic Kubernetes Service) using helm charts, enabling version-controlled, repeatable deployments 
+With rollback, scaling, and fault tolerance.
+• Designed CI/CD pipelines in Jenkins, integrating with GitHub, ECR, and Helm to automate code checkout, image builds, and deployments.
+• Integrated SonarQube and Veracode into Jenkins pipelines for static code analysis and application security validation.
+• Configured Prometheus and Grafana for infrastructure and application monitoring, used ELK Stack (Elasticsearch, Logstash, Kibana) for 
+Centralized logging, and delivered static content via Amazon CloudFront for global low-latency access.

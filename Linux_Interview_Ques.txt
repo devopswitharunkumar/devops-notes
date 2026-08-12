@@ -1,0 +1,1185 @@
+For a **4+ years DevOps/Linux Engineer interview**, expect questions beyond basic commands. Interviewers focus on **troubleshooting, performance, networking, systemd, storage, security, shell scripting, and real-time scenarios**.
+
+## 1. Linux Boot Process
+
+**Q1. Explain Linux boot process.**
+
+**Answer:**
+
+Flow:
+
+```
+BIOS/UEFI
+   ↓
+Boot Loader (GRUB2)
+   ↓
+Kernel
+   ↓
+initramfs
+   ↓
+systemd (PID 1)
+   ↓
+Targets
+   ↓
+Services
+```
+
+* **BIOS/UEFI** → hardware initialization
+* **GRUB** → loads kernel
+* **Kernel** → initializes hardware/drivers
+* **initramfs** → temporary filesystem
+* **systemd** → starts services
+
+Check PID 1:
+
+```bash
+ps -p 1
+```
+
+---
+
+# 2. What happens when Linux server starts slowly?
+
+Troubleshooting:
+
+Check boot time:
+
+```bash
+systemd-analyze
+```
+
+Find slow services:
+
+```bash
+systemd-analyze blame
+```
+
+Check failed services:
+
+```bash
+systemctl --failed
+```
+
+Logs:
+
+```bash
+journalctl -xb
+```
+
+---
+
+# 3. Difference between soft link and hard link
+
+| Hard Link                    | Soft Link                  |
+| ---------------------------- | -------------------------- |
+| Points inode                 | Points filename            |
+| Cannot cross filesystem      | Can cross filesystem       |
+| Works after original deleted | Breaks if original deleted |
+
+Commands:
+
+Hard link:
+
+```bash
+ln file1 file2
+```
+
+Soft link:
+
+```bash
+ln -s file1 file2
+```
+
+Check inode:
+
+```bash
+ls -li
+```
+
+---
+
+# 4. Server CPU utilization is 100%. How troubleshoot?
+
+Steps:
+
+Check load:
+
+```bash
+uptime
+```
+
+CPU processes:
+
+```bash
+top
+```
+
+or
+
+```bash
+htop
+```
+
+Find top CPU users:
+
+```bash
+ps -eo pid,ppid,cmd,%cpu --sort=-%cpu | head
+```
+
+Process details:
+
+```bash
+pidstat -p PID
+```
+
+Kill if required:
+
+```bash
+kill PID
+kill -9 PID
+```
+
+---
+
+# 5. Difference between kill and kill -9?
+
+### kill
+
+```bash
+kill PID
+```
+
+* Sends SIGTERM (15)
+* Graceful shutdown
+* Process can cleanup
+
+### kill -9
+
+```bash
+kill -9 PID
+```
+
+* Sends SIGKILL
+* Immediate termination
+* Cannot be ignored
+
+---
+
+# 6. Memory utilization high. How troubleshoot?
+
+Check memory:
+
+```bash
+free -h
+```
+
+Processes:
+
+```bash
+top
+```
+
+Sort memory:
+
+```bash
+ps aux --sort=-%mem | head
+```
+
+Cache:
+
+```bash
+cat /proc/meminfo
+```
+
+Clear cache:
+
+```bash
+sync; echo 3 > /proc/sys/vm/drop_caches
+```
+
+---
+
+# 7. Difference between free memory and available memory?
+
+Example:
+
+```bash
+free -h
+```
+
+* **free** → completely unused RAM
+* **available** → RAM available including reclaimable cache
+
+Linux uses free RAM for cache.
+
+---
+
+# 8. Disk is 100% full. How troubleshoot?
+
+Check:
+
+```bash
+df -h
+```
+
+Find large directories:
+
+```bash
+du -sh /* | sort -hr
+```
+
+Large files:
+
+```bash
+find / -type f -size +1G
+```
+
+Deleted files holding space:
+
+```bash
+lsof | grep deleted
+```
+
+---
+
+# 9. Difference between df and du?
+
+### df
+
+Filesystem usage
+
+```bash
+df -h
+```
+
+Example:
+Disk mounted size
+
+### du
+
+Directory/file usage
+
+```bash
+du -sh /var/log
+```
+
+---
+
+# 10. Server unable to connect internet. Troubleshoot?
+
+Check IP:
+
+```bash
+ip addr
+```
+
+Gateway:
+
+```bash
+ip route
+```
+
+Ping:
+
+```bash
+ping google.com
+```
+
+DNS:
+
+```bash
+cat /etc/resolv.conf
+```
+
+Test DNS:
+
+```bash
+nslookup google.com
+```
+
+Ports:
+
+```bash
+telnet host port
+```
+
+---
+
+# 11. Difference between TCP and UDP?
+
+TCP:
+
+* Connection based
+* Reliable
+* Acknowledgement
+* Example:
+
+  * SSH
+  * HTTP
+  * HTTPS
+
+UDP:
+
+* Connectionless
+* Faster
+* No guarantee
+* Example:
+
+  * DNS
+  * Streaming
+
+---
+
+# 12. Explain Linux permissions
+
+Example:
+
+```
+-rwxr-xr--
+```
+
+Meaning:
+
+```
+owner → rwx
+group → r-x
+others → r--
+```
+
+Numbers:
+
+```
+r = 4
+w = 2
+x = 1
+```
+
+Example:
+
+```bash
+chmod 755 file
+```
+
+means:
+
+owner = 7 rwx
+group = 5 r-x
+others = 5 r-x
+
+---
+
+# 13. Difference between chmod and chown
+
+chmod:
+Change permission
+
+```bash
+chmod 755 file
+```
+
+chown:
+Change ownership
+
+```bash
+chown user:group file
+```
+
+---
+
+# 14. Explain systemctl
+
+Start service:
+
+```bash
+systemctl start nginx
+```
+
+Stop:
+
+```bash
+systemctl stop nginx
+```
+
+Enable boot:
+
+```bash
+systemctl enable nginx
+```
+
+Logs:
+
+```bash
+journalctl -u nginx
+```
+
+---
+
+# 15. How to check open ports?
+
+```bash
+netstat -tulnp
+```
+
+or
+
+```bash
+ss -tulnp
+```
+
+Example:
+
+```
+LISTEN 0.0.0.0:80 nginx
+```
+
+---
+
+# 16. What is zombie process?
+
+A completed process whose entry remains in process table.
+
+Find:
+
+```bash
+ps aux | grep Z
+```
+
+Parent has not collected child exit status.
+
+---
+
+# 17. Find files modified in last 7 days
+
+```bash
+find /path -mtime -7
+```
+
+---
+
+# 18. Find word inside files
+
+```bash
+grep -r "ERROR" /var/log
+```
+
+Case insensitive:
+
+```bash
+grep -i error file
+```
+
+---
+
+# 19. Explain crontab
+
+Schedule jobs.
+
+View:
+
+```bash
+crontab -l
+```
+
+Edit:
+
+```bash
+crontab -e
+```
+
+Example:
+
+Run every day 2 AM:
+
+```
+0 2 * * * script.sh
+```
+
+---
+
+# 20. Important Linux files
+
+| File              | Purpose         |
+| ----------------- | --------------- |
+| /etc/passwd       | users           |
+| /etc/shadow       | password hashes |
+| /etc/fstab        | mount info      |
+| /etc/hosts        | local DNS       |
+| /var/log/messages | logs            |
+| /etc/resolv.conf  | DNS             |
+
+---
+
+For **4+ years DevOps**, also prepare scenario questions like:
+
+* EC2 CPU 100% troubleshooting
+* Nginx 502 error debugging
+* Application unable to connect DB
+* Disk full but df and du mismatch
+* SSH not working
+* Load average high but CPU normal
+* SSL certificate issue
+* File descriptor limit issue
+
+These are commonly asked for **AWS + DevOps 4 YOE roles**.
+
+
+
+For **4+ years AWS DevOps Engineer interviews**, don't just say commands. Explain your **troubleshooting flow**. Below are interview-style answers.
+
+---
+
+# 1. EC2 CPU is 100%. How will you troubleshoot?
+
+### Answer:
+
+First I check whether CPU spike is temporary or continuous.
+
+### Step 1: Check CPU usage
+
+```bash
+top
+```
+
+or
+
+```bash
+htop
+```
+
+Check:
+
+* CPU %
+* Process ID
+* User
+* Command
+
+Example:
+
+```
+PID     CPU     COMMAND
+
+2345    95%     java
+```
+
+---
+
+### Step 2: Check system load
+
+```bash
+uptime
+```
+
+Output:
+
+```
+load average: 8.5 7.3 6.9
+```
+
+Compare with CPU cores:
+
+```bash
+nproc
+```
+
+If:
+
+```
+CPU cores = 4
+Load = 8
+```
+
+Server overloaded.
+
+---
+
+### Step 3: Find top CPU process
+
+```bash
+ps -eo pid,user,%cpu,%mem,cmd --sort=-%cpu | head
+```
+
+---
+
+### Step 4: Analyze process
+
+For Java:
+
+```bash
+jstack PID
+```
+
+Check threads.
+
+For Linux process:
+
+```bash
+strace -p PID
+```
+
+---
+
+### Step 5: AWS side checks
+
+Check CloudWatch:
+
+* CPUUtilization
+* CPU Credit balance (T2/T3)
+* Auto Scaling activity
+
+Check instance type.
+
+---
+
+### Fix:
+
+Depends on issue:
+
+* Restart bad process
+
+```bash
+systemctl restart service
+```
+
+* Scale EC2
+* Add Auto Scaling
+* Optimize application
+
+---
+
+# 2. Nginx 502 Bad Gateway issue
+
+### What is 502?
+
+Nginx is working but backend application is not responding.
+
+Flow:
+
+```
+User
+ |
+Nginx
+ |
+Backend App
+```
+
+---
+
+### Step 1: Check nginx status
+
+```bash
+systemctl status nginx
+```
+
+---
+
+### Step 2: Check nginx logs
+
+Ubuntu:
+
+```bash
+tail -f /var/log/nginx/error.log
+```
+
+RHEL:
+
+```bash
+tail -f /var/log/nginx/error.log
+```
+
+Example:
+
+```
+connection refused upstream
+```
+
+---
+
+### Step 3: Check backend service
+
+Example:
+
+```bash
+systemctl status tomcat
+```
+
+or
+
+```bash
+systemctl status nodeapp
+```
+
+---
+
+### Step 4: Check backend port
+
+Example backend runs 8080:
+
+```bash
+netstat -tulnp | grep 8080
+```
+
+or
+
+```bash
+ss -tulnp
+```
+
+---
+
+### Step 5: Test locally
+
+```bash
+curl localhost:8080
+```
+
+---
+
+### Causes:
+
+* Application down
+* Wrong upstream config
+* Firewall issue
+* Timeout issue
+
+---
+
+# 3. Application unable to connect Database
+
+### Step 1: Check DB hostname
+
+```bash
+nslookup db-url
+```
+
+---
+
+### Step 2: Check connectivity
+
+```bash
+ping db-server
+```
+
+---
+
+### Step 3: Check DB port
+
+MySQL:
+
+```bash
+telnet db-server 3306
+```
+
+Postgres:
+
+```bash
+telnet db-server 5432
+```
+
+or
+
+```bash
+nc -zv db-server 3306
+```
+
+---
+
+### Step 4: Verify credentials
+
+Check:
+
+* username
+* password
+* database name
+
+---
+
+### Step 5: AWS checks
+
+For RDS:
+
+Check:
+
+* Security Group inbound rules
+* NACL
+* Route table
+* DB status
+
+Example:
+
+EC2 SG should allow:
+
+```
+EC2 → RDS : 3306
+```
+
+---
+
+# 4. Disk full but df and du mismatch
+
+Scenario:
+
+```bash
+df -h
+```
+
+shows:
+
+```
+/dev/xvda 100%
+```
+
+but:
+
+```bash
+du -sh /*
+```
+
+shows less usage.
+
+---
+
+### Reason:
+
+Deleted files still held by running process.
+
+Example:
+
+Application writes log:
+
+```
+app.log 50GB
+```
+
+Someone deletes:
+
+```bash
+rm app.log
+```
+
+but app still holds file handle.
+
+---
+
+### Find:
+
+```bash
+lsof | grep deleted
+```
+
+Example:
+
+```
+java 1234 deleted app.log
+```
+
+---
+
+### Fix:
+
+Restart process:
+
+```bash
+systemctl restart app
+```
+
+or kill PID:
+
+```bash
+kill PID
+```
+
+---
+
+# 5. SSH not working to EC2
+
+### Step 1: Check instance
+
+AWS Console:
+
+* Instance running?
+* Status checks passed?
+
+---
+
+### Step 2: Check Security Group
+
+Port 22 allowed?
+
+Example:
+
+```
+Inbound:
+
+TCP 22
+Your IP
+```
+
+---
+
+### Step 3: Test port
+
+```bash
+telnet public-ip 22
+```
+
+or
+
+```bash
+nc -zv ip 22
+```
+
+---
+
+### Step 4: Check key permission
+
+Private key:
+
+```bash
+chmod 400 key.pem
+```
+
+Connect:
+
+```bash
+ssh -i key.pem ec2-user@ip
+```
+
+---
+
+### Step 5: Debug SSH
+
+```bash
+ssh -vvv -i key.pem user@ip
+```
+
+---
+
+Common issues:
+
+* Wrong username
+* Wrong key
+* SG blocked
+* NACL blocked
+* sshd stopped
+
+---
+
+# 6. Load average high but CPU normal
+
+Example:
+
+```bash
+uptime
+```
+
+shows:
+
+```
+load average: 20
+```
+
+but CPU:
+
+```
+20%
+```
+
+---
+
+Meaning:
+
+Processes are waiting, not running.
+
+Usually:
+
+* Disk I/O issue
+* Network storage delay
+
+---
+
+### Check IO wait
+
+```bash
+top
+```
+
+Look:
+
+```
+%wa
+```
+
+High wa = disk issue.
+
+---
+
+Check disk:
+
+```bash
+iostat -xz 2
+```
+
+Install:
+
+```bash
+yum install sysstat
+```
+
+---
+
+Find processes:
+
+```bash
+ps aux | awk '$8=="D"'
+```
+
+D = waiting for IO
+
+---
+
+Fix:
+
+* Optimize disk
+* Increase EBS IOPS
+* Check database queries
+
+---
+
+# 7. SSL Certificate issue troubleshooting
+
+Example error:
+
+```
+certificate expired
+```
+
+---
+
+### Check certificate:
+
+```bash
+openssl s_client -connect domain.com:443
+```
+
+---
+
+Check expiry:
+
+```bash
+openssl x509 -in cert.pem -noout -dates
+```
+
+---
+
+Check nginx SSL config:
+
+```bash
+nginx -t
+```
+
+---
+
+Renew Let's Encrypt:
+
+```bash
+certbot renew
+```
+
+Restart:
+
+```bash
+systemctl reload nginx
+```
+
+---
+
+Common SSL issues:
+
+* Expired certificate
+* Wrong certificate chain
+* Wrong domain name
+* TLS version mismatch
+
+---
+
+# 8. File descriptor limit issue
+
+Error:
+
+```
+Too many open files
+```
+
+---
+
+### Check current limit
+
+```bash
+ulimit -n
+```
+
+Example:
+
+```
+1024
+```
+
+---
+
+### Check process open files
+
+```bash
+lsof -p PID | wc -l
+```
+
+---
+
+### Increase temporary:
+
+```bash
+ulimit -n 65535
+```
+
+---
+
+### Permanent change:
+
+Edit:
+
+```bash
+vim /etc/security/limits.conf
+```
+
+Add:
+
+```
+appuser soft nofile 65535
+appuser hard nofile 65535
+```
+
+For systemd:
+
+```bash
+vim /etc/systemd/system/app.service
+```
+
+Add:
+
+```
+LimitNOFILE=65535
+```
+
+Reload:
+
+```bash
+systemctl daemon-reload
+systemctl restart app
+```
+
+---
+
+## Interview closing statement:
+
+"In production issues, I first identify whether the problem is CPU, memory, disk, network, application, or configuration related using monitoring and Linux troubleshooting commands, then apply the fix and perform RCA."
+
+This style matches **4+ years AWS DevOps interviews.**

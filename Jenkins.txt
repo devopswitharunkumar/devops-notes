@@ -1,0 +1,3329 @@
+Jenkins we used 
+
+Nexus
+setup new password ---> user : admin and password : admin123
+jenkins
+setup new password ---> user : admin and password : admin123
+
+How did you use Jenkins in your project?
+Explain your Jenkins pipeline.
+How did you integrate Jenkins with GitHub?
+How did you deploy to Kubernetes?
+What plugins did you use?
+How did you secure Jenkins?
+What are Jenkins agents?
+Difference between Declarative and Scripted pipelines?
+
+how u configure master and agent architecture in ur project
+
+Explain CI/Cd Architecture in ur project?
+https://github.com/daws-76s/concepts/blob/master/CICD.MD    ====> read this 
+
+In Jenkins we have Master and Slave/agent/node
+
+
+
+
+Jenkins: CICD tool
+----------
+Jenkins is an open-source automation server used to automate Continuous Integration (CI) and Continuous Delivery/Deployment (CD). 
+It automates building, testing, code quality checks, security scanning, packaging, and deployment So whenever code changes are pushed by developer to a source code repository like GitHub or Azure DevOps.
+
+without jenkins Developer has to do manually all the things
+with jenkins Everything is automated. 
+Flow : 
+Developer ---> Pushes Code to GitHub ---> Webhook  notify to ---> Jenkins triggers pipeline ---> Unit Test ---> SonarQube ---> Security Scan ---> Package ---> Deploy
+
+               Developer
+                    │
+               GitHub / Azure DevOps
+                    │
+                 Webhook (we configure this in git hub settings )
+                    │
+              Jenkins Controller
+                    │
+        -------------------------
+        │                       │
+   Agent-1                  Agent-2
+ (Java Build)            Docker Build
+
+        │
+        │
+    AWS / Kubernetes
+	
+Jenkins Controller (Master) : Controller is the brain. Controller sends work. Agent executes.
+-------------------------------------
+Responsibilities : 
+Manage jobs
+Schedule builds
+Store pipeline definitions
+Manage plugins
+Assign work to agents
+Maintain credentials
+
+Controller should not execute heavy builds.
+
+Jenkins Agent (Slave) ---> Agents execute jobs.
+----------------------------
+Example
+Agent 1
+
+Java
+Maven
+Sonar
+
+Agent 2
+
+Docker
+Kubectl
+Helm
+
+Agent 3
+
+Terraform
+AWS CLI
+
+
+Jenkins Pipeline Types : 
+------------------------------
+Jenkins supports two types of pipelines:
+1 Declarative Pipeline 
+2 Scripted Pipeline
+
+Declarative Pipeline
+--------------------------
+Declarative Pipeline is a structured pipeline syntax to make CI/CD pipelines easier to write, maintain, read. 
+It follows a predefined syntax with sections like pipeline, agent, stages, stage, steps, post, and environment blocks etc.
+Ex:
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                sh 'mvn clean package'
+            }
+        }
+        stage('Test') {
+            steps {
+                sh 'mvn test'
+            }
+        }
+    }
+    post {
+        success {
+            echo "Deployment Successful"
+        }
+    }
+}
+
+Advantages
+Easy to read and understand, Standard structure across teams, Built-in features like:  post , environment , parameters , options , when , agent , Better validation before execution. , Easier for team collaboration and maintenance.
+
+Real-Time Usage
+
+In my current project, we primarily use Declarative Pipelines. Our CI pipelines are defined declaratively with stages such as Checkout, Build, Unit Testing, SonarQube Analysis, Artifact Publishing to Nexus, and Deployment Trigger. Declarative syntax makes the pipelines more readable and easier for the team to maintain.
+
+
+Scripted Pipeline
+----------------------
+Scripted Pipeline is based on entirely on Groovy. It provides complete programming flexibility and is suitable for implementing complex pipeline logic, dynamic workflows, loops, conditional execution, and reusable functions.
+
+node {
+
+    stage('Build') {
+        sh 'mvn clean package'
+    }
+
+    if (env.BRANCH_NAME == 'main') {
+
+        stage('Deploy') {
+            sh './deploy.sh'
+        }
+    }
+}
+
+Advantages
+Full Groovy programming capabilities.
+Supports: Loops , Conditions , Exception handling , Dynamic stage generation , Complex workflows , More flexible than Declarative Pipeline.
+
+Limitations
+More difficult to read and maintain.
+Requires good Groovy knowledge.
+Easier to introduce coding mistakes.
+Less standardized across teams
+
+
+Real-Time Scenario :  Suppose your application has 20 microservices. 
+-------------------------------------------------------------------------------------------
+Instead of writing 20 deployment stages manually:
+stage('Catalogue')
+stage('User')
+stage('Cart')
+...
+
+A Scripted Pipeline can dynamically generate stages in a loop:
+
+def services = ['catalogue','user','cart']
+
+services.each { service ->
+    stage(service) {
+        build job: service
+    }
+}
+This is one situation where Scripted Pipeline is useful.
+
+Interview Answer (4+ Years)
+
+"In my project, we primarily use Declarative Pipelines because they provide a standardized structure, making pipelines easier to read, maintain, and review across the team. We use stages for checkout, build, testing, SonarQube analysis, artifact publishing, and deployment. For advanced requirements, such as shared libraries, dynamic stage creation, reusable functions, or conditional execution, we leverage Groovy scripting within the Declarative Pipeline or use Scripted Pipeline constructs where necessary. Declarative is our preferred approach because it improves maintainability while still allowing us to incorporate Scripted logic when the workflow becomes more complex."
+
+Interview Follow-up: "Which one have you used?"
+
+A strong 4+ years answer would be:
+
+"In our project, about 90–95% of our Jenkins pipelines are Declarative Pipelines. We use Shared Libraries to reuse common logic across applications. For advanced automation, such as dynamic stage generation, loops, or conditional execution, we incorporate Groovy scripting within the Declarative Pipeline. We rarely create fully Scripted Pipelines because Declarative provides better readability, consistency, and governance for enterprise CI/CD pipelines."
+
+
+Declarative Pipeline = Automatic Car 🚗
+You have fixed controls. You drive using:  Drive, reverse and park so The car decides how the gears change.
+Scripted Pipeline = Manual Car 🚙 
+You control everything. --> Gear,clutch and acceleration so More power., More flexibility and More responsibility.
+
+In Declarative Pipeline  --> Everything follows a fixed structure --> like in pipeline block we will have agent, stages, stage, steps and parameters block , environment block, options block everything follows a strucure and Everything has its own place. 
+
+pipeline -----> agent -----> stages -----> stage -----> steps
+
+You cannot randomly write Groovy code anywhere. Jenkins expects this structure.
+
+Scripted Pipeline : There is no fixed structure.  Everything is just Groovy code. You are writing a Groovy program. Jenkins only provides functions like node (), stage(), sh() etc  Everything else is normal Groovy.
+
+Biggest Difference
+Declarative  : You tell Jenkins "These are my stages." Jenkins controls the execution.
+Scripted       : You tell Jenkins "Execute this Groovy program."
+
+Then why do people say...  "We use Scripted inside Declarative." ....Because Declarative has one special block called script{} block Inside that block, you can write Groovy.
+ Ex:
+ script{
+		def version="1.0"
+		if(version=="1.0"){
+			echo "Deploy"
+         }
+
+
+Everything outside script{} block is Declarative. Only this small block is Scripted (Groovy).
+
+ref example ---> A Scripted Pipeline can dynamically generate stages in a loop:
+
+
+Interview Answer (4+ Years)
+
+"In our project, we use Declarative Pipelines as the standard because they provide a clear and maintainable structure. Whenever we need advanced programming features such as variable creation, loops, conditional logic, maps, or dynamic stage generation, we use a script {} block, which allows us to execute Groovy code within the Declarative Pipeline. We rarely write fully Scripted Pipelines because Declarative offers better readability and governance while still giving us the flexibility to use Scripted logic where required."
+
+In one sentence:
+
+Declarative Pipeline = A structured pipeline with predefined sections (pipeline, stages, steps, etc.).
+Scripted Pipeline = A Groovy program where you write the pipeline logic yourself and control the execution flow. The script {} block lets you embed small pieces of that Groovy logic inside a Declarative Pipeline when needed.
+
+Jenkinsfile:
+--------------
+What is a Jenkinsfile?
+A text file that defines the CI/CD pipeline as code using Groovy syntax and is stored in the application's source code repository.
+
+or
+"A Jenkinsfile is a text file written in Groovy that defines the complete CI/CD pipeline as code. It is stored in the application's Git repository along with the source code, which allows version control, code reviews, and consistent pipeline execution across environments. Instead of configuring jobs manually in the Jenkins UI, we define all stages such as build, testing, code quality analysis, artifact publishing, and deployment in the Jenkinsfile."
+
+Why use Jenkins Agents?
+To distribute build workloads, improve scalability, run platform-specific builds, and prevent the controller from becoming overloaded.
+
+Project ------> Jenkinsfile
+Benefits : Version Control , Code Review , Reusability , Automation
+
+
+
+
+Freestyle Job :
+-----------------
+ Old Jenkins job. Configured through UI. No version control. Not recommended.
+ 
+Jenkins Freestyle Job (Interview Explanation for 4+ Years)
+Interview Question:
+What is a Freestyle Job in Jenkins?
+
+"A Freestyle Job is the simplest type of Jenkins job used to automate individual tasks such as building code, executing shell scripts, running tests, deploying applications, or performing administrative operations. It is configured entirely through the Jenkins UI without writing a Jenkinsfile. 
+In my experience, we primarily used Freestyle Jobs for simple automation tasks and proof-of-concept activities, whereas most production CI/CD workflows were implemented using Jenkins Pipelines because they provide version control, better maintainability, and support for complex deployment workflows."
+
+"In our environment, we used Jenkins Freestyle Jobs primarily for simple automation tasks such as executing shell scripts, performing server maintenance, checking system health, restarting services, and running utility jobs. A typical Freestyle Job consisted of source code configuration, build triggers, build steps, and post-build actions. 
+For example, I created Freestyle Jobs to execute shell scripts for installing packages in lab environments, validating application health, and performing administrative tasks. However, for our production CI/CD pipelines, we used Jenkins Pipeline jobs with Jenkinsfiles because they are version-controlled, reusable, and better suited for complex deployment workflows involving Maven, SonarQube, Docker, AWS ECR, and Kubernetes."
+
+Components of Freestyle Job
+1. Source Code Management
+Connect : to GitHub , Azure DevOps , GitLab , Repository
+Example
+
+https://github.com/company/payment.git
+
+Branch : /main
+
+2. Build Triggers : When should Jenkins start?
+when to trigger: Build Now , Webhook , Poll SCM , CRON Schedule , Remote Trigger
+
+3. Build Environment
+Used to configure , Delete Workspace , Inject Environment Variables , Credentials , Timestamps
+
+4. Build Steps
+
+Example:
+Execute Shell
+
+echo "Hello"
+mvn clean package
+docker build
+docker push
+
+5. Post Build Actions
+After build , Archive Artifacts ,Email , Slack , Teams , Trigger another Job , Publish JUnit Reports
+
+
+
+Pipeline Job   : Pipeline code written in Jenkinsfile and store it in githubrepo 
+------------------
+What is a Jenkins Pipeline Job?
+
+A Jenkins Pipeline is a code-based CI/CD workflow that automates the complete software delivery process from source code checkout to deployment. Unlike Freestyle Jobs, Pipeline Jobs are defined using a Jenkinsfile, which is stored in the source code repository. 
+This enables version control, code review, reusability, and easier maintenance. 
+
+
+Jenkins Trigger
+
+How does Jenkins know code changed --------->   Using Webhook. We configure webhook in repository settings and in pipeline configuration we select gitwebhook checkbox
+
+Developer pushes ---> GitHub --> Webhook ---> Jenkins ---> Pipeline starts automatically.
+
+Alternative : Polling Every 5 minutes Less efficient.
+
+
+Jenkins in Your Project (Capgemini Example)
+
+Based on your experience, you can answer like this:
+
+"In my project, developers pushed code to Azure DevOps/GitHub. A webhook triggered the Jenkins pipeline automatically. Jenkins checked out the code, executed Maven builds using mvn clean package, ran JUnit tests, performed SonarQube static code analysis and enforced quality gates. After successful validation, it built Docker images, pushed them to the container registry, and deployed the application to Kubernetes using Helm charts. Post-deployment smoke tests were executed, and build notifications were sent to the team. We stored sensitive information such as AWS credentials and tokens in the Jenkins Credentials Store instead of hardcoding them."
+
+
+How Real Companies Do It ..... Normally Jenkins does not install software during a build.
+
+Instead:
+
+Jenkins agent AMIs are pre-built with required tools (Git, Java, Maven, Docker, etc.).
+Or configuration management tools like Ansible, Chef, or Puppet install packages before Jenkins jobs run.
+If Jenkins must execute privileged operations, administrators grant the jenkins user limited passwordless sudo only for the required commands, rather than unrestricted root access.
+
+====================================================================================================================================================================
+
+In AWS console --> create an ec2 with name Jenkins --> with devops-practice ami --> t3.small --> procced with out key pair ---> select allow-all sg ---> and storage 20 gb and copy Public ip of jenkins ec2 and open it in superputty 
+
+Jenkins Installation:
+-------------------------
+1. curl -L -o /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo  or  wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat-stable/jenkins.repo
+2. rpm --import https://pkg.jenkins.io/redhat-stable/jenkins.io-2023.key
+	
+# Add required dependencies for the jenkins package (Jenkins need java)
+3. yum install fontconfig java-21-openjdk -y
+4. yum install jenkins -y 
+5. systemctl daemon-reload
+6. systemctl enable jenkins
+7. systemctl start jenkins 
+8. systemctl status jenkins
+
+sudo yum upgrade
+
+Now in browser ---> <public ip of jenkins ec2>:8080 --> open --> ask for Administrator password ---> it will show the path where that exists in ec2 u can go that path and
+ 
+cat /var/lib/jenkins/secrets/initialAdminPassword     ---> copy and paste in browser --> it will install and create username and password
+
+/var/lib/jenkins ---> jenkins entire data will be stored here    ----> Master Agent all info stored here
+
+AND 
+
+To create pipeline project 
+----------------------------------
+In jenkins console ---> New item ---> Enter an item name --> select pipeline (item type)--> description --> in pipeline configuration --> select Pipeline script from SCM (we are using Github as Scource code management tool) --> select GIT (SCM section) ---> git repo url  --> if repo public no credentials needed and ---> give branch like /main(ur branch name based on) --> Script Path (ur file name)--> save and  apply ---> Build now 
+
+Pipeline syntax:
+---------------------
+Ex:
+---
+pipeline type with single stages
+pipeline {
+    agent any
+    stages {
+        stage('Hello') {
+            steps {
+                echo 'Hello World'
+            }
+        }
+	}
+}
+pipeline type with multiple stages
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                echo 'Building Java dependencies for Ecommerce Application'
+            }
+        }
+		 stage('Test') {
+            steps {
+                echo 'Test people testing the application and if they forun bugs they will assign them to developers'
+            }
+        }
+		 stage('Depoly') {
+            steps {
+                echo 'Deploying Application to prod'
+            }
+        }
+    }
+}
+
+we select ---> pipeline script from SCM in UI
+
+=====================================================================================================================================================================================
+
+Agent: 
+--------
+Agent defines where the Pipeline should execute. mandatory to define in pipeline syntax
+or
+A Jenkins Agent is a machine (physical server, virtual machine, Docker container, or Kubernetes Pod) that executes the actual build, test, and deployment tasks assigned by the Jenkins Controller. The Jenkins Controller manages jobs and scheduling, while Agents perform the execution. This separation improves scalability, performance, and resource utilization.
+
+or
+
+"The agent directive specifies where the Jenkins Pipeline or a particular stage should execute. It defines the Jenkins node or agent that will run the pipeline. In a Declarative Pipeline, an agent must be specified either at the pipeline level or at the stage level."
+
+Why do we need an Agent?
+
+Imagine a company with: 100 Developers,50 Applications,500 Builds per day ---->  If Jenkins (master) executes everything on one machine: CPU becomes busy,Memory becomes full,,Builds become slow,Jenkins UI becomes unresponsive
+
+Solution:
+----------
+Controller only schedules. Agents execute.
+
+          Jenkins Controller
+                  │
+      ┌───────────┼───────────┐
+      │           │           │
+ Agent-1      Agent-2      Agent-3
+(Java)       (Docker)      (Kubernetes)
+
+
+types:
+-------
+1) agent any   ----> Jenkins can execute/assign this Pipeline job on any available Agent. Ex: if Jenkins agent-1 busy and agent-2 busy it chooses agent 3 to run
+2)agent none ----> Pipeline doesn't allocate Agent. Each Stages choose mentioned Agents.
+Ex:
+pipeline{
+agent none
+	stages{
+		stage("Build"){
+			agent {
+				label "java"
+			}
+		}
+		stage("Docker"){
+			agent{ 
+				label "docker"
+			}
+		}
+
+	}
+}
+
+3)Label
+Suppose company has 10 Agents. Some Java, Some Docker, Some Terraform, Some Windows 
+
+Pipeline {
+	agent{
+		label "docker"
+	}
+}
+Controller looks for Agent name with Label docker and Job executes there.
+
+
+
+Workspace
+Whenever Agent receives Job
+Creates /var/lib/jenkins/workspace/payment --> Downloads code. Runs Build. Deletes or keeps file data depending on configuration.
+
+Static Agent       ----> permanant VM -->Alwars Ec2 will be in running state
+Dynamic Agent ----> Created Only when Job starts. Destroyed After Job finishes.
+Ex: Kubernetes Pod ---> Pipeline Starts ---> Pod Created ---> Job Executes ---> Pod Deleted
+
+5) docker
+Ex: 
+agent {
+     docker {
+        image 'myregistry.com/node'
+        label 'my-defined-label'
+        registryUrl 'https://myregistry.com/'
+        registryCredentialsId 'myPredefinedCredentialsInJenkins'
+		}
+}
+
+6)Kubernetes Agent --> Instead of VM we do with Pod Created.
+
+
+
+Agent Connection :
+--------------------------
+Controller communicates with Agents using below 3 types 
+
+1) SSH                ---> in our project we are using SSH --> give credentials  -------------> In Jenkins UI ---> in manage jenins ---> Credentials section --> create credentials 
+2) JNLP (Inbound Agent)
+3) WebSocket (newer versions)
+
+Executor ---> Every Agent has Executors
+Ex: 1 :  Agent-1 --> Executors 2 ---> Can execute 2 Jobs Simultaneously. if third job gets it will wait until one of them has to finish 
+
+If No Agent Available ---------> Build waits. in QUEUE -------> once agent is free then execution starts 
+
+Agent Failure
+
+
+Agent in Your Project
+
+For your experience, you can say:
+
+"In our Jenkins environment, we used dedicated agents to execute CI/CD pipelines. The controller was responsible for job scheduling and pipeline orchestration, while agents executed Maven builds, SonarQube scans, Docker image creation, AWS CLI commands, and Kubernetes deployments. This separation reduced the load on the Jenkins controller and allowed multiple builds to run in parallel across different agents."
+
+In our project we have different agent for diff techmologies 
+Java Job ---> Java Agent
+Node Job ----> Node Agent
+Python Job ---> Python Agent\
+
+
+Agent vs Node
+Node: Any machine (controller or agent) that Jenkins knows about and can schedule work on.
+Agent: The execution process running on a node that performs the build.
+
+In everyday Jenkins conversations, people often use Node and Agent interchangeably, but technically a node is the machine/resource, while the agent is the process connected to the controller that executes the job.
+
+4+ Years Interview Answer
+
+"A Jenkins Agent is the execution environment where Jenkins pipelines run. The Jenkins Controller handles scheduling, pipeline orchestration, credential management, and job configuration, while Agents perform the actual build, testing, Docker image creation, infrastructure provisioning, and deployment tasks. In our project, we used dedicated agents with the required toolsets, such as Java, Maven, Docker, AWS CLI, Helm, and kubectl. This architecture improved scalability, enabled parallel execution, reduced controller load, and provided isolated environments for different types of workloads."
+
+
+=====================================================================================================================================================================================
+
+Post block:  optional to define in pipeline syntax
+--------------
+The post block defines actions that should be executed after the pipeline or a stage completes, regardless of whether the build succeeds, fails, or becomes unstable. 
+It is commonly used for notifications, cleaning the workspace, archiving artifacts, publishing reports, and triggering follow-up actions.
+
+Why do we need post?
+Suppose your pipeline is: --> checkout git --> clone code --> build --> test --> docker build ---> Deploy
+lets say Docker build is failed --->  How will you notify the team? or How will you clean the workspace?  or  How will you archive logs? That's why we use post.
+
+If Docker build fails so failure condition will trigger and sent notification to required team 
+
+Ex:
+post {
+    success {
+        echo "Deployment Successful"
+    }
+}
+
+Conditions
+always	 ---> It will run regardless of  Pipeline Success? or Pipeline Failed? or Pipeline Aborted? --> run every case 
+success    ---> It will run if the current Pipeline’s or stage’s is "success" status, typically denoted by blue or green in the web UI.
+failure      ---> It will run if the current Pipeline’s or stage’s is "failed" status, typically denoted by red in the web UI. or Runs only when the pipeline fails.
+unstable  ---> Runs when the build is unstable. like build is succeeded but some test cases failed 
+aborted   --->  Suppose someone clicks stop build that is the case of aborted 
+changed  ---> Runs if build result changed. is some code or something changes status of pipeline it will run
+fixed        ---> Only run if the current Pipeline’s run is successful and the previous run failed or was unstable.
+cleanup  ---> Run the steps in this post condition after every other post condition has been evaluated, regardless of the Pipeline or stage’s status.
+
+Email Example
+post {
+	success {
+			mail(
+					to: "team@company.com",
+					subject: "Build Successful",
+					body: "Deployment Completed"
+			)
+	}
+}
+Slack Example
+post {
+	failure {
+		slackSend(
+		message: "Deployment Failed"
+		)
+	}
+}
+Publish JUnit Report
+post {
+	always {
+	junit '**/target/surefire-reports/*.xml'
+	}
+}
+
+
+4+ Years Interview Answer
+
+"In our Jenkins Declarative Pipelines, we used the post block to execute actions after the pipeline completed. 
+We configured always to clean the workspace and publish reports ----> 
+success to send deployment success notifications and archive artifacts, 
+and failure to notify the DevOps team with build logs for troubleshooting. 
+This ensured that cleanup, reporting, and notifications were handled consistently regardless of the pipeline outcome."
+
+
+in post section we have 
+
+post {
+        always {
+            echo "Always runs whether pipeline success or failure"
+            cleanWs()        //or deleteDir()
+
+        }}
+
+cleanWs()   ---->  cleans the entire Jenkins workspace before or after a build. It removes all files, directories, and leftover data from previous builds to ensure a fresh workspace.
+deleteDir() ----> deleteDir() deletes the current workspace directory and all its files after the pipeline execution. It is mainly used to clean up files generated during the current build.
+
+Simple Difference
+deleteDir() → Deletes the current working directory.
+cleanWs() → Cleans the entire Jenkins workspace (recommended for build cleanup).
+=====================================================================================================================================================================================
+
+Environment: Block 
+-------------------
+Used to define environment variables that can be accessed throughout the pipeline or within a specific stage. 
+It helps avoid hardcoding values, improves maintainability, and allows the same pipeline to be reused across different environments.
+
+Example; 
+Why do we need Environment Variables?
+
+Suppose your pipeline contains:
+
+sh "docker push 123456789012.dkr.ecr.us-east-1.amazonaws.com/payment:v1"     ---> lets say we have it in 100 places in file 
+
+Now your company changes : AWS Region  --> us-east-1 to  ap-south-1 =======> Need to edit 100 places. Very difficult.
+
+Instead Store once.
+
+pipeline {
+	environment{
+		AWS_REGION="us-east-1"
+		IMAGE_NAME="payment"
+	}
+	stages {
+		stage('Build') {
+            steps {
+                echo "This is a build stage where Build packages and download dependencies everything needed for the application"
+                echo """${IMAGE_NAME}:${AWS_REGION} from build stage"""
+            } 
+	    }
+}
+Now Anywhere u can Use ---> ${AWS_REGION}
+=====================================================================================================================================================================================
+
+
+Parameters Block
+------------------------
+The parameters block is used to accept user input before a pipeline starts. It allows the same pipeline to perform different operations without modifying the Jenkinsfile.
+
+Why Parameters? 
+Suppose Today i want to Deploy Dev env and tommorrow Testing and next week Prod without parameter we need to create 3 pipelnes each for one 
+
+With Parameters
+At runtime User selects --> u will get drop down u can select env one pipeline runs for diff env's
+
+Ex:
+ parameters{
+        choice(name:'Environment', choices:['DEV','QA','PROD'])
+     }
+
+When Build Starts Jenkins asks to select from drop dowm  --> after push first build run it wont show parameters --> 2nd time run it will popup on UI to select 
+
+
+types: 
+-------
+1.String Parameter
+
+parameters {
+	string(name:'VERSION', defaultValue:'1.0', description: 'some')
+}
+
+User enters 2.0 pipelines deploys on 2.0 but default version is 1.0
+
+2.Boolean Parameter
+
+parameters{
+	booleanParam(name:'RUN_TESTS', defaultValue:true, description: 'some content')
+}
+If Checked means if we click check box then it will run Run Tests i.e., true. Otherwise Skip  that stage - i.e., false ---> by using when condition we mention
+
+3.Password Parameter
+
+parameters{
+	password(name:'DB_PASSWORD',defaultValue: 'SECRET', description: 'Enter a password')
+}
+
+Hidden Input.
+
+4.Choice Parameter
+
+parameter {
+	choice(name:'Environment', choices:['DEV','QA','PROD'])
+}
+
+It will show a drop down in UI when u click on build with parameters 
+
+5.text Parameter
+
+parameter {
+	text(name: 'BIOGRAPHY', defaultValue: '', description: 'Enter some information about the person')
+}
+
+Access them anywhere in pipeline using like this  --------> echo "Hello ${params.PERSON}"
+
+Advantages
+Reusable Pipeline ,No Code Changes , Dynamic , Easy Deployment , Single Jenkinsfile
+
+Interview Answer
+
+"We used Jenkins pipeline parameters to make our deployment pipelines reusable. Before execution, the pipeline prompted users to select the target environment, application version, and deployment options. Based on these values, the pipeline deployed the appropriate version to the selected environment without requiring any modifications to the Jenkinsfile."
+
+
+Real Company Example
+
+Our deployment pipeline accepted:
+
+Environment (DEV/SIT/UAT) and PROD we have seperate setup for prod env
+Application Version
+Whether to run smoke tests
+Whether to deploy or just build
+
+=====================================================================================================================================================================================
+
+Options Block
+-------------------
+The options block is used to configure the behavior of a Jenkins Pipeline. It controls execution settings such as timeouts, concurrent builds, log retention, timestamps, and retry behavior.
+
+Why Options?
+
+Suppose Pipeline Runs Forever. Need Timeout. 
+Suppose Developer Clicks Build 10 Times. Need Disable Concurrent Builds. 
+Suppose 1000 Builds. Need Delete Old Builds. That's Options.
+
+Ex:
+1. lets say application runs 2-3 hrs some times because or erros ot should not be like that for that we mention time line
+options{
+	timeout(time:30, unit:'MINUTES')
+}
+it will run till 30 mins time and after that pipeline will fail because of timeout 
+
+Examples :
+-------------
+The main purpose of timeout is not only to stop errors, but also to prevent the pipeline from hanging indefinitely when a stage gets stuck and never completes.
+Example 1: Waiting for User Input (Most Common)
+input "Approve Production Deployment"      --> if approver forgot toapprove The pipeline will remain in Running state forever. To avoid this: If no approval is given within 30 minutes, Jenkins automatically aborts the pipeline.
+
+Example 3: SSH Connection Hangs
+sh "ssh app-server"
+The server is unreachable due to a network issue. Instead of immediately failing, the SSH command keeps waiting for a response. The pipeline stays in the Running state without moving to the next stage.The timeout stops the pipeline after the specified duration.
+
+Example 4: SonarQube Scan Hangs
+sh "sonar-scanner"
+If the SonarQube server is overloaded or not responding, the scanner may wait indefinitely.
+
+Interview Answer (4+ Years)
+
+"We use the timeout option to prevent the pipeline from running indefinitely. Sometimes a stage such as Terraform Apply, SonarQube Scan, waiting for manual approval, or a network connection may hang instead of failing. In such cases, the pipeline remains in the Running state and blocks Jenkins resources. By configuring a timeout, Jenkins automatically aborts the pipeline if it exceeds the specified duration, improving resource utilization and preventing stuck builds."
+
+2. disableConcurrentBuilds()
+Suppose Developer a runs Build and Developer-2 click build like there may be database corruption etc to restrick that if one build is running if we click build now 2nd build will wait until build one compltes then 2 will run 
+
+options{
+	disableConcurrentBuilds()             ---> only one build will run at a time second build wait until first build completes
+}
+
+3.buildDiscarder()  ---> Suppose 1000 Builds. Consumes disk space 
+Ex: 
+options{
+	buildDiscarder(logRotator(numToKeepStr:'10'))
+}
+
+this will Keeps Only 10 Builds. Deletes Others.
+
+4.timestamps()   ---> prints time useful for troubleshooting
+
+options{
+	timestamps()
+}
+
+
+5. retry()
+Suppose Network Issue. Temporary Failure. Instead of Pipeline Failed.
+
+options{
+	retry(3)
+}
+
+Jenkins Attempts Three Times.
+
+6.skipDefaultCheckout()
+Normally Jenkins Automatically Checks out code. Sometimes We Manually Checkout.
+
+options{
+	skipDefaultCheckout()
+}
+Avoids duplicate checkout.
+
+Real Company Example
+
+In your project, you can say:
+
+"We configured pipeline options to improve reliability. We enabled timeouts to prevent hung builds, disabled concurrent executions to avoid overlapping deployments, configured log retention to manage disk usage, and enabled timestamps to simplify troubleshooting using Jenkins console logs."
+
+
+
+
+
+4+ Years Interview Answer
+
+"In our Jenkins Declarative Pipelines, we used the environment block to define reusable configuration values such as AWS region, Docker image names, and Kubernetes namespaces, while sensitive values were injected through Jenkins Credentials. 
+We used the parameters block to make pipelines reusable by allowing users to select deployment environments and application versions at runtime. 
+We also configured the options block to improve pipeline reliability by enabling timeouts, preventing concurrent deployments, retaining only recent build logs, and adding timestamps for easier troubleshooting. This made our CI/CD pipelines configurable, maintainable, and production-ready."
+
+=====================================================================================================================================================================================
+
+
+Jenkins Triggers:
+----------------------
+Triggers define how and when a Jenkins Pipeline should start automatically. 
+Instead of manually clicking "Build Now", Jenkins can trigger the pipeline based on events such as code commits i.e., push event, scheduled times, upstream jobs, or remote API calls etc
+
+Why do we need Triggers?
+If Developr pushes the code into Github we manually go and click on BUILD NOW on jenkins UI instaed pf this we can do automate that 
+
+With Triggers 
+Developer pushes the code --> webhook notifies the jenins and jenkins will trigger pipeline 
+
+1)Webhook: Instead of Jenkins checking Git, Git informs Jenkins. Totaly UI process one time
+
+Step 1:  Open Github --> navigate to ur repo  (Ex: learn-jenkins-concepts) ---> settings in that repo ---> Add Webhook --> profile url box (http://52.90.229.243:8080/github-webhook/) ec2 public ip where jenkins are runinng and /github-webhook/ add this --> content type -- application/Json ---> let me select individual event ---> pushes --> Add
+
+Step 2:  Click on pipeline --> configure --> Triggers section ---> GitHub hook trigger for GITScm polling ---> it has already repo url in pipeline from scm so not needed ---> save 
+
+
+2.pollSCM()
+pollSCM periodically checks the source code repository for changes. If Jenkins detects new commits, it automatically triggers the pipeline. if no commit it wont run pipeline
+
+Ex: in UI --> Configure inside pipeline --> select Triggers --> Poll SCM ---> in box  write this  ----> * * * * *  means every min it will check github is there any event ran for that repo 
+
+in script way 
+
+triggers{
+	pollSCM('* * * * *')
+}
+
+* * * * *
+Every minute jenkins ----> Check Git Repository ----> If Changes ----> Run Pipeline   if no changes it will not run 
+
+pollSCM('H/5 * * * *') --> every 5 mins 
+
+Disadvantage : Jenkins continuously checks Git. Even No Changes. Extra Load. like consumes resources of ec2 -- lets say 100
+
+Interview Answer
+
+In our project we used GitHub/Azure DevOps Webhooks instead of Poll SCM because Webhooks are event-driven(when event happen it triggers likepush is an even and pr merge is and event like that) and immediately trigger the pipeline after code commits, whereas Poll SCM continuously checks the repository and consumes unnecessary resources.
+
+3. cron()                 --> in Ui it is Build periodically option
+Runs Pipeline Based on Time.
+Example:
+Nightly Backup.
+
+triggers{
+	cron('0 2 * * *')       --> means every day 2 am run pipeline 
+}
+
+Use Cases : Database Backup , Nightly Build , Health Check , Cleanup , Log Rotation
+
+Cron Syntax : 
+
+MIN HOUR DAY MONTH WEEKDAY
+
+0 2 * * * --> 2 am every day 
+
+cron('30 10 * * 1')     --> runs every monday 10:30 am 
+
+
+4. Upstream Trigger         ---> in UI it is Build after other projects are built 
+
+Suppose
+
+Pipeline A Builds Application.
+Pipeline B Deploys Application.
+Flow --> Build job completed ---> Deployment Job Starts automatically  means pipeline A trigger pipeline B 
+Syntax : Usually configured in Jenkins UI.
+
+Real Exapmle --> compile job --> unit test job --> deploy job
+ 
+5. Remote Trigger                 ---> in UI it is Trigger Builds remotely  
+Another application Calls Jenkins REST API.
+
+Example : Application ---> HTTP Request ---> Jenkins ---> Pipeline Starts
+Useful : CI/CD Integrations.
+
+
+
+Why Companies Prefer Webhooks?
+poll scm 
+Suppose : 100 Repositories. Using pollSCM Every Minute/mentioned time Jenkins performs 100 Git Requests ---> Every Minute ----> Huge Load
+
+Webhook : Only When Developer Pushes  ---> Pipeline Starts. No Extra Load. doesnt require any resources no load 
+
+
+Which trigger did you use?
+
+We used GitHub/Azure DevOps Webhooks because they are event-driven and provide immediate pipeline execution. For scheduled maintenance tasks such as cleanup and backups, we used cron triggers.
+
+
+4+ Years Interview Answer
+
+In our Jenkins pipelines, we configured triggers to automate pipeline execution. For application CI/CD pipelines, we primarily used GitHub/Azure DevOps Webhooks, which immediately triggered builds whenever developers pushed code. This provided faster feedback and avoided the overhead of continuously polling the repository. For scheduled operational tasks such as log cleanup, report generation, and database backups, we used cron-based triggers. This combination enabled efficient, event-driven automation while also supporting scheduled maintenance activities.
+
+**********************************************************************************************************************************************************
+
+Pipeline Execution Example
+Suppose Developer commits Payment API.
+
+Pipeline
+
+Stage 1 : Checkout ---> Git Clone =======> Stage 2 : Build ---> Maven =======> Stage 3 : Unit Test ---> JUnit ======> Stage 4 : SonarQube ---> Quality Gate =======> Stage 5 : Docker Build ---> Image Created =======> Stage 6 : Push ECR ---> Image Stored =======> Stage 7 : Deploy EKS ---> Rolling Update =======> Stage 8 : Smoke Test ---> Health API =======> Stage 9 : Notification ---> Microsoft Teams or Email
+
+
+Advantages of pipeline job:
+-----------------------------------
+Everything stored in Git. , Version controlled. , Reusable. , Supports multiple stages. , Supports parallel execution. , Supports rollback. , Supports approval. , Easy maintenance. , Easy auditing.
+
+
+Practical Example (Based on Your Experience)
+Suppose your RoboShop application has: Catalogue, cart,user etcc
+Developer 
+Git Push ---> Webhook ---> Jenkins Pipeline ---> Checkout Cart Source Code ---> Maven Build ---> JUnit Tests ---> SonarQube Analysis ---> Quality Gate Validation ---> Docker Image Build ---> Push Image to Amazon ECR ---> Update Kubernetes Deployment ---> Rolling Update in Amazon EKS ---> Smoke Test ---> Notify Team
+
+
+4+ Years Interview Answer
+
+"In our project, we primarily used Jenkins Declarative Pipelines instead of Freestyle Jobs because they support Infrastructure as Code principles. The entire CI/CD workflow was defined in a Jenkinsfile stored in Git, which enabled version control, peer reviews, and consistent execution across environments. The pipeline automatically performed source code checkout, Maven builds, unit testing, SonarQube quality analysis, Docker image creation, image push to Amazon ECR, Kubernetes deployment to Amazon EKS, smoke testing, and post-deployment notifications. This approach improved deployment consistency, reduced manual effort, and made the release process more reliable and maintainable."
+
+
+=====================================================================================================================================================================================
+
+
+Input :
+--------
+
+The input step is used to pause a Jenkins Pipeline and wait for manual approval or user input before continuing execution. 
+It is commonly used in production deployments where human approval is required before deploying changes to critical environments.
+
+Ex: we run terraform apply -auto-approve --->
+Ex:  see in terraform-roboshop-infra-dev -- folder -- 01-vpc folder u will find a jenkinsfile 
+
+ stage('Apply Stage') {
+            input {
+                message "Do You Want to Continue ?"
+                ok "proceed"
+            }
+            steps {
+            sh """
+                cd "${Module_No}"
+                terraform apply -auto-approve
+            """
+            }
+        }
+
+while pipeline is running it will wait for manual approval by some one he should click procced then only apply tage will run 
+
+Suppose your pipeline is:
+Checkout ---> Build ---> Test ---> SonarQube ---> Docker Build ---> Deploy to Production
+Imagine the deployment goes directly to Production.
+
+❌ Dangerous.
+What if:
+
+Wrong version
+Failed testing
+Wrong Docker image
+Wrong Kubernetes namespace
+
+Companies don't allow automatic production deployment.
+Instead
+Checkout ---> Build ---> Test ---> SonarQube ---> Docker Build ---> Manual Approval (Wait for approval manually he should approve) then only procced  ---> Deploy Production
+
+How does input work?
+
+Suppose developer pushes code. Pipeline pauses until someone approves. or Release Manager Clicks Proceed 
+Developer ---> Pipeline Starts ---> Build ---> Testing ---> Docker Image ---> INPUT ---> Waiting... ----> Manager Clicks "Proceed"  ---> Deployment Starts
+Example
+Basic Syntax
+pipeline {
+    agent any
+    stages {
+        stage('Approval') {
+            steps {
+               input 'Do you want to continue?'
+            }
+        }
+    }
+}
+
+Jenkins UI shows two options
+
+Do you want to continue?
+[Proceed]    [Abort]                    
+
+
+Input with Message
+Ex: 
+input(
+message: 'Deploy to Production?',
+ok: 'Deploy'
+)
+
+Input with Parameters
+
+Ex:
+input(
+message: 'Choose Environment',
+	parameters: [
+		choice(
+			name: 'ENV',
+			choices: ['DEV','QA','PROD']
+		)
+	]
+)
+
+Input with String Parameter
+Ex
+input(
+message: 'Enter Version',
+	parameters: [
+		string(
+			name:'VERSION',
+			defaultValue:'1.0'
+		)
+	]
+)
+
+Input with Boolean
+Ex:
+input(
+message:'Run Smoke Tests?',
+parameters:[
+	booleanParam(
+		name:'SMOKE',
+		defaultValue:true
+	)
+]
+)
+
+
+Difference Between parameters and input
+| Parameters                            | Input                                         |
+| ------------------------------------- | --------------------------------------------- |
+| Asked before pipeline starts          | Asked while pipeline is running               |
+| User provides values before execution | Pipeline pauses and waits for approval/input  |
+| Used to customize pipeline execution  | Used for manual approval or runtime decisions |
+
+
+Real Project Answer (Based on Your Experience)
+
+You can answer:
+
+"In our deployment pipeline, we used the input step before production deployment. After completing code checkout, Maven build, unit testing, SonarQube quality checks, Docker image creation, and pushing the image to Amazon ECR, the pipeline paused and waited for approval from the release manager. Once the deployment was verified and approved, the pipeline resumed and deployed the application to the production Kubernetes cluster. This ensured controlled and compliant production releases."
+
+
+Advantages
+Prevents accidental production deployments.
+Provides manual approval for critical environments.
+Supports compliance and audit requirements.
+Reduces deployment risks.
+Allows runtime decisions.
+
+===================================================================================================================================================================================
+
+when:
+-------
+The when directive is used to execute a stage conditionally. 
+Jenkins evaluates the specified condition before entering the stage. If the condition evaluates to true, the stage executes; otherwise, Jenkins skips the stage. 
+This helps build dynamic and reusable pipelines.
+Ex:
+pipeline {
+	agent any
+		parameters {
+				choice (name: 'action', choices: ['Apply', 'Destroy'])
+			}
+		stage('Apply Stage') {
+			when {
+				expression {
+					params.action == 'Apply'
+				}
+			}
+			input {
+				message "Do You Want to Continue ?"
+				ok "proceed"
+			}
+			steps {
+			sh """
+				cd "${Module_No}"
+				terraform apply -auto-approve
+			"""
+			}
+		}	
+		stage('Destroy Stage') {
+			when {
+				expression {
+					params.action == 'Destroy'
+				}
+			}
+			input {
+				message "Do You Want to Continue ?"
+				ok "proceed"
+			}
+			steps {
+			sh """
+				cd "${Module_No}"
+				terraform destroy -auto-approve
+			"""
+			}
+		}
+	}
+	
+Environment Variable example inside pipeline
+environment {
+   ENV="DEV"
+}
+
+stage('Deploy') {
+    when {
+        environment name: 'ENV', value: 'DEV'
+    }
+    steps {
+        echo "Deploying DEV"
+    }
+}
+
+
+4+ Years Interview Answer
+
+"In our Jenkins Declarative Pipelines, we used the when directive to control stage execution based on conditions such as Git branches, deployment environments, and pipeline parameters. For example, Docker image creation was performed for all branches, but deployment to production was executed only when the build originated from the main branch and the selected environment was PROD. This prevented accidental deployments and allowed us to maintain a single reusable pipeline for multiple environments."
+
+
+
+
+************************************************************************************************************************************************************************************
+
+CI/CD
+--------
+clone the code 
+unit testing 
+scans
+	sonarQube scanning
+	SAST
+	DAST
+	open source scanning
+	Docker image scanning
+dependencies install 
+build ---> zip file
+push to nexus
+
+CD
+----
+Deploy to Dev
+Functional tetsing
+push the results
+
+
+If CI success then only we go to CD and Till Cd we dont need infra 
+
+we are writing jeniks file for catalogue code we need to install dependencies and verything code we need to zip and store some where that nexus 
+
+
+Nexus: 
+--------
+Nexus is a centralized artifact repository used to store, manage, version, and distribute build artifacts such as JARs, WARs, Docker images, npm packages, Maven dependencies, Helm charts, and other binaries. 
+It acts as a single source of truth for all software artifacts in the CI/CD pipeline
+nexus built on java we need java on nexus
+
+Why do we need Nexus?
+Suppose your Java application is built.
+Developer ---> Git Push ---> Jenkins Build ---> payment.jar -----> Now deployment needs payment.jar
+
+Where is it stored?
+Without Nexus === Jenkins Workspace ----> Deleted after cleanup ----> Artifact Lost Not good.
+
+Instead
+Developer ---> Git ---> Jenkins ---> Build ---> payment.jar ---> Nexus Repository ---> Deployment Server Downloads ---> Deploy
+
+Nexus becomes the central storage for build artifacts.
+
+What is an Artifact --->  An artifact is the output of a build process.
+
+Examples:
+Java --->  payment.jar , shipping.jar ,  user.war
+Docker ----> payment:v1.0
+Python ---> .whl
+NodeJS --> .tgz
+Helm  ---> payment-1.0.0.tgz
+
+
+Why not store JAR in Git?
+Because Git is for Source Code Not Binary Files ---> Binary files , Large , Cannot diff easily , Increase repository size, Slow cloning so we store them in Nexus 
+
+Types of Repositories
+Nexus supports multiple repository formats. ----> Maven , Docker , npm , NuGet , PyPI , Helm , Raw
+
+Maven Repository      ----> jar, war, pom, zip Ex : payment-1.0.jar
+Docker Repository     ----> stores Docker Images Example : payment:v1.0
+npm Repository         ----> Stores NodeJS Packages
+Helm Repository        ----> stores Helm Charts
+Raw Repository          ---->  atores anything like   ---> zip, war , pdf , tar.gz , scripts , configs etc......
+
+
+Repository Types
+1. Hosted Repository   : Stores artifacts created inside your organization.  Ex: payment.jar ---> uploaded ----> organization
+2. Proxy Repository      : Suppose Maven needs spring-boot.jar Normally  Maven Central ---> internet ---> Download  and Every developer downloads again. but we can cache that and upload to nexus so 2nd devloper gets that from nexus not from internet
+3. Group Repository     : Combines Hosted and Proxy into one URL. Instead of configuring use that URL 
+
+
+Nexus in CI/CD
+Developer Push ---> GitHub ---> Jenkins CHECKOUT to github for code ---> Compile ---> JUnit Test ---> SonarQube ---> Build/Package(payment.jar )---> Upload to Nexus ---> Approvalifor SIT Deployment ---> Download Artifact (i.e., jar file)---> Deploy to diff env's 
+
+Advantages
+-----------------
+Central Repository
+Version Control
+Artifact Storage
+Rollback Support
+Security
+High Availability
+Dependency Caching
+Faster Builds
+
+| Git                | Nexus                  |
+| ------------------ | ---------------------- |
+| Stores Source Code | Stores Build Artifacts |
+| .java              | .jar                   |
+| Jenkins clones     | Jenkins uploads        |
+| Developers modify  | Deployment downloads   |
+
+
+Where did you use Nexus?
+
+Interview Answer
+
+"We used Nexus as the centralized artifact repository in our CI/CD pipeline. After Maven successfully built the application, Jenkins uploaded the generated JAR files to Nexus. During deployments, instead of using artifacts from the Jenkins workspace, deployment jobs downloaded the required version from Nexus. This ensured version consistency, simplified rollbacks, reduced dependency on Jenkins workspaces, and provided a single source of truth for build artifacts."
+
+
+Why do we need Nexus?
+
+To centrally store versioned build artifacts, enable artifact reuse, simplify rollbacks, reduce build dependencies, and improve CI/CD reliability.
+
+Why not deploy directly from Jenkins?
+
+Jenkins workspaces are temporary and can be cleaned or removed. By storing artifacts in Nexus, deployments always use a versioned, immutable artifact from a centralized repository, ensuring consistency across environments.
+
+4+ Years Interview Answer
+
+"In our CI/CD pipeline, Jenkins built the application using Maven and uploaded the generated artifacts to Nexus Repository Manager. Nexus served as the centralized repository for versioned artifacts. Deployment pipelines downloaded the required artifact version from Nexus rather than relying on Jenkins workspaces. We also configured Nexus proxy repositories to cache external Maven dependencies, reducing internet dependency and improving build performance. This approach provided traceability, simplified rollbacks, and ensured that the same tested artifact was promoted across DEV, SIT, UAT, and PROD environments."
+
+Install Nexus in ec2
+-------------------------
+in local devops repo check file 
+
+CI Process:
+-------------
+
+catalogue :
+-------------
+
+//login to Agent-1 here wwe are using agent ec2 so login to that manually through super putty 
+//do sudo visudo or sudo cd /etc/sudoers file 
+// add jenkins ALL=(ALL) NOPASSWD: ALL   after %wheel 
+// this is adding becasue it will not run as root it will run as jenkins user so adding like this 
+//do aws configure command not in root user do it in normal user in agent-1 where ever agent u do all this
+//then only pipeline will execute and one for one ec2/agent/jenins server
+
+pipeline {
+    agent {
+        node {
+            label 'Agent-1'
+        }
+    }
+    environment {
+        packageVersion = ''
+        nexusURL = '172.31.27.178:8081'   //we gave Private ip of nexus ec2 with port but in project we use static ip 
+    }
+    options {
+        ansiColor('xterm')
+        timeout(time:1, unit:'HOURS')
+        disableConcurrentBuilds()
+    }
+
+    stages {
+        stage('Get Version') {
+            steps {
+                script {
+                    sh 'cd catalogue/'
+                    def packageJSON = readJSON file: 'catalogue/package.json'
+                    packageVersion = packageJSON.version
+                    echo "Application version is : $packageVersion"
+                }
+            }
+        }
+        stage('Install Dependencies') {
+            steps {
+                sh """
+                    sudo dnf module disable nodejs -y
+                    sudo dnf module enable nodejs:18 -y
+                    sudo dnf install nodejs -y
+                    cd catalogue/
+                    npm install  
+                """
+            }
+        }
+        stage('Build package') {
+            steps {
+                sh """
+                    sudo dnf install zip -y
+                    cd catalogue/
+                    ls -la       
+                    pwd             
+                    zip -q -r catalogue.zip ./* -x ".git" -x ".zip"
+                    ls -ltr 
+                """
+            }
+        }
+        stage('Publish Artifact') {
+            steps {
+                sh """
+                    pwd
+                    cd catalogue/
+                """
+                nexusArtifactUploader(
+                    nexusVersion: 'nexus3',
+                    protocol: 'http',
+                    nexusUrl: "${nexusURL}",
+                    groupId: 'com.roboshop',
+                    version: "${packageVersion}",
+                    repository: 'catalogue',
+                    credentialsId: 'nexus-login-credentials',
+                    artifacts: [
+                        [artifactId: 'catalogue',
+                        classifier: '',
+                        file: 'catalogue/catalogue' + '.zip',
+                        type: 'zip']
+                    ]
+                )
+            }
+        }
+    }
+    post {
+        always {
+            echo "Always runs whether pipeline success or failure"
+            // deleteDir()
+
+        }
+        success {
+            echo "Pipeline is runned successfully "
+        }
+        failure {
+            echo "Pipeline is Failed "
+        }
+    }
+}
+		
+Completed 
+
+Get Version stage:
+in Jenkins --> plugins --> pipeline utility steps plugin install  so it activates to read json file because we have a version in package.json file to read that we did this 
+Install Dependencies stage: 
+installing node js dependencies for catalogue because catalogue developed on node js so we are doing that with npm install 
+Build package stage: 
+we are zipping the catalogue code to upload into nexus as a artict likw .zip or war or jar files we are packaging all code 
+
+zip -r catalogue.zip ./* -x ".git" -x ".zip"
+zip --> too zip files
+catalogue.zip  --> wit which name zip file has to create 
+-r -- recursively
+./* -- everything
+-x --> exclude  this files 
+
+stage('Build') {
+            steps {
+                sh """
+                    sudo dnf install zip -y
+                    cd catalogue/
+                    ls -la       
+                    pwd             
+                    zip -q -r catalogue.zip ./* -x ".git" -x ".zip"
+                    ls -ltr 
+                """
+            }
+        }		
+
+
+untill above we have builded zip file for catalogue with all files and to store that we need and artifact storage (i.e., nexus repository)
+
+Publish Artifact stage:
+create an ec2 ---> name : nexus --> devops-practice AMI --> t3.medium --> proceed without keypair --> select sg allow-all --> 30 gb --> create ec2 
+
+now take public ip of nexus ec2 ---> open superputty --> and 
+https://github.com/devopswitharunkumar/learn-jenkins-concepts.git    --> in this repo i have a file with all the steps to install  nexus in ec2 --> file name  ---> Nexus-installation-steps.sh
+
+do ----> git clone https://github.com/devopswitharunkumar/learn-jenkins-concepts.git  
+cd learn-jenkins-concepts
+bash Nexus-installation-steps.sh or give chmod +x Nexus-installation-steps.sh and ./Nexus-installation-steps.sh os sh Nexus-installation-steps.sh  --> it will install nexus and run nexus server 
+
+Now take public ip od --> nexus ec2 and nexus runs on port -- 8081
+In Browser 
+http://98.89.40.14:8081/    --> open nexus and in ui --> login --> admin and password will be located on it will show propmt to take password 
+cat /opt/sonatype-work/nexus3/admin.password    --> like this ----> and change password ----->
+
+username :  admin 
+password : admin123
+
+Then do below provcess :
+
+we need to create one repo for catalogue 
+maven 2 format 
+In nexus ---> settings --> repositories --> create repository --> maven2 (hosted) --> Name (catalogue) --> version policy (Mixed, Snapshot and Release) we used Mixed--> layout policy (permissive, Strict)  we used permissive --> Content deposition (inline , Attachment) we used inline ---> Blob storage (default) --> Deployment Policy (Disable Redeploy, Allow redeploy , Read-only ) we used Allow redeploy --> create Repository ---> it will generate an url 
+
+http://3.84.208.199:8081/repository/catalogue/
+
+Now In jenkins UI ---> manage jenkins ---> plugins ---> install (nexus artifact uploader  ) --> restart 
+and  in credentials ---> new credentials ---> add nexus credentials --->    admin and admin123 and name like nexus-login-creds ---> create ---> take that credentials name and paste it in Jenkins file at 
+credentialsId: 'CredentialsId' below u can refer 
+
+To upload a above generated zip file into nexus we have a plugin called nexus artifact uploader
+we have an aritifact in jenkins agent(one ec2) and we need to push it inot nexus(anthoer ec2) to push we have 
+
+Search   nexusArtifactUploader in google u will get  syntax
+
+
+
+Nexus Artifact Uploader  and we also need to install plugin in jenkins server 
+
+
+  nexusArtifactUploader(
+        nexusVersion: 'nexus3',
+        protocol: 'http',
+        nexusUrl: 'my.nexus.address',
+        groupId: 'com.example',
+        version: version,
+        repository: 'RepositoryName',
+        
+        artifacts: [
+            [artifactId: projectName,
+             classifier: '',
+             file: 'my-service-' + version + '.jar',
+             type: 'jar']
+        ]
+     )
+	 
+
+ credentialsId: 'CredentialsId', --> for this section --> go to manage jenkins --> credentials --> add credentials --> admin and admin123 in username and password box and ID box --> nexus-credentials --> create  \
+ 
+now replace nexus-credentials with 
+
+ credentialsId: 'nexus-credentials', 
+ 
+ ---> Build a pipeline with Agen-1 it will push to a zip file to nexus ----> go to nexus --> repositories -->click on catalogue repository --> u can see a zip file there  Ex:  	com/roboshop/catalogue/1.0.0/catalogue-1.0.0.zip
+ 
+ 
+ CI IS Completed
+ 
+ 
+ 
+ CD 
+ ----
+ So All required packages libraries for the application deployment is done that is CI 
+ now we need to deploy Application in infra --> IN ec2's 
+ 
+ Now go to this folder and run terraform init,plan and apply inside this repo 
+ terraform-roboshop-infra-dev ---> for catalogue deployment we need to create infra until folders like
+01-vpc,02-sg,03-vpn,04-databases,05app-alb and the 06 catalogue ----> to work catalogue all this ifra is needed ryt create that filrst 
+
+
+in terrafor we are following this approach ryt we do this with CD
+
+1.create 1 instance
+2.provision with ansible/shell
+ 3.stop the instance
+ 4.take AMI
+ 5.delete the instance
+ 6.we have created AMI now, create launch template with AMI
+     ---> if  u give launch template to AMI it will do autoscaling and can create the instances
+	 
+	
+Step: 1 : Create all infra  upto 01-vpc,02-sg,03-vpn,04-databases,05app-alb from  terraform-roboshop-infra-dev with terraform commands manually and 
+connect to vpn  --> login to 03-vpn created ec2 (i.e., rosboshop-dev-vpn in ec2 ) --> take public ip and login and ls -l ---> cat arnvpn.ovpn --> copy content and paste in local file arunvpn.ovppn present in devopsrepo folder ---> open vpn application in lapto --> upload that file --> it will connect to vpn 
+
+all infra available in aws account upto 05-app-alb 
+	 
+step:2 : 
+Create Roboshop-CD-Application-Code folder and inside that create one terraform folder and one Jenkinsfile
+Inside terraform folder copy paste terraform files from 06-catalogue from terraform-roboshop-infra-dev folder  Ex: bootstarp.sh,data.tf,locals.tf,main.tf,provider.tf,variables.tf	
+
+step : 3 :  now Download Artifact from nexus previously from s3 bucket like catalogue application zip and other components code ryt but now we cant download from s3 we need to download from nexus 
+
+Now 
+1.Download artifact from nexus (which contains all the code files)
+2.Download specific version 
+to do that So we need to provide nexus location and version to Ansible  
+3.We do changes in playbooks 
+4. now i have created a copy of roboshop-ansible-with-roles-for-CD-deploy-usage for CD processs from roboshop-ansible-with-roles-for-terraform-infra-usage same code but roboshop-ansible-with-roles-for-CD-deploy-usage we are changing ansible configuration files for CD process 
+
+ roboshop-ansible-with-roles-for-terraform-infra-usage ---> this is for terraform infra ryt i didnt disturb this folder so created a copy of same code for CD process 
+ 
+ 
+roboshop-ansible-with-roles-for-CD-deploy-usage ---> create a repo with same name and push all files inside that
+ 
+ Now first it will come here in this file ---> main-tf.yaml
+ we need to send artifact version from terraform --->
+ 
+ step 4: in Jenkins --> new item --> create RoboShop-CD-deploy (name)--> select Folder --> ok 
+ now click on --> RoboShop-CD-deploy --> new item --> catalogue-CD-deploy (name) ---> select pipeline --> create 
+ 
+ Upstream job --> means CI  --> because first run 
+ Down stream Job --> CI success avuthene CD ni call cheyali  --> down stream because dependent on CI --> If CI fails obviously CD will not call/trigger 
+ 
+One job calling another Job --> because first job run successfully 
+catalogue CI pipeline/job gives information to catalogue-CD --> my job is done and success u can do ur job now like that 
+ 
+Roboshop-CD-Application-Code ---> create a git repo with same name and push files 
+Now go to jenkins ---> RoboShop-CD Folder --> click on catalogue-CD-Deploy  pipeline --> configure --> Pipeline section --> select Pipeline from SCM option --> select git in SCM section--> give Roboshop-CD-Application-Code repo url and credentials ec2-user and Devops321 --->edit /main in branch section ---> catalogue-deploy/Jenkinsfile in jenkins file sevtion ---> create 
+
+
+How to call another pipeline form jenkins pipeliine  like upstream and downstream concept
+
+stage('triggerChildJob') {
+            steps {
+                build job: "name of child job", wait: true
+            }
+        }
+		
+No in Roboshop-CI-Application-Code --> catalogue --> Jenkinsfile --> edit Deploy Stage 
+Add this 
+stage ('Deploy') {
+            steps {
+                build job: "RoboShop-CD/catalogue-CD-deploy", wait: true
+            }
+        }
+
+with parameters
+
+stage ('Deploy') {
+            steps {
+                build job: "RoboShop-CD/catalogue-CD-deploy", wait: true,
+                parameters: [ 
+                    string(name: 'version', value: "${packageVersion}"),
+                    string(name: 'environment', value: "Dev")
+                ]
+            }
+        }
+		
+this pipeline will trigger automatically after CI pipeline success if fails that will not trigger until success it will wait 
+
+If U run Build Now ---> first pipeline will trigger 2nd pipeline automatically 
+
+Step:5 
+we are going to implement multienv style in current CD process 
+
+In Roboshop-CD-Application-Code/catalogue-deploy folder --> inside terraform folder ---> create dev folder and prod folder ---> in dev foldeer create backend.tf and dev.tfvars and in prod folder create backend.tf and prod.tfvars 
+
+Now in jenkins  have application version but we need to send the version to the terraform 
+we need to create a variable ---> Roboshop-CD-Application-Code/catalogue-deploy/terraform/variables.tf 
+
+we have plugin called Rebulder -->  it will run with previous valuesi.e., previous build values insted of selecting version and env every time when we run pipeline 
+
+variable "app_version" {
+  
+}
+and in main.tf  --> "sudo sh /tmp/bootstrap.sh catalogue dev ${var.app_version}"     ---> we are passing environment variable also 
+Ex:
+pipeline {
+    
+    stages {
+        stage('Print Version') {
+            steps {
+                sh """
+                    echo "version : ${params.version}"
+                    echo "environment : ${params.environment}"
+                """
+            }
+        }
+        stage('Init') {
+            steps {
+                sh """
+                    pwd
+                    cd catalogue-deploy/terraform/
+                    pwd
+                    terraform init --backend-config=${params.environment}/backend.tf -reconfigure
+                """
+            }
+        }
+        stage('Plan') {
+            steps {
+                sh """
+                    cd catalogue-deploy/terraform/
+                    terraform plan -var-file=${params.environment}/${params.environment}.tfvars -var="app_version=${params.version}"
+                """
+            }
+        }
+    }
+}
+
+This is our URL we need to modify ansible roles download nexus based on this 
+
+http://nexus.devopswitharun.online:8081/repository/catalogue/com/roboshop/catalogue/1.0.0/catalogue-1.0.0.zip
+
+Step : 6:
+In roboshop-ansible-with-roles-for-CD-deploy-usage/roles /common folder 
+Insted of Downloading code ZIP files from s3 we need to download them from Nexus where we already packaged and pushed in CI process so we need to change that location code changes in anisble roles folder along with tis we need to pass the version also 
+Now Ansible Should has to be connection for pulling artifact 
+
+app-setup.yaml in this file :
+----------------------------------
+- name: Download Artifact From NEXUS
+  ansible.builtin.get_url:
+    url: "{{NEXUS_URL}}/{{component}}/{{group_id}}/{{component}}/{{app_version}}/{{component}}-{{app_version}}/zip"
+    dest: /tmp/{{component}}-{{app_version}}.zip
+	url_username: admin                                      ------> nexus url and password to download file 
+    url_password: admin123
+
+- name: Unarchive the Downloaded Zip File From Nexus
+  ansible.builtin.unarchive:
+    src: "/tmp/{{component}}-{{app_version}}.zip"
+    dest:: /app
+    remote_src: yes
+
+Add them in variables-dev.yaml	
+NEXUS_URL: http://172.31.29.254:8081/repository
+group_id: com/roboshop
+
+step : 7:
+
+stage('Apply') {
+            steps {
+                sh """
+                    cd catalogue-deploy/terraform/
+                    terraform apply -var-file=${params.environment}/${params.environment}.tfvars -var="app_version=${params.version} -auto-approve"
+                """
+            }
+        }
+		
+when u run this pipeline it will not connect or download because VPN we are connecting in laptop and we are running in lap but not it is running in agent explicitly it wont run becasue CATALOGUE accept traffing only from VPN  so we need to give VPN SG to agent instance because we are running terraform there 
+
+WE NEED TO ATTCH VPN SECURTITY GROUP T AGENT EC2 ---->AWS console --> ec2--> instaces ---> select agent --> action --> modify security group --> add roboshop-dev-vpm group-id to agent ec2 --> save 
+now it will connect successfully and install and run catalogue 
+
+Run Pipeline RoboShop-CI ---> it will trigger automatically CD peipeline that is --> RoboShop-CD --> check terraform apply successfull or not 
+
+
+Step : 8:
+Now lets assume in catalogue code we developed a new feature and we changed all code files and developer has to update version in package.json file we want to release 
+In package.jso file 
+
+version: 1.2.0
+in catalogue folder change some this in files 
+
+When u click build now  RoboShop-Ci pipeline-->  version 1.2.0 has to be deployed ----> verify in pipeline logs 
+So 1.2.0 ki CI and Cd total automatic ga run ayipovali --> Ci process and Cd process throgh pipeline 
+If u See In Nexus --> repositories--> catalogue --> u can see two versions 1.0.0 and 1.2.0  two zip files will be there --->
+So incase some issue in Arraises in production version 1.2.0 ---> so we can redeploy the old version i.e., 1.0.0 immeadiately through pipeline it will deploy automatically 
+
+1.2.0 --> package should upload to nexus
+asible has to download that new version and unzip and instances ni refresh cheyali and automatic ga up ayipovali 
+
+
+Application integration we are doing
+-------------------------------------------------
+Jenkins ---> running terraform and creating Infra ---> in terraform bootstarp.sh file we gave ansible roles path for Ec2 Server configuration
+
+We need to add scans , unit testing etc...
+
+Now Develop environment set 
+
+
+Error: in jenkins --> nodes --> agent-1 
+Disk space is below threshold of 1.00 GiB. Only 583.93 MiB out of 960.00 MiB left on /home/ec2-user/jenkins-agent.
+
+
+lsblk
+pvs
+vgs
+lsblk -f
+growpart /dev/nvme0n1 4
+pvresize /dev/nvme0n1p4
+vgs
+lvextend -L +5G /dev/mapper/RootVG-homeVol
+df -h /home
+
+Filesystem                  Size
+/dev/mapper/RootVG-homeVol  6G
+
+
+What you accomplished (Interview Explanation)
+
+If an interviewer asks:
+
+"How did you resolve a Terraform 'no space left on device' error on a Jenkins agent?"
+
+You can answer:
+
+"Initially, Terraform failed while downloading the AWS provider with a 'no space left on device' error. I verified that the root filesystem had free space but discovered the Jenkins workspace was located on a separate /home logical volume that was only 960 MB. I increased the EC2 EBS volume from 20 GB to 30 GB, resized the LVM physical volume, extended the /home logical volume from 960 MB to 6 GB, and grew the XFS filesystem using xfs_growfs. After expanding /home, the Jenkins workspace had sufficient space for Terraform provider downloads."
+
+This is a solid real-world troubleshooting example for a DevOps interview.
+
+
+Step : 9 :
+Types of scanning 
+-------------------------
+static source code sacn 					 		 		--- SonarQube  --> to check whether our code maintaining project/company standards
+static application security testing   		 		--- fortify  --> manam rasina code security standards ki vunda ledha anedi 
+dynamic application security testing    		--- web inspector ---> mana application ni evaraina hack cheyalani chusthe ela test test cheyali --> they will perform some tests like that 
+open source library scaning  --> nexus IQ   --- we are downloading from internet ryt we need to scan them for any vulnarabulities
+Docker image scanning 									--- twistlock or ECR Scanning
+
+Ee scans anni developmment env lo chesthe we no need to worry about prod instead of doing it in prod directly  if we get defects there then we need tgo back to dev repeatedly instead we do them in dev also 
+
+this is called Shift-left 
+
+
+in this devops engineer dont do much --> we scan them and publish results and quality gate we setup
+
+
+
+
+SonarQube:
+--------------
+SonarQube is a Static Code Analysis tool.
+It analyzes your source code without executing it and identifies:
+
+Bugs
+Vulnerabilities
+Security Hotspots
+Code Smells
+Duplicate Code
+Test Coverage (when integrated with coverage tools)
+
+Its goal is to improve code quality and code security before deployment.
+
+Why do we use SonarQube?
+Imagine a Java developer writes:
+String password = "admin123";
+
+The application compiles successfully. The build also succeeds.
+But SonarQube reports: Hardcoded password detected. So instead of discovering this in production, SonarQube catches it during CI.
+
+Where does SonarQube fit?
+
+Developer--->GitHub--->Jenkins--->Git Checkout--->Maven Compile ---> Unit Test ---> SonarQube Analysis ---> Quality Gate ---> Build Docker Image ---> Push to Nexus ---> Terraform  ---> Deploy
+
+Notice that SonarQube runs before building the Docker image or deploying. If code quality is poor, the pipeline stops early.
+
+Practical RoboShop Example : 
+-------------------------------------
+Suppose you're working on the Catalogue Service. Developer pushes code. GitHub triggers Jenkins.
+
+Jenkins stages:
+
+Checkout ---> Compile ---> Test ---> SonarQube ---> Quality Gate ---> uild Docker Image ---> Push to Nexus ---> Deploy
+
+If SonarQube detects serious issues: Security Vulnerability or Critical Bug : the pipeline fails. Nothing is deployed.
+
+How Jenkins talks to SonarQube
+Jenkins ----sonar scanner--->SonarQube Server ---> Analyzes Source Code ---> Stores Results ---> Returns Quality Gate
+Jenkins only sends the code. SonarQube performs the analysis.
+
+
+Components involved
+1. Jenkins : Runs the pipeline.
+2. SonarQube Server : Analyzes the code. Usually runs on EC2.
+
+Example : http://54.xx.xx.xx:9000
+
+3. Sonar Scanner : CLI tool. Collects source code. Uploads results to SonarQube.
+
+4. Quality Gate
+
+Defines rules like
+
+Coverage > 80%
+Critical Bugs = 0
+Security Rating = A
+Duplicate Code < 3%
+
+If passed Pipeline continues. Otherwise Pipeline fails and pipeline stops
+
+Jenkins Integration
+Manage Jenkins ---> Tools ---> SonarQube Scanner ---> Install Scanner 7.x
+
+Manage Jenkins ---> System ---> SonarQube Servers ---> Add Name , URL , Token
+
+Example
+
+Name :Sonar
+URL  : http://172.31.xx.xx:9000
+Authentication : Token
+
+Sonar Token : Instead of username/password, SonarQube generates and Store this token inside Jenkins Credentials Never hardcode it inside Jenkinsfile.
+
+Jenkins Pipeline Example
+stage('SonarQube Analysis') {
+    steps {
+        withSonarQubeEnv('Sonar') {
+            sh '''
+            mvn sonar:sonar
+            '''
+        }
+    }
+}
+What happens?
+
+withSonarQubeEnv() ---> Reads Sonar URL ---> Reads Token ---> Exports Environment Variables ---> Runs Scanner ---> Uploads Report
+
+Quality Gate Stage
+
+After analysis withSonarQubeEnv()
+
+stage('Quality Gate') {
+    steps {
+        timeout(time: 5, unit: 'MINUTES') {
+            waitForQualityGate abortPipeline: true
+        }
+    }
+}
+
+This waits until SonarQube completes analysis. If PASSED Pipeline continues. If FAILED Pipeline stops.
+
+SonarQube Dashboard --> After analysis you see
+
+Project --> Catalogue --> u can see Metrics like
+Bugs
+Vulnerabilities
+Coverage
+Code Smells
+Duplications
+
+Why Sonar before Docker?
+
+If code quality fails, there's no point in: Building Docker Image ---> Pushing Image ---> Deploying,  
+So SonarQube saves build time and prevents poor-quality code from moving through the pipeline.
+
+
+Interview Answer (4+ Years)
+
+Interviewer: How did you use SonarQube in your project?
+
+Answer:
+
+"We integrated SonarQube into our Jenkins CI pipeline to perform static code analysis after the build and unit test stages. Jenkins used the SonarQube Scanner along with a token stored in Jenkins Credentials to send the source code to the SonarQube server. After the analysis completed, the pipeline waited for the Quality Gate result. If the Quality Gate failed due to critical bugs, vulnerabilities, or unmet quality thresholds, the pipeline stopped and no Docker image was built or deployed. Only when the Quality Gate passed did the pipeline continue to build the Docker image, push it to Nexus, and deploy the application."
+
+Process:
+-----------
+Create an ec2 in aws ---> name (sonarQube ec2) --> devops-practice --> t3.medium --> proceed without key pair --> select allow all --> 30 gb --> create 
+Copy public ip --> login --> labauto --> 71  --> sonarqube port 9000
+In browser --> <public ip of sonarqube ec2>:9000 ---> username : admin and password : admin 
+
+Installation SonarQube: (disk usage issue for that use this steps)
+sudo dnf install -y cloud-utils-growpart
+sudo growpart /dev/nvme0n1 4
+sudo pvresize /dev/nvme0n1p4
+pvs
+vgs
+sudo lvextend -L +8G /dev/RootVG/homeVol
+sudo xfs_growfs /home
+df -h /home
+rm -rf /home/sonar/sonarqube
+rm -f /home/sonar/*.zip
+
+now do labauto--> 71 --> sonarqube install done
+
+we need to install scanner CLI to scan the code in agent/other ec2 who is going t run the piepline script 
+Agent Ec2 --> <public ip> in superputty --> labauto --> 70 --> it will install default in /opt folder ---> cd sonar --> cd conf folder --> we need to give sonarqube properties 
+scanner CLI ki manam SonarQube address ivali so it can upload results 
+
+
+vim sonar-scanner.properties --> it will open a file in that give 
+
+sonar.host.url=http://sonarqube.devopswitharun.online:9000
+sonar.projectKey=catalogue            -- from sqnarqube projectname and key
+sonar.projectName=catalogue
+sonar.login=sqa_06f281f68b1266e3d914c6c4a398febb54c5d1f6    --> generated in sonarqube in --> profile section
+
+
+Click on profile ---> my account --> security -->give any name (jenkins -agent) --> generate a token and 
+
+
+
+Now in Roboshop-CI-Application-Code\catalogue folder --> create sonar-project.properties file --> if u want search in google create a file 
+Inside file 
+sonar-projectKey=catalogue 
+sonar.qualitygate.wait=true 
+sonar.exclusions=node_modules**                      ---> scanner wont scan this file/folder 
+
+sonar.exclusions tells the Sonar Scanner: "Do not analyze these files or folders."
+
+sonar.exclusions is a SonarQube configuration property used to exclude files or directories from static code analysis. In Node.js projects, we commonly exclude the node_modules directory because it contains third-party libraries rather than application code. Analyzing those files would increase scan time, generate unnecessary issues, and make the quality reports less meaningful. The ** wildcard tells SonarQube to exclude all files and subdirectories recursively under node_modules."
+
+
+stage('Sonar Scanning') {
+            steps {
+                sh """
+                    sonar-scanner 
+                """
+            }
+        }
+		
+sonar-scanner ---> this is a command it will read and start the process scanning and uploading the results 
+--------------------
+sonar-scanner is a CLI (Command Line Interface) tool provided by SonarQube.
+Its job is to collect your source code and analysis information and send it to the SonarQube Server for analysis.
+
+For Maven project in backgroung it will run :    mvn sonar:sonar
+
+It only:
+
+Reads your project
+Collects project information
+Sends it to SonarQube
+Waits for SonarQube to process it
+
+The actual analysis happens on the SonarQube Server.
+
+Real Example (Your RoboShop Project)
+--------------------------------------------------
+Suppose your project structure is
+catalogue/
+ ├── Jenkinsfile
+ ├── pom.xml
+ ├── src/
+ │      ├── main/
+ │      └── test/
+ └── Dockerfile
+When Jenkins reaches the Sonar stage, it runs sonar-scanner ---> or for Maven projects --> mvn sonar:sonar
+
+What happens internally?
+Let's say your Jenkinsfile has
+
+stage('SonarQube Analysis') {
+    steps {
+        withSonarQubeEnv('Sonar') {
+            sh '''
+                sonar-scanner
+            '''
+        }
+    }
+}
+
+
+waitForQualityGate() ---> This is a Jenkins Pipeline step. Here Jenkins is waiting,
+
+Step 1 : Scanner starts ------>Jenkins ---> sonar-scanner
+Step 2 : Scanner reads configuration : sonar-project.properties this file 
+
+For example
+sonar.projectKey
+sonar.projectName
+sonar.sources
+sonar.host.url
+sonar.login
+
+These values come either from:
+
+sonar-project.properties
+Jenkins environment
+Command-line arguments
+
+Step 3
+
+Scanner scans your project directory
+catalogue/ ---> src/main/java and src/test/java and pom.xml
+It gathers ---> Java files , XML , JavaScript , Python, Dockerfile etc.
+
+Step 4 : Scanner packages all metadata
+It creates information like Project Name , Number of Java Files , Coverage Report , Test Report , Git Information
+
+Step 5 : Scanner uploads everything : 
+Jenkins ----> HTTP Request ---> http://SonarServer:9000 ------> using the authentication token.
+
+
+Step 6 : SonarQube Server analyzes Now the server starts
+
+Parser ----> Rules Engine ---> Security Rules ---> Bug Detection ---> Code Smells ---> Coverage ---> Duplicate Code
+
+Step 7 : Server stores results Inside SonarQube Database PostgreSQL
+
+Step 8 : Dashboard updates
+
+You open : http://<Sonar-IP>:9000 ---> and see Catalogue , Bugs , Coverage , Duplications , Security
+
+So what exactly does sonar-scanner do?
+
+It performs tasks like:
+✔ Reads source code
+✔ Reads project configuration
+✔ Reads Git information
+✔ Reads coverage reports (if available)
+✔ Compresses the analysis data
+✔ Sends it securely to SonarQube Server
+
+It does not decide whether your code has bugs. That decision is made by the SonarQube Server.
+
+Why install sonar-scanner on Jenkins?  ------->   Because Jenkins is the machine that has the source code. If Jenkins doesn't have the scanner, it cannot send the project to SonarQube.
+What happens if scanner is not installed? Jenkins returns sonar-scanner: command not found
+
+How does Jenkins know where SonarQube is?
+
+This part is handled by --->   withSonarQubeEnv('Sonar') ---> This step automatically sets environment variables like:
+
+SONAR_HOST_URL=http://172.31.xx.xx:9000
+SONAR_AUTH_TOKEN=xxxxxxxx
+SONAR_SCANNER_HOME=/var/lib/jenkins/tools/...
+
+So when sonar-scanner runs, it already knows Which SonarQube server to connect to Which authentication token to use
+
+Interview Answer (4+ Years)
+
+Interviewer: What is sonar-scanner?
+"sonar-scanner is the command-line client provided by SonarQube. In our Jenkins pipeline, after the source code is checked out and built, the scanner collects the project files and analysis metadata, then uploads them to the SonarQube server using the configured server URL and authentication token. The scanner itself does not analyze the code; the SonarQube server performs the static analysis and returns the Quality Gate result, which Jenkins uses to decide whether the pipeline should continue."
+
+Quality gate:
+----------------
+
+A Quality Gate is a set of rules or conditions defined in SonarQube to determine whether the code meets the organization's quality standards.
+
+Developer
+      │
+      ▼
+Jenkins Build
+      │
+      ▼
+SonarQube Analysis
+      │
+      ▼
+ Quality Gate
+   /       \
+ PASS      FAIL
+  │          │
+  ▼          ▼
+Deploy     Stop Pipeline
+
+If the code passes all the conditions, the pipeline continues. If even one critical condition fails, the pipeline stops.
+
+Why do we need a Quality Gate?
+Imagine a developer writes code that: Has 10 bugs , Has a SQL Injection vulnerability , Has only 20% test coverage ---> The application may still compile successfully.
+
+Without a Quality Gate:
+GitHub ---> Jenkins ---> Build Success ---. Docker Image ---> Deploy ---> Bad code reaches production.
+
+With a Quality Gate:
+GitHub ---> Jenkins ---> SonarQube ---> Quality Gate ---> FAIL -----> Deployment is stopped.
+
+What does a Quality Gate check?
+Typical conditions include:
+Bugs									   0 	
+Vulnerabilities 					  0 	
+Code Smells					      0 
+Code Coverage				      > 80 or 80  in box 
+Duplicated Code               < 10 or 10 
+Security Rating    			 	A
+Reliability Rating    			A
+Maintainability Rating    A
+
+etc.......
+Example:
+---------
+Suppose SonarQube analyzes your project.
+In SonarQube: Administration --> Quality Gates --> create a qualitygate ---> catalogue (name) --> select our Project Name --> we define all conditions on ---> over all code or we can also apply on new code and we can apply both for single project 
+like below 
+It reports:
+
+Bugs              : 0
+Vulnerabilities   : 0
+Coverage          : 85%
+Duplications      : 1%
+
+Quality Gate Result: PASSED Pipeline continues.
+
+Now another developer commits code.
+
+SonarQube reports:
+
+Bugs              : 4 Critical
+Coverage          : 45%
+Duplications      : 12%
+
+Quality Gate Result: FAILED Pipeline stops.
+
+
+How Jenkins uses Quality Gate
+Your Jenkins pipeline typically has two stages.
+
+Stage 1: Analysis
+stage('SonarQube Analysis') {
+    steps {
+        withSonarQubeEnv('SonarQube') {
+            sh 'sonar-scanner'
+        }
+    }
+}
+Here, sonar-scanner uploads the project to the SonarQube server.
+
+Stage 2: Wait for Quality Gate
+
+stage('Quality Gate') {
+    steps {
+        timeout(time: 5, unit: 'MINUTES') {
+            waitForQualityGate abortPipeline: true
+        }
+    }
+}
+
+This stage waits until SonarQube finishes analyzing the project.
+
+What happens internally?
+Developer pushes code. ---> Jenkins executes ----> sonar-scanner ----> SonarQube starts analysis. ----> SonarQube compares results with the Quality Gate rules. ----> SonarQube sends the result back to Jenkins. Example: Status = OK or Status = ERROR ---> Jenkins receives the response. If: Status = OK Pipeline continues. If: Status = ERROR ------> Pipeline fails immediately.
+
+Example in your RoboShop Pipeline
+GitHub Push
+      │
+      ▼
+Checkout Code
+      │
+      ▼
+Maven Build
+      │
+      ▼
+Unit Tests
+      │
+      ▼
+SonarQube Analysis
+      │
+      ▼
+Quality Gate
+      │
+ ┌────┴────┐
+ │         │
+PASS      FAIL
+ │         │
+ ▼         ▼
+Docker    Stop Build
+Build
+ │
+ ▼
+Push to Nexus
+ │
+ ▼
+Terraform Deploy
+
+Notice that if the Quality Gate fails, you never:
+
+Build the Docker image
+Push to Nexus
+Deploy using Terraform
+
+This saves time and prevents low-quality code from progressing through the pipeline.
+
+Where do we configure the Quality Gate? 
+
+You'll find built-in gates such as:
+
+Sonar way
+
+You can also create your own custom Quality Gate.
+Example :
+Coverage > 80%
+Critical Bugs = 0
+Critical Vulnerabilities = 0
+Duplicated Code < 3%
+
+What does waitForQualityGate do?
+waitForQualityGate abortPipeline: true
+It waits for the SonarQube server to finish analysis.
+It checks the Quality Gate status.
+If the status is FAILED, Jenkins aborts the pipeline automatically.
+If the status is PASSED, the next stages execute.
+
+Interviewer: What is a Quality Gate?
+
+"A Quality Gate in SonarQube is a set of predefined quality conditions that determine whether code can proceed through the CI/CD pipeline. After the Jenkins pipeline runs the SonarQube analysis, it waits for the Quality Gate result using the waitForQualityGate step. If the code meets the configured thresholds for metrics such as bugs, vulnerabilities, code coverage, and duplication, the Quality Gate passes and the pipeline continues. If any critical condition fails, Jenkins aborts the pipeline, preventing poor-quality code from being packaged or deployed."
+
+Example :
+
+stage('Sonar Analysis') {
+    steps {
+        withSonarQubeEnv('SonarQube') {
+            sh 'sonar-scanner'
+        }
+    }
+}
+
+stage('Quality Gate') {
+    steps {
+        timeout(time: 5, unit: 'MINUTES') {
+            waitForQualityGate abortPipeline: true
+        }
+    }
+}
+
+
+What is the difference between sonar.qualitygate.wait=true and waitForQualityGate()?
+
+"sonar.qualitygate.wait=true is a Sonar Scanner property that makes the scanner wait until the SonarQube server finishes analysis and returns the Quality Gate result. 
+In contrast, waitForQualityGate() is a Jenkins Pipeline step provided by the SonarQube Jenkins plugin. It lets the scanner finish quickly, and then Jenkins waits for the Quality Gate result, 
+typically using a webhook from SonarQube. In Jenkins-based CI/CD pipelines, waitForQualityGate() is the preferred approach because it's better integrated with the pipeline and avoids keeping the scanner process blocked unnecessarily."
+
+
+
+in SonarQube UI --> ADMIN --> QUALITYGATE --> CREATE ---> roboshop-allow (name)  ---> Dont add any condition for out project --> set as default ---> build pipeline 
+
+
+
+
+
+
+
+*********************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************************
+
+
+
+New process
+------------------
+
+
+ACTUAL SCENARIO :
+--------------------------
+git will have multiple stages single pipeline workout kadu ---> for that we have multi branch pipeline  because we have lot of developers and pushes to diff branches 
+we have language (EX: node js we did ) and deployed in ec2 and we have diff deployment platforms  like VM/DOCKER/KUBERNETES/pivotalcloudfoundry/on-primise VM etc..  --> So language and deployment platform oka application ni we deploy differently it  is varying so  based on all this pipeline will change 
+
+Based on all this we need to plan pipeline 
+
+Lets say in HDFC bank we have 200 projects in that
+there is multiple nodejs language for multiple project so wee need to write one pipeline script so that all nodejs langauage project can use and if u write nodejsvm pipeline in multiple projects if u want to change 1 single thing u need to change it in every project but if we write 1 single pipeline script we can only change at once all projects call pull and update 
+
+So manam oka central location lo change chesthe ani dantloalao change avvalike like Ansible roles and Terraform modules etc....
+
+NODEJS language --> dont duplicate code and basically we need to write centralized pipeline script 
+
+
+
+Jenkins Shared Library :
+-------------------------------
+A Jenkins Shared Library is a reusable collection of Groovy scripts, functions, and pipeline code that can be shared across multiple Jenkins pipelines.
+or
+A Jenkins Shared Library is a central repository that stores reusable pipeline code.
+Instead of writing the same Groovy code in every Jenkinsfile, we write it once in a shared library and reuse it across all pipelines.
+
+Why do we need it?
+Imagine you have 10 microservices.
+Catalogue,User,Cart,Shipping,Payment,Dispatch,Frontend,Redis,Mongo,RabbitMQ
+Every Jenkinsfile contains: Checkout , Build ,SonarQube , Quality Gate , Docker Build , Push to Nexus ,Deploy
+That's hundreds of duplicate lines.
+
+If tomorrow your company changes:
+docker build to docker buildx  --> you would have to update 10 Jenkinsfiles. This is difficult to maintain.
+
+
+Solution : Move common code into a Shared Library one Git repository.. Now the Jenkinsfile becomes very small.
+Instead of 200 lines
+
+@Library('roboshop-library') _
+
+buildApplication()
+runSonar()
+buildDocker()
+pushToNexus()
+deploy()
+
+Real Project Structure
+----------------------------
+roboshop-shared-library
+├── vars/
+│     dockerBuild.groovy
+│     sonarScan.groovy
+│     deploy.groovy
+│     terraformApply.groovy
+├── src/
+│     com/company/
+│             Utils.groovy
+└── resources/
+				nginx.conf
+				
+Jenkinsfile :  Now every application uses
+
+
+@Library('roboshop-library') _
+
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                buildApplication()
+            }
+        }
+        stage('Sonar') {
+            steps {
+                sonarScan()
+            }
+        }
+        stage('Docker') {
+            steps {
+                dockerBuild()
+            }
+        }
+
+    }
+}
+
+Configuration
+
+How Jenkins knows the library?
+Manage Jenkins UI----> System ----> Global Trusted Pipeline Libraries ----> Add
+Library Name : roboshop-library
+Git Repository : https://github.com/company/shared-library.git
+Branch : main
+
+Now every Jenkinsfile can use
+@Library('roboshop-library') _
+Ex: 
+vars Folder	
+vars/installNodeDependencies.groovy
+
+def call() {
+    sh '''
+    sudo dnf module disable nodejs -y
+    sudo dnf module enable nodejs:18 -y
+    sudo dnf install nodejs -y
+    npm install
+    '''
+}
+
+Now in Jenkinsfile
+
+installNodeDependencies()
+
+src Folder
+Used for:
+Utility Classes
+Helper Classes
+Complex Logic
+
+resources Folder
+Contains Dockerfile , Shell Scripts , JSON , YAML , Templates , Config Files
+
+
+Example
+      resources/nginx.conf
+Read
+     libraryResource('nginx.conf')
+
+
+How does Shared Library work?
+Pipeline Starts -----> Reads @Library('roboshop-library') -----> Downloads Shared Library ----> Loads Groovy Files ----> Executes Functions -----> Runs Pipeline
+
+
+RoboShop Example
+Suppose every application performs
+Git Checkout ----> Maven Build ----> Sonar ----> Quality Gate ----> Docker Build ----> Push Nexus ----> Terraform Deploy
+Instead of repeating this everywhere
+
+Create
+
+vars/
+mavenBuild.groovy
+dockerBuild.groovy
+sonarScan.groovy
+terraformDeploy.groovy
+
+Now Jenkinsfile becomes
+
+@Library('roboshop-library') _
+
+pipeline {
+    agent any
+    stages {
+        stage('Build') {
+            steps {
+                mavenBuild()
+            }
+        }
+        stage('Sonar') {
+            steps {
+                sonarScan()
+            }
+        }
+        stage('Docker') {
+            steps {
+                dockerBuild()
+            }
+        }
+        stage('Deploy') {
+            steps {
+                terraformDeploy()
+            }
+        }
+    }
+}
+Advantages
+✅ Reusable code
+✅ Easy maintenance
+✅ Centralized logic
+✅ Cleaner Jenkinsfiles
+✅ Standardized CI/CD pipelines
+✅ Faster development
+No duplicate pipeline code-based
+Version-controlled with Git
+One change updates all pipelines
+
+Real Company Scenario
+
+Suppose the security team says Every Docker build must scan the image.
+
+Earlier 10 Jenkinsfiles had docker build You would update all 10.
+With Shared Library --> dockerBuild.groovy --> contains docker build , trivy image , docker push ---> Only one file changes. Every project automatically gets the new process. This is one of the biggest benefits of a Shared Library.
+
+Interview Answer (4+ Years)
+
+Interviewer: What is Jenkins Shared Library?
+
+A strong answer is:
+
+"A Jenkins Shared Library is a reusable collection of Groovy scripts and pipeline functions stored in a separate Git repository. Instead of duplicating common CI/CD logic such as Maven builds, SonarQube analysis, Docker image creation, Nexus publishing, and Terraform deployment across multiple Jenkinsfiles, we implement those functions once in the Shared Library. Jenkins loads the library using the @Library annotation, allowing all pipelines to reuse standardized logic. This reduces code duplication, and ensures consistent CI/CD practices across all projects , simplifies maintenance by allowing changes in one place to be reused by all Jenkins pipelines.
+
+
+Flow :
+-------
+
+How Jenkins uses it
+Step 1 : Create Git repository ----> roboshop-shared-library
+Step 2 : 
+Store code
+vars/
+src/
+resources/
+
+Step 3 : In Jenkins
+
+Manage Jenkins
+→ System
+→ Global Trusted Pipeline Libraries ---> Add
+
+Name
+roboshop-lib
+Default Version
+main
+Repository URL
+https://github.com/xxxx/shared-library.git
+
+Step 4 : Use in Jenkinsfile
+
+@Library('roboshop-lib') _
+
+Now Jenkins downloads the library automatically and uses to run the pipeline 
+
+
+process from notes:
+1. Create a feature branch in Roboshop-CD-Application-Code\catalogue-deploy folder Ex: feature-1
+2. Configure a multi-branch pipeline ---> in jenkins Ui --> New Item --> give name RoboShop --> select multipbranch 
+3. Configure Shared Libraries
+
+Now Roboshop-CI-Application-Code\catalogue/Jenkinsfile   ---> Convert this file name to Jenkinsfile.backup 
+Create a feature branch in --->Roboshop-CI-Application-Code\catalogue folder git branch -M feature-1
+
+From now we will not push to main branch etc... we dont do anything in main --> write and commit to feature branch ---> merge to main branch ---> send it to prod 
+
+1)Create a Jenkinsfile in  Roboshop-CI-Application-Code\catalogue folder and write some steps to test 
+
+2)Go to Jenkins Ui --> New item --> RoboShop(name) --> Select Folder ---> create ---> click on RoboShop folder in Jenkins Dashboard --> new item --> catalogue-CI (name) --> Select Multi-Branch pipeline option ---> create 
+3)now in general --> Sources --> Git ---> repo url ---> automatically discover branhces ---> now im creating jenkins file in catalogue folder so in Jenkins Script path ---> give catalogue/Jenkinsfile --> Save Apply
+If u see now automaticall i will find branches and display in UI --> If u create multiple branches all branhes will be shown there 
+
+
+4)create a roboshop-Jenkins-shared-libraries folder and inside that vars folder and inside that file nodejsVM.groovy
+so nodejs application code ki vm's lo deploy chese code ki ee pipeline work avuthundi 
+
+Step : 2
+1)Copy paste Roboshop-CI-Application-Code\catalogue\Jenkinsfile.bkp file code into nodejsVM.groovy file and push to github by creating a repo called roboshop-Jenkins-shared-libraries -- main branch
+2)Now in Jenkin UI --> Manage Jenkins ---> system --> U will see Global shared Librariries option --> Add --> give name Rpboshop-Jenkins-shared-libraries --> default version .. main --> retrival from  SCM ---> give roboshop-Jenkins-shared-libraries repo path ---> add --> save 
+
+3)So we added there we need to refer in Jenkins file ---> Roboshop-CI-Application-Code\catalogue\Jenkinsfile -----> add  like below
+
+@Library('roboshop-Jenkins-shared-libraries')  --> push to Roboshop-CI-Application-Code\catalogue repo
+
+Now if u go and click on feature-1 pipeline it will run with shared libraries script
+
+roboshop-Jenkins-shared-libraries\vars\pipelineDecision.groovy
+Roboshop-CI-Application-Code\catalogue\Jenkinsfile
+
+If u do pipeline with shared libraries in roboshop-Jenkins-shared-libraries\vars\nodejsVM.groovy  where jenkins steps are available u need to write 
+in roboshop-Jenkins-shared-libraries\vars\nodejsVM.groovy
+def call(Map configMap)	{
+pipeliine {
+}
+}
+we kept out whole pipeline in call function --> it is default function 
+
+Step 3: terraform-roboshop-infra-dev/ create a jenkins file to run infra ----> jenkinsfile
+In Jenkins UI --> RoboShop-infra-dev--> create new item --> roboshop-terraform-infra-dev --> configure with this repo url and mention the jenkinsfile ----> create 
+If access fails do --- aws configure in agent ec2 
+In Aws Console --> add vpn sg to the agent to run catalogue 
+
+To create an infra for application deployment we have written a jenkins file ---> D:\devopsrepo\terraform-roboshop-infra-dev\Jenkinsfile
+In Jenkins UI --> Create new item --> Roboshop-infra folder-->  inside that --> new item --> RoboShop-infra-dev-create --> Configure  --> pipeline from SCM --> git url --> /main --> jenkins file --> apply --> build now 
+
+In Jenkins -agent --> open in super putty --> Do ----> aws configure 
+
+
+
+Parallel sategs in jenkinsPipeline 
+------------------------------------------
+//all stages are running in sequential process so App alb doesnt have dependency n databases s we used parallel stages
+        stage('Databases And APP ALB') {
+            parallel {
+                stage('Databases') {
+                    steps {
+                        sh """
+                            cd 04-databases/
+                            terraform init -reconfigure
+                            terraform apply -auto-approve
+                        """
+                    } 
+                }
+                stage('Application Load Balancer') {
+                    steps {
+                        sh """
+                            cd 05-app-alb/
+                            terraform init -reconfigure
+                            terraform apply -auto-approve
+                        """
+                    } 
+                }
+            }
+        }
+            
+
+
+Step 4:
+roboshop-Jenkins-shared-libraries\vars --> create a file --> pipelineGlobals.groovy --> used to define global / static variables 
+static final String nexusURL() {
+    return '172.31.23.251:8081'    //or u can give public ip  with route53 nexus.devopswitharun.online:8081 whenever u stop ec2 instance u need to edit new public ip to route53 url
+}
+and inside nodejsVM.groovy 
+
+nexusUrl: "pipelineGlobals.nexusURL()",
+
+
+Build now --> pipeline will success 
+
+Step : 4  
+Roboshop-CD-Application-Code\catalogue-deploy\Jenkinsfile create a jenkins file for RoboShop-Project-CD
+create a backup jenkins file we used for this RoboShop-CD pipeline 
+
+Roboshop-CD-Application-Code\catalogue-deploy\terraform\main.tf ---> inside this we need to call this terraform-roboshop-infra-dev\terraform-roboshop-app-module/main.tf
+at "sudo sh /tmp/bootstrap.sh ${var.tags.Component} ${var.Environment}" addd ---> "sudo sh /tmp/bootstrap.sh ${var.tags.Component} ${var.Environment} ${var.app_version}"
+
+inside variables.tf add below 
+variable "app_version" {
+}
+
+Now in Roboshop-CD-Application-Code\catalogue-deploy\terraform\main.tf ---> rename it to main.tf.bkp
+
+create a main.tf in above folder --> addd 
+
+module "catalogue" {
+#   source = "../terraform-roboshop-app-module"
+  source = "git::https://github.com/devopswitharunkumar/terraform-roboshop-infra-dev.git//terraform-roboshop-app-module?ref=main"
+  vpc_id = data.aws_ssm_parameter.vpc_id.value
+  component_sg_id = data.aws_ssm_parameter.catalogue_sg_id.value
+  private_subnet_id = split(",", data.aws_ssm_parameter.private_subnet_id.value)
+  iam_instance_profile = var.iam_instance_profile
+  Project_Name = var.Project_Name
+  Environment = var.Environment
+  common_tags = var.common_tags
+  tags = var.tags
+  zone_name = var.zone_name
+  app_alb_listner_arn = data.aws_ssm_parameter.app_alb_listner_rule.value
+  alb_listner_rule_priority = var.alb_listner_rule_priority
+  app_version = var.app_version
+}
+
+in variables.tf --> app version
+
+variable "iam_instance_profile" {
+    default = "TerraformRoleForEc2"
+}
+
+Now Add ---> VPN sg  to agent 
+
+
+Run --> http://jenkins.devopswitharun.online:8080/job/RoboShop-Project-Infra-Dev/job/RoboShop-Project-Infra-dev/
+
+Multi Branch pipeline run Steps:
+------------------------------------------
+Terraform infra and Ansible configuration will be done here up to 05-alb
+In Jenkins Dashboard ---> RoboShop-Project-Infra-dev folder --> RoboShop-Project-Infra-Dev pipeline --> build now with parameters --> Apply option and Destroy for destroy 
+
+In Jenkins Dashboard --->  RoboShop-Project -->select catalogue-CI  --> select feature-1 pipeline --->  run the pipeline ---> it will automatically trigger catalogue-CD-deploy pipeline automatically --> we implemented like that 
+
+To work catalogue ---> Add roboshop-dev-vpn sg to Agent instance 
+ 
+
+
+
+Change Management Process :
+----------------------------------------
+"In every real company, especially banking, healthcare, insurance, telecom, and fintech projects, we cannot deploy directly to Production. Every Production deployment must go through a Change Management process to ensure the deployment is safe, approved, auditable, and can be rolled back if any issue occurs."
+
+Overall Flow
+Business Requirement --->Development ---> DEV Testing ---> SIT Testing ---> UAT Testing ---> Raise Change Request (CR) ---> Approvals ---> Production Deployment ---> Post Deployment Validation ---> Close Change Request
+
+Step 1: Development Phase .... Suppose the business wants a new feature.
+
+Example: Add a new payment validation in the Catalogue application.
+
+Developer will
+Create feature branch
+Develop the feature
+Commit code
+Raise Pull Request
+Merge after review
+
+Then the Jenkins pipeline starts.
+Pipeline stages:
+Git Checkout ----> Build ----> Unit Testing ----> SonarQube ----> Security Scan ----> Package ----> Deploy to DEV
+
+Step 2: Testing in Multiple Environments
+We never deploy directly to Production. The application moves through multiple environments.
+Developer ---> DEV ---> SIT ---> UAT ---> Production
+
+Each environment has its own purpose.
+
+CIT1/DEV   : Developers verify -----> Build succes , Unit tests , Smoke testing basically
+SIT               : QA Team performs Functional Testing , Regression Testing , Integration Testing
+UAT             : Business users verify, Business functionality,User Acceptance Testing and  
+
+Only after business approval can we move to Production.
+
+
+Step 3: Why Change Management?
+
+Production is very sensitive : If we deploy directly, Banking transactions may fail. Customers may not access the application. Business loses money. Therefore every company follows a Change Management process.
+
+Step 4: Raise Change Request (CR)
+After UAT is successful, DevOps Engineers raise a Change Request (CR).
+This is created in ---> Jira Service Management , ServiceNow , BMC Remedy
+Every company has its own tool. 
+
+Example
+CR Number CHG00012345
+
+Step 5: What Information Goes into the CR?
+A Change Request contains: 
+Project Code (Ex: RoboShop), 
+Application Name (Example : Catalogue) , 
+Jira Story ID (Example JIRA-4567) and This links the deployment to the development work.
+Version (Example : 2.3.1)
+Deployment Date
+Deployment Time
+Environment : Production
+Jenkins Build URL ---> Attach Build #120 i.e., attach build results 
+Test Results
+Attach
+Unit Test Report
+SonarQube Report
+Security Scan Report
+QA Report
+
+Deployment Plan : Stop Application ---> Backup ---> Deploy ---> Restart ---> Verify
+Rollback Plan : If deployment fails : Deploy Previous Build or Helm Rollback or Terraform Rollback
+
+Validation Plan :
+Example : Login ---> API Testing ---> Database Check ---> Smoke Testing ---> Business Validation
+
+Step 6: CR Status
+Initially : NEW ---> Pending Approval ---> Approved ---> Scheduled ---> Implemented ---> Finally ---> Closed
+
+Step 7: Approval Process
+The Change Request goes through multiple approvals.
+
+DevOps Engineer ---> Team Lead ---> Delivery Manager ---> Client / Product Owner ---> CAB Approval
+
+1)Team Lead verifies
+Jira Story
+Build
+Version
+Test Reports
+Deployment Plan
+
+2)Delivery Manager verifies
+Business impact
+Deployment window
+Risk
+
+3)Client Approval : Some companies also require client approval before Production deployment.
+
+4)CAB = Change Advisory Board
+
+Members include
+Project Manager
+Delivery Manager
+Infrastructure Team
+Security Team
+Database Team
+Business Owner
+
+Only after CAB approval is the Production deployment allowed.
+
+Step 8: Jira and Jenkins Integration
+
+The CR is integrated with Jenkins.
+Jira ---> Change Request ---> Approval ---> Trigger Production Pipeline ---> Jenkins Pipeline
+
+The Production pipeline will start only after:
+CR is approved . Scheduled deployment time has arrived Otherwise Jenkins will not deploy.
+
+Step 9: Production Deployment
+DevOps Engineer starts deployment.
+
+Pipeline
+Checkout ---> Download Artifact ---> Deploy ---> Restart Services ---> Health Check
+or
+Helm Upgrade ---> Rolling Update ---> Smoke Test
+or
+Terraform Apply ---> Infrastructure Update ---> Verification
+
+Step 10: Post Deployment Testing
+
+After deployment
+
+Application team performs
+
+Smoke Testing
+Sanity Testing
+API Testing
+Login Testing
+Database Validation
+Business Validation
+
+Only after successful validation is the deployment declared successful.
+
+Step 11: Rollback
+Suppose deployment fails. Then DevOps follows the rollback plan.
+
+Example
+Deploy Previous Artifact
+or
+helm rollback
+or
+kubectl rollout undo and Rollback should already be documented in the Change Request before deployment starts.
+
+Step 12: Close the Change Request
+After successful deployment,
+
+Update
+
+Actual Start Time
+Actual End Time
+Deployment Status
+Validation Result
+
+Then close the CR.
+
+Production Pipeline
+
+Generally :    DEV Pipeline --->SIT Pipeline ---> UAT Pipeline  ---> Separate Production Pipeline through CR process
+
+The Production pipeline usually has:
+
+Additional approvals
+Restricted access
+Manual confirmation
+Change Request validation
+Audit logging
+
+Only authorized DevOps engineers or Release Managers can execute it.
+
+Real Interview Answer (4+ Years DevOps)
+
+"In our project, after development and successful testing in DEV, SIT, and UAT, the DevOps team raised a Change Request in Jira Service Management or ServiceNow. The CR included the project code, application name, Jira story ID, application version, deployment schedule, implementation plan, rollback plan, validation plan, Jenkins build URL, and testing reports such as QA, SonarQube, and security scan results. The request then went through approvals from the Team Lead, Delivery Manager, and, where required, the client and Change Advisory Board (CAB). Once approved and during the scheduled maintenance window, the Production Jenkins pipeline was triggered. The deployment was performed using our CI/CD pipeline, followed by smoke testing, API validation, and business verification. If any issue occurred, we executed the predefined rollback plan. After successful validation, we updated the CR with deployment results and closed it. This process ensured that every production deployment was fully approved, traceable, auditable, and low risk."
+
+
+
+Different Environments:
+---------------------------------
+In jenkins UI --> RoboShop-Project --> click catalogue-CD-deploy ---> build with parameters --> whatever env u give based on the environment configuration it will run currently we have files for Dev and Prod 
+path : Roboshop-CD-Application-Code\catalogue-deploy -> Check this folder u will see 2 environments 
+with same process we can create for UAT and pre-prod etc....
+
+
+Now we have created a feature-1 branch ryt in this path ---> Roboshop-CI-Application-Code\catalogue
+if we raise pr ---> after reviewing and approvals --> merge into main branch --> trigger mainbranch pipeline in 
+Jenkins UI ---> RoboShop-Project --> catalogue-CI --> main --> build with parameters --> run and deploy 
+
+
+Step : 5         2389 step continue 
+-----------
+We assume Developer implemented new Api feature for cart application
+Now  Roboshop-CI-Application-Code\catalogue\package.json   ------> update   version to 1.2.0
+
+In server.js --> just think it is a new feature api added to cart application
+
+//Developer added new feature here and version updated to 1.2.0
+app.get('/healthcheck', (req, res) => {
+    var stat1 = {
+        app: 'OK',
+        mongo: mongoConnected
+    };
+    res.json(stat1);
+});
+
+Now push to feature-1 branch
+
+Now in Jenkins Ui --> RoboShop-project --> catalogue-ci --> th -1  -----> run this pipeline 
+So CI --> done --> CD Done automatically
+
+Now raise the PR --> from feature-1 to main branch 
+Now add a other account as a collaborator --> approve the raised pr ---> then trigger main piepline  
+
+
+
+
+
+
+
+
+
+
+production Flow:
+----------------------
+Now copy terraform-roboshop-infra-dev this folder and rename to terraform-roboshop-infra-prod
+01-vpc --> variables.tf -----> 
+1) change  dev value to prod
+2) change vpc_cidr_block,public_subnet_cidr,private_subnet_cidr,database_subnet_cidr to any number --> like in dev we have 10.0.0.0/16 this we need to change to any like
+10.1.0.0/16 or any number 
+
+change  dev value to prod  ---> do this for all modules from 02-sg to 15-dispatch 
+And create seperate bucket and dynamodb table and provide them in provider.tf 
+
+Now Roboshop-CD-Application-Code\catalogue-deploy\terraform --> in this we have prod folder -- so automatically goes to prod 
+
+To create infra prod 
+to create pipeline for infra -create -prod ---> in JenkinsUI --> RoboShop-project-Infra --> create RoboShop-Project-Infra-Prod pipeline --> give repo url and in script path give ---> Jenkinsfile
+
+To destroy infra dev and prod 
+terraform-roboshop-infra-dev/Jenkinsfile-destroy --> create this file and write destroy pipeline --> in JenkinsUI --> RoboShop-project-Infra --> create RoboShop-Project-Infra-Dev-Destroy pipeline --> give repo url and in script path give ---> Jenkinsfile-destroy
+terraform-roboshop-infra-prod/Jenkinsfile-destroy --> create this file and write destroy pipeline --> in JenkinsUI --> RoboShop-project-Infra --> create RoboShop-Project-Infra-prod-Destroy pipeline --> give repo url and in script path give ---> Jenkinsfile-destroy
+
+
+
+
+
+
+
+
+
+
+Functional testing:
+------------------------
+
+Functional Testing means checking whether the application works according to the business requirements. It focuses on what the application does, not how it is implemented.
+or
+Functional testing is the process of verifying that every feature of an application behaves as expected according to the business requirements and functional specifications.
+
+Example (RoboShop Catalogue Service)
+
+Suppose your Catalogue service provides product information. that is an 
+API : GET /products
+During functional testing, QA verifies:
+
+✅ API returns HTTP 200
+✅ Product list is displayed
+✅ Product name is correct
+✅ Price is correct
+✅ Required fields are present
+✅ Search works correctly
+✅ Filters work correctly
+
+Another Example:  Banking Example
+Suppose you work on an online banking application.
+
+Feature: Fund Transfer
+
+Functional testing checks:
+
+User logs in successfully.
+User enters account details.
+Amount is entered.
+OTP is validated.
+Money is transferred.
+Transaction history is updated.
+Account balance is reduced.
+Confirmation message is displayed.
+
+If all these business functions work correctly, the functional test passes.
+
+Functional Testing vs Smoke Testing
+
+| Smoke Testing                                                      													 						| Functional Testing                                                   |
+| ------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| Checks whether the application starts and basic functionality works				 | Checks every business feature in detail                              |
+| Quick test                                                         																			 | Detailed test                                                        |
+| Performed after deployment                                        												  | Performed after smoke testing                                        |
+| Example: Login page opens                                          												 | Example: Login, Add Product, Delete Product, Checkout, Payment, etc. |
+
+
+Functional Testing vs Sanity Testing
+
+| Functional Testing           | Sanity Testing                        |
+| ---------------------------- | ------------------------------------- |
+| Tests complete functionality | Tests only the modified functionality |
+| Covers all features          | Covers only the affected feature      |
+| More comprehensive           | Faster and more focused               |
+
+
+Real Company Flow
+Developer ---> Build ---> Deploy to DEV ---> Smoke Testing ---> Functional Testing ---> Regression Testing ---> SIT ---> UAT ---> Production
+
+
+Interview Answer (4+ Years DevOps)
+
+"Functional testing verifies that the application's business functionality works according to the requirements. In our project, after deployment to the DEV or SIT environment, the QA team performed functional testing by validating APIs, user workflows, database updates, and business rules. Only after successful functional testing and sign-off was the application promoted to the next environment. As a DevOps engineer, my responsibility was to ensure the deployment was successful and that the environment was stable so the QA team could execute their functional test cases."
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Flow
+------
+
+1. make sure dev and prod infra is ready. get the vpn connected
+2. catalogue
+		create catalogue repo
+		create jenkinsfile
+		point this jenkinsfile to shared libraries. make sure you have shared libraries
+		configured in jenkins system configuration
+		shared library VM pipeline will be called
+				clone
+				get the version from package.json
+				install dependencies
+				unit tests
+				build
+				scans
+					sonar
+					sast
+					open source libraries scans
+					dast
+				if developer opts for deploy we can deploy
+		catalogue-deploy, it is calling terraform-roboshop-app
+		bootstrap script, we are passing environment, version and component
+		bootstrap script will clone roboshop-ansible-roles-tf and run catalogue role
+
+As a DevOps team, we have Nodejs CICD ready ... a new project user module is created..how do u setup 
+
+
+user Module:
+-----------------
+Step :1
+Download user.zip file and unzip 
+create a user folder in ---> Roboshop-CI-Application-Code/user --> paste all extracted files 
+Copy paste Jenkinsfile from catalogue folder and replace name in Jenkinsfile ---> component = "user"
+pus it to remote branch and create a feature-1-user branch for user module 
+
+Step : 2 create a repo name in nexus --> 
+In nexus UI ---> settings --> repositories --> create repository --> maven2 (hosted) --> Name (user) --> version policy -->  Mixed--> layout policy (permissive, Strict)  ---> permissive --> Content deposition --> inline ---> Blob storage (default) --> Deployment Policy --> Allow redeploy  --> create Repository ---> it will generate an url 
+
+Flow :
+When user push the code user module --> Roboshop-CI-Application-Code\user --> using webhook triggers pipeline --> in local flow
+CI
+Roboshop-CI-Application-Code\user folder --> jenkins file 
+def configMap = [
+    application: "nodejsVM",
+    component: "user"
+]
+this and @Library('roboshop-Jenkins-shared-libraries') _ it will trigger and nodejsVM.groovy file and replaces component as user 
+nodejsVM.groovy -- in this file we have mention CD pipeline to trigger so automatically version will be deployed Roboshop-CD-Application-Code\user-deploy in this code will deploy 
+
+Branch rule set 
+In Githun --> devopswitharunkumar/Roboshop-CI-Application-Code --> go to this repo --> settings --> branches --> Branch protection rules --. Add branch protection rules --> Ruleset Name ---> Target branches --> add target --> including patter --> main  --> Branch rules --> select Require a pull request before merging -->  Required approvals any number u can give --> add if u want anything --> create
+
+Now In Jenkin UI --> RoboShop-Project --> new item --> user name --> multi-branch pipeline option --> ccreate --> in general --> branch sources --> git --> add url --> user/Jenkinsfile in script path -> apply save 
+
+Now user-deploy --> configure CD process --> copy catalogue-deploy all files and chnage catalogue to user all files 
+Push to git hub 
+
+Now in Jenkins -UI --> RoboShop-Project --> new item --> user-deploy name --> pipeliine type --> crreate --> in configuration --> pipeliine from SCM --> gitve https://github.com/devopswitharunkumar/Roboshop-CD-Application-Code.git  ---> url --> in jenkins script path ---> user-deploy/jenkinsfile --> apply 
+
+
+
+
+
+
+
+
+
+
+
+In Jenkins
+For Dev Environment 
+1)Jenkins Ui --> RoboShop-Project-Infra folder --> click RoboShop-Project-Infra-dev --> to create dev infra --> after creating --> add roboshop-dev-vpn to agent ec2 before running catalogue CI 
+2)Jenkins Ui --> RoboShop-Project --> catalogue-CI --> feature-1 click --> it will run catalogue-ci process 
+and we added catalogue/Jenkinsfile --> in  catalogue-CI configuration  so it will run only catalogue modeule even we have catalogue and user in repositoy 
+
+catalogue-deploy/Jenkinsfile
+3)Jenkins Ui --> RoboShop-Project --> catalogue-CD-deploy pipeline --> build with parameters --> so it will run https://github.com/devopswitharunkumar/Roboshop-CD-Application-Code.git --> catalogue-deploy/Jenkinsfile file only catalogue will deploy because we mentioned catalogue-deploy/Jenkinsfile in pipeline configuration --> it does not merge with user code
+
+User module 
+2)Jenkins Ui --> RoboShop-Project --> user-CI --> feature-1 click --> it will run user-ci process 
+and we added user/Jenkinsfile --> in  user-CI configuration  so it will run only user modeule even we have user and user in repositoy 
+
+user-deploy/Jenkinsfile
+3)Jenkins Ui --> RoboShop-Project --> user-CD-deploy pipeline --> build with parameters --> so it will run https://github.com/devopswitharunkumar/Roboshop-CD-Application-Code.git --> user-deploy/Jenkinsfile file only user will deploy because we mentioned user-deploy/Jenkinsfile in pipeline configuration --> it does not merge with user code
+
+
+For Prod Environment :
+1)Jenkins Ui --> RoboShop-Project-Infra folder --> click RoboShop-Project-Infra-prod --> to create prod infra --> after creating --> add roboshop-prod-vpn to agent ec2 before running catalogue CI 
+
+So now no change or create pipelines for catalogue Ci and catalogue-deploy --> existing pipeliine is sufficient it can manage either dev or prod environment we used multi-environment support 
+Roboshop-CD-Application-Code\user-deploy\terraform --> check this folder there is prod folder when if prod env it will rin prod we configured that -----> in CI and CD pieplines
+
+Create them manually in SSM parameter store for prod env 	
+/roboshop/dev/mysql_root_password     		--> value : RoboShop@1
+/roboshop/dev/rabbitmq_password 			    --> value : roboshop
+/roboshop/dev/rabbitmq_user                         --> roboshop123
+
+
+
+
+
+
+
+So We did Jenkins VM baesed deployment now a day no one is using this deployment so all are using docker and kubernetes
+We were used to deploy the Applications in Vm's but later we migrated into the docker and kubernetes 
+How u used to do in VM"s based deployment 
+Still we have few lagacy applications running in VM's and we are planning them for migrating to docker and kubernetes and some application are already migrated 
+
+So we have diff kind of pipelines for VM's 
+we have nodejsVm pipeline script for nodeJS based applications
+we have javaVm pipeline script for java based applications
+any deployment languate and any deployment platform we support 
+
+
+CI/CD Pipeline
+-------------------
+Developer --->  Push code to GitHub ---> Webhook triggers ---> Jenkins pipeline---> Checkout Code ---> Compile ---> Unit Testing ---> SonarQube Analysis ---> Quality Gate ---> OWASP Scan ---> Build Artifact ---> Docker Build ---> Push Docker Image ---> Deploy it in Kubernetes ---> Smoke Test ---> send Notification frompost loc
+
+Webhook --> confiured in each repo settings section -- webhook and in pipeline configuration u need to select github hook option 
+
+
+
+
+Interview: Explain Your Jenkins Pipeline
+Answer
+
+"In my current project, we use Jenkins Declarative Pipelines with Shared Libraries to standardize the CI/CD process across multiple microservices. 
+Instead of writing the same logic in every Jenkinsfile, we created reusable functions in a Shared Library, and each application's Jenkinsfile simply passes configuration such as the component name and application name."
+
+
+CI Pipeline Flow:
+1. Agent Selection
+
+agent {
+    node {
+        label 'Agent-1'
+    }
+}
+
+"The pipeline executes on a dedicated Jenkins agent instead of the Jenkins controller. The agent is preconfigured with tools like Git, Terraform, Node.js, AWS CLI, and has the required permissions. Using agents distributes the workload and avoids overloading the Jenkins master."
+
+2. Parameters
+
+parameters {
+	 choice(name:'environment', choices:['dev','prod'])
+	 booleanParam(name:'Deploy')
+}
+
+Explain
+
+"The pipeline accepts the deployment environment (Dev or Prod) and a Deploy flag. If Deploy is false, the pipeline performs only CI activities like build and artifact publication. If true, it triggers the CD pipeline after publishing the artifact."
+
+
+3. Environment Variables
+
+environment {
+    packageVersion=''
+}
+
+Explain
+
+"We use environment variables to store values that are required across multiple stages. In our case, the application version extracted from package.json is reused during artifact publication and deployment."
+
+4. Get Version stage 
+readJSON file:"package.json"
+Explain
+
+"We read the application version dynamically from package.json. This avoids hardcoding the version and ensures the artifact uploaded to Nexus matches the application's actual version."
+
+5. Install Dependencies stage
+npm install
+Explain
+
+"The pipeline installs the required Node.js runtime and downloads all project dependencies using npm install. This prepares the application for build and testing."
+
+6. Unit Testing stage
+
+echo "Unit Testing"
+Explain
+
+"In production, this stage runs automated unit tests. In our lab setup, it contains a placeholder, but in enterprise projects this stage executes the application's unit test suite before proceeding."
+
+7. SonarQube Scan stage
+sonar-scanner
+Explain
+
+"After the build, we perform static code analysis using SonarQube to identify bugs, code smells, and security vulnerabilities. The Quality Gate must pass before the artifact is promoted."
+
+(Mention that in your current practice project it is mocked with echo, but in real projects it runs sonar-scanner.)
+
+8. Build Package
+zip catalogue.zip --> usinf zip command 
+
+Explain
+
+"Once validation is complete, we package the application into a ZIP artifact, excluding unnecessary files such as the .git directory. This package is what gets deployed."
+
+9. Publish Artifact
+
+nexusArtifactUploader()  --> usinf this block we can push zip file to nexus 
+
+Explain
+
+"The generated artifact is uploaded to the Nexus Repository Manager. We use versioning so every build is stored uniquely, allowing us to roll back to previous versions if required."
+
+10. Trigger CD Pipeline
+
+Explain
+
+"If deployment is requested, the CI pipeline triggers the CD pipeline and passes parameters such as the application version and target environment. The CD pipeline then deploys the same artifact to the selected environment."
+
+CD Pipeline
+
+1. Receive Parameters
+
+version
+environment
+Explain
+
+"The CD pipeline receives the artifact version and environment from the CI pipeline. This ensures the exact artifact produced during CI is deployed."
+
+2. Terraform Init
+terraform init
+Explain
+
+"Terraform initializes the working directory, downloads providers, and configures the remote backend for the selected environment."
+
+
+3. Terraform Plan
+terraform plan
+Explain
+
+"Terraform compares the desired infrastructure with the existing infrastructure and generates an execution plan showing the proposed changes."
+
+4. Terraform Apply
+terraform apply
+Explain
+
+"After reviewing the plan, Terraform provisions or updates AWS infrastructure such as EC2 instances, security groups, load balancer configuration, and application deployment."
+
+
+Shared Library
+Explain
+
+"To avoid code duplication, we moved common pipeline logic into a Jenkins Shared Library. Each microservice Jenkinsfile simply invokes the shared library and passes a configuration map containing values like the component name. This improves maintainability and ensures all services follow the same CI/CD process."
+
+Why Separate CI and CD?
+Explain
+
+"We separated CI and CD to keep build and deployment responsibilities independent. CI focuses on building, testing, code quality checks, and publishing artifacts, while CD is responsible for infrastructure provisioning and deployment. This separation makes the pipelines easier to maintain and allows the same artifact to be deployed across multiple environments."
+
+Your Responsibilities (4+ Years)
+
+"I was responsible for maintaining Jenkins pipelines, developing Shared Libraries, configuring Jenkins agents, integrating SonarQube and Nexus, automating infrastructure deployment with Terraform, troubleshooting pipeline failures, managing credentials securely through Jenkins Credentials, and supporting deployments across development and production environments."
+
+
+Interview Tip
+
+When explaining a Jenkins pipeline, always follow this order:
+
+Code Checkout
+        ↓
+Build
+        ↓
+Install Dependencies
+        ↓
+Unit Testing
+        ↓
+SonarQube Scan
+        ↓
+Package Application
+        ↓
+Publish Artifact to Nexus
+        ↓
+Trigger CD Pipeline
+        ↓
+Terraform Init
+        ↓
+Terraform Plan
+        ↓
+Terraform Apply
+        ↓
+Application Deployed
+
+
+Interviewer: Can you explain your Jenkinsfile?
+
+Answer:
+
+"In my project, we use a Declarative Jenkins Pipeline with a Shared Library. The Jenkinsfile is very lightweight because most of the common CI logic is implemented in the Shared Library, and each application passes only its configuration, such as the component name.
+The pipeline starts by allocating a Jenkins agent where all the required tools like Git, Node.js, Terraform, AWS CLI, and Jenkins plugins are already installed.
+Next, it accepts input parameters such as the target environment (Dev or Prod) and whether deployment should be triggered.
+It then reads the application version dynamically from the package.json file to ensure the correct version is used throughout the pipeline.
+After that, the pipeline installs project dependencies using npm install, executes unit tests, and performs SonarQube static code analysis to verify code quality.
+Once the quality checks pass, it packages the application into a ZIP file and uploads the artifact to Nexus Repository Manager with versioning.
+Finally, if deployment is selected, the CI pipeline triggers the CD pipeline by passing the application version and target environment. The CD pipeline then performs Terraform Init, Plan, and Apply to provision or update the infrastructure and deploy the application."
+
+Short Version (2 minutes)
+
+"A Jenkinsfile is a Pipeline as Code file written in Groovy that automates the CI/CD process. In my project, our Jenkinsfile runs on a Jenkins agent, installs dependencies, executes unit tests, performs SonarQube analysis, packages the application, publishes the artifact to Nexus, and finally triggers the CD pipeline. The CD pipeline receives the artifact version and environment from the CI pipeline and uses Terraform to deploy the application to the target AWS environment. We also use Jenkins Shared Libraries to avoid duplicating common pipeline logic across multiple microservices."
+
+
+
+
+Jenkins Credentials
+"Jenkins Credentials provide a secure way to store sensitive information such as usernames, passwords, SSH keys, API tokens, AWS access keys, and secret text. 
+Instead of hardcoding these values in the Jenkinsfile, we store them securely in Jenkins and reference them using a Credentials ID."
+
+Why do we use them?
+Avoid hardcoding passwords in Jenkinsfiles.
+Secure sensitive information.
+Centralized credential management.
+Easy to rotate passwords without changing pipeline code.
+
+
+Types of Jenkins Credentials
+| Type                               				    | Used For                        |
+| ----------------------------- 				    | ------------------------------- |
+| Username with Password            | Nexus, Git, Docker Registry     |
+| Secret Text                                      | API Tokens, Sonar Token         |
+| SSH Username with Private Key | GitHub SSH, Remote Server Login |
+| Secret File                                       | kubeconfig, certificates        |
+| Certificate                   					| SSL/TLS authentication          |
+
+
+How to Create Credentials  ----> In Jenkins UI ----> Manage Jenkins ----> Credentials ----> System ----> Global Credentials ----> Add Credentials
+
+Using Credentials in Pipeline
+
+1. Username & Password (Nexus)
+In Jenkins UI ----> Manage Jenkins ----> Credentials ----> System ----> Global Credentials ----> Add Credentials       -----> manually create first 
+Username : admin
+Password : admin123
+Credential ID : nexus-login-credentials
+
+In Pipeline 
+withCredentials([
+    usernamePassword(
+        credentialsId: 'nexus-login-credentials',
+        usernameVariable: 'USERNAME',
+        passwordVariable: 'PASSWORD'
+    )
+]) {
+    sh """
+        curl -u $USERNAME:$PASSWORD http://nexus.example.com
+    """
+}
+
+When this block executes:
+
+Jenkins looks for nexus-login-credentials.
+Retrieves the stored username and password.
+Creates temporary environment variables:
+USERNAME=admin
+PASSWORD=admin123
+Executes the shell command.
+Removes those variables after the block finishes.
+
+2. Secret Text (Sonar Token)
+
+Credential Type : Secret Text
+Credential ID : sonar-token
+Secret : xxxxxxxxxxxxx
+
+In Pipeline
+withCredentials([
+    string(credentialsId: 'sonar-token',
+           variable: 'SONAR_TOKEN')
+]) {
+
+    sh """
+        sonar-scanner -Dsonar.login=$SONAR_TOKEN
+    """
+}
+
+3. SSH Private Key
+
+Credential Type :
+SSH Username with Private Key
+
+In Pipeline
+sshagent(['github-ssh']) {
+    sh 'git clone git@github.com:company/project.git'
+}
+
+4. AWS Credentials
+
+withCredentials([
+    usernamePassword(
+        credentialsId: 'aws-creds',
+        usernameVariable: 'AWS_ACCESS_KEY_ID',
+        passwordVariable: 'AWS_SECRET_ACCESS_KEY'
+    )
+]) {
+    sh 'aws s3 ls'
+}
+
+
+
+
+
+Your Project In your Jenkinsfile you already have:
+
+nexusArtifactUploader(
+    credentialsId: 'nexus-login-credentials',
+    ...
+)
+
+So before running this pipeline, you must create a Jenkins credential with the ID: nexus-login-credentials
+The nexusArtifactUploader plugin will automatically fetch the username and password from Jenkins. You don't need to write withCredentials() in this case because the plugin itself knows how to use the credentialsId.

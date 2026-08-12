@@ -1,0 +1,222 @@
+1st way  manually 
+------------
+
+Create a ec2 instance with 30 gb store and t3 medium
+copy public ip and open it in superputty
+sudo su -
+labauto 
+give 51
+select option 3  install.sh
+
+Step 3: Update
+dnf update -y
+
+Step 4: Install Java
+dnf install java-17-openjdk java-17-openjdk-devel wget tar unzip -y
+java -version
+
+Step 5: Create Nexus User
+useradd -r -m -d /opt/nexus -s /bin/bash nexus
+id nexus
+
+Step 6: Download Nexus
+cd /opt
+
+wget 							 https://download.sonatype.com/nexus/3/nexus-3.83.1-03-linux-x86_64.tar.gz
+wget -O nexus.tar.gz https://download.sonatype.com/nexus/3/nexus-3.83.1-03-linux-x86_64.tar.gz
+ls -lh
+
+Step 7: Extract
+tar -xzf nexus-3.83.1-03-linux-x86_64.tar.gz
+mv nexus-3.83.1-03 nexus
+
+
+Step 8: Create Sonatype Work
+mkdir /opt/sonatype-work
+
+Step 9: Permissions
+chown -R nexus:nexus /opt/nexus
+
+chown -R nexus:nexus /opt/sonatype-work
+
+Step 10: Configure Nexus
+
+vi /opt/nexus/nexus-3.83.1-03/bin/nexus.rc
+
+run_as_user="nexus"
+
+or 
+
+echo 'run_as_user="nexus"' > /opt/nexus/nexus-3.83.1-03/bin/nexus.rc
+
+Step 11: Configure Memory (Very Important for t2.small)
+
+vi /opt/nexus/nexus-3.83.1-03/bin/nexus.vmoptions
+
+-Xms512m
+-Xmx512m
+
+or 
+-Xms768m
+-Xmx768m
+
+head -5 /opt/nexus/nexus-3.83.1-03/bin/nexus.vmoptions
+
+Step 12: Create systemd Service
+vi /etc/systemd/system/nexus.service
+paste this 
+
+[Unit]
+Description=Nexus Repository Manager
+After=network.target
+
+[Service]
+Type=forking
+
+User=nexus
+Group=nexus
+
+LimitNOFILE=65536
+
+Environment="JAVA_HOME=/usr/lib/jvm/java-17-openjdk"
+
+ExecStart=/opt/nexus/nexus-3.83.1-03/bin/nexus start
+ExecStop=/opt/nexus/nexus-3.83.1-03/bin/nexus stop
+
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
+Step 13: Reload
+systemctl daemon-reload
+systemctl enable nexus
+systemctl start nexus
+
+systemctl status nexus
+
+ss -lntp | grep 8081
+
+Step 18: Browser
+http://<EC2-Public-IP>:8081
+
+Step 19: Get Admin Password
+cat /opt/nexus/sonatype-work/nexus3/admin.password
+
+
+
+
+
+
+2nd ways script 
+================
+#!/bin/bash
+
+set -e
+
+echo "==============================="
+echo " Nexus Installation Started"
+echo "==============================="
+
+# Update packages
+echo "Updating system..."
+dnf update -y
+
+# Install Java and required packages
+echo "Installing Java and utilities..."
+dnf install -y java-17-openjdk java-17-openjdk-devel wget tar unzip
+
+echo "Java Version:"
+java -version
+
+# Create nexus user
+echo "Creating Nexus user..."
+if ! id nexus &>/dev/null; then
+    useradd -r -m -d /opt/nexus -s /bin/bash nexus
+fi
+
+# Download Nexus
+cd /opt
+
+echo "Downloading Nexus..."
+wget -O nexus.tar.gz https://download.sonatype.com/nexus/3/nexus-3.83.1-03-linux-x86_64.tar.gz
+
+# Extract Nexus
+echo "Extracting Nexus..."
+tar -xzf nexus.tar.gz
+
+# Rename directory
+mv nexus-3.83.1-03 nexus
+
+# Create Sonatype work directory
+mkdir -p /opt/sonatype-work
+
+# Set permissions
+chown -R nexus:nexus /opt/nexus
+chown -R nexus:nexus /opt/sonatype-work
+
+# Configure nexus user
+echo 'run_as_user="nexus"' > /opt/nexus/nexus-3.83.1-03/bin/nexus.rc
+
+
+# Create systemd service
+cat > /etc/systemd/system/nexus.service <<EOF
+
+ 
+[Unit]
+Description=Nexus Repository Manager
+After=network.target
+
+[Service]
+Type=forking
+
+User=nexus
+Group=nexus
+
+LimitNOFILE=65536
+
+Environment="JAVA_HOME=/usr/lib/jvm/java-17-openjdk"
+
+ExecStart=/opt/nexus/nexus-3.83.1-03/bin/nexus start
+ExecStop=/opt/nexus/nexus-3.83.1-03/bin/nexus stop
+
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+
+# Reload systemd
+systemctl daemon-reload
+
+# Enable service
+systemctl enable nexus
+
+# Start Nexus
+systemctl start nexus
+
+echo
+echo "Waiting 30 seconds for Nexus to start..."
+sleep 30
+
+echo
+echo "==============================="
+echo "Nexus Status"
+echo "==============================="
+systemctl status nexus --no-pager
+
+echo
+echo "Nexus Installation Completed!"
+
+echo "Admin Password:"
+echo "cat /opt/sonatype-work/nexus3/admin.password"
+
+
+
+
+
+
+
+
+
+
+

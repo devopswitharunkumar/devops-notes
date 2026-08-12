@@ -1,0 +1,2761 @@
+Important concepts:
+
+------------------
+Ansible Architecure
+Pull and push based Architecure
+
+
+Ansible:
+-----------
+Ansible is an open-source, agentless automation and configuration management tool used to configure servers, deploy aplications, and automate IT tasks.
+It allows us to manage hundreds/thousands of servers from a single server(i.e.,controller node) we can login hundreds of managed nodes/servers without manually logging into each managed  server and perform tasks and required operations.
+Ansible follows a push-based architecture where the control node(we need to install ansible package in this server) connects to managed nodes using SSH for Linux or WinRM for Windows, pushes the required modules, executes tasks defined in YAML playbooks, collects the result, and removes temporary files.
+Since Ansible is agentless, we don't need to install any additional software or agents on managed servers.
+Compared to shell scripting, Ansible provides better features like idempotency, inventory management, reusable roles, error handling, variables, templates, and easier management of large-scale environments.
+
+q)If interviewer asks "How did you use Ansible in your project?"
+Answer:
+In our project, we used Ansible for configuration management and application deployment. We maintained Ansible roles for each component like frontend, backend services, databases, and common configurations.
+We used inventories to manage servers, variables for environment-specific configurations, templates for dynamic configuration files, handlers for service restarts, and Ansible Vault/secret management for sensitive information.
+This helped us achieve consistent deployments across multiple environments like dev, QA, and production.
+
+DevOps Engineer
+      |
+      |
+      v
+Ansible Control Node(Ansible installed)
+
+      |
+      | connect via SSH to
+      |
+      v
+
+Managed Nodes
+(App servers, DB servers)
+to perform tasks 
+- Install packages
+- Configure files
+- Deploy applications
+- Restart services
+
+Ansible architecture :
+---------------------------
+Ansible follows an agentless push-based architecture where the Ansible control node manages multiple remote servers (managed nodes) using SSH communication.
+The control node reads inventory and YAML playbooks, converts tasks into modules, transfers those modules to managed nodes, executes them, collects the results, and removes temporary files after execution.
+  devops engineer ---> control node(ansible package must be installed) ---connect through SSH to--> managed nodes/target servers (multiple servers)
+  
+ 1. Control Node
+What is Control Node --> The machine where Ansible software is installed is called the control node.
+contro node contains --> roles,main.yaml.ansible.cfg and inventory file
+Responsibilities of control node
+1. Reads configuration --> ansible.cfg
+2. Reads inventory  --> Control node understands --> Where should I connect?
+3. Reads playbook  --> Control node understands --> What should I do?
+4. Control node connects or Establish SSH connection with managed node servers using username and password or private key mentioned in ansibe.cfg or from Ansibe vault
+
+2. Managed Nodes
+What are Managed Nodes --> Servers controlled by Ansible. and these servers are agentless.
+Control node sends instructions. Managed node executes: dnf install nginx
+
+3. Inventory
+Inventory tells Ansible ---> "Which servers should I manage?"
+two types:
+1)static inventory         --> where we mention server info directly like rouse53 domain name -->  web.devopswitharun.online in inventory file
+2)Dynamic inventory   --> Ansibe fetches the multiple server info like host ip address and name automatically configure servers and deploy applications (like in big billion days auto scaling and fetches info of those ec2 and deploy)
+
+4. Playbooks
+Playbooks tell ---> "What operations/tasks should be performed?" Written in YAML. ex: Go to web servers install nginx,create user tasks etc
+
+5. Modules are actual workers.
+dnf:
+ name: nginx
+Behind:
+Ansible dnf module ----> executes package installation  and Common modules --> dnf,copy,template,service,user,file,command,shell
+
+6. Plugins
+Plugins extend Ansible functionality.
+Connection plugin --> SSH plugin
+Inventory plugin
+Example: AWS dynamic inventory: gets EC2 list.
+Callback plugin --> Controls output/logging.
+
+7. Roles ---> Roles organize playbooks. --> proper folder structure foe each module mongodb,catalogue etc --> Reusable.
+8. Variables --> Avoid hardcoding.
+Before: port: 8080
+After: port: "{{APP_PORT}}" then in variables file we can mention like below and u can use in main.yaml like vars_files: -  variables.yaml
+Variable: APP_PORT: 8080
+9. Templates
+Dynamic configuration files.
+Example:
+catalogue.service.j2
+MONGO={{mongodb_host}}
+During execution: MONGO=mongodb.devopswitharun.online
+10. Vault --> Used to store secrets. like username and password,tokens,certificates etc and we can entrypt that files
+
+Ansible is an agentless push-based architecture. The control node contains Ansible installation, playbooks, inventories, roles, and configuration files.
+It connects to managed nodes using SSH, transfers required modules temporarily, executes the tasks, collects the output, and removes temporary files. 
+Managed nodes don't require any agent installation, only SSH connectivity and Python are required. 
+We used roles, inventory, templates, variables, and vault to automate deployments across environments.
+
+
+
+Configuration management --> is the process of maintaining servers, applications, and infrastructure in a desired and consistent state by automating installation, configuration, updates, and management of resources.
+Tools like Ansible ensure required packages, users, services, files, and configurations are consistently maintained across multiple servers. It helps avoid configuration drift and provides automation, consistency, and reliability."
+
+Feautures :
+----------
+1)Idempotency --> means running the same automation task multiple times will produce the same result without making unnecessary duplicate changes.
+In shell if u run useradd roboshop cmd -->first time it will create user if not present if u run 2nd time if user exist script will fail because of that we must need to handle this by shell script logic
+but in Ansible it handles automatically if user not exist it will create if exists it will skip and no changes will happen and no errors/failures 
+in ansible
+User not exists
+changed=1
+failed=0
+User already exists
+changed=0
+failed=0
+2)Agent less  --> Ansible does not require any agent/software installed on managed nodes/target servers.
+Linux  → SSH
+Windows → WinRM
+Only Ansible package will be installed on Control node and no installation need on managed nodes we can login to control node we can do things in managed nodes 
+Connect using SSH ---> Execute module ---> Return result
+3)scalable   --> Ansible can manage hundreds/thousands of servers from one controller node. we can configure at a time using inventory and parallel execution.
+4)Platform independent ---> Ansible supports automation across different operating systems and platforms. os like linux,windows etc and cloud --> aws,azure,gcp etc and containers kubernetes and docker
+5)Configuration Management --> maintains infrastructure and servers in the desired state automatically
+6)Readability   -->Ansible uses YAML-based playbooks, which is human-readable and easy to understand.
+7)Error Handling --> Ansible automatically detects failures and reports errors. in shell u need to handle manually using validate functions like that but in ansible handles automatically
+If failed:
+Output: TASK FAILED --> Host: server1 --> Reason:Package mysql not found --> Automatically stops and reports.
+8)Dry Run -->Dry run shows what changes Ansible will perform without actually applying them.
+Ex: ansible-playbook nginx.yml --check
+9)Templates --> Templates are used to create dynamic configuration files using variables.Ansible uses: Jinja2 templates(i.e., .j2 files) in this file server_port={{PORT}} and in vars file mention value
+Same template can be reused for dev, QA, prod.
+10)Huge Module Support --> Ansible provides thousands of ready-made modules to automate different technologies.
+Ready modules for AWS/Linux/Docker/K8s etc
+11) Reusability using Roles --> Ansible roles allow reusable and structured automation.
+12) Inventory Management --> Ansible manages servers using inventory.
+13) Security using Vault --> Ansible Vault encrypts sensitive information.
+
+
+
+Disadvantages:
+-------------
+1)Slower Than Some Tools Because it Uses SSH connection each time because agent less and Tools like Puppet/Chef have agents.
+2)YAML Indentation Issues
+3)Not Best for Complex Logic
+4)No Built-in State Storage --> Ansible does not maintain state file
+
+control node connects by using below command 
+Currently im in control node running below command but login into managed/control node
+
+sudo sshpass -p "DevOps321" ssh ec2-user@54.161.47.33 
+-----------------------------------------------------------------------------
+
+I have two servers one is control node and the other is managed/target node now im in control node and from control node i can login to managed/target node and we can do anything like installing packages and creating files and content etc..by using commands 
+
+in control node we are running the command but the will be created in the managed/target node like wise we can install packages etc..without login to multiple/100 servers each time by using control node we can login to all managed/target nodes and perform tasks
+server connects to managed/target node from control node and perform tasks
+ex:
+sshpass -p "DevOps321" ssh ec2-user@54.161.47.33 "echo Hi this is arun > /tmp/hi.txt"     --> file hi.txt will be created in managed node and content will be paster=d in that file
+--------------------------------------------------------------------------------------------------------------------
+
+Ex: if i want to install mysql in 100 servers manually or shell i need to login to each ec2 server and install 
+but in ansible we can just login to one control node and we can install mysql in all 100 managed/target nodes by putting ip address column in for loop 
+to install my sql in target server but running this command in control node
+ex:
+sudo sshpass -p "DevOps321" ssh ec2-user@54.161.47.33 "curl -s https://raw.githubusercontent.com/devopswitharunkumar/shell-script/main/09-install-mysql.sh | sudo bash"
+
+-s -> silent mode
+in backgroung control node connects to managed node server/target server through SSH and it will run the command in that target node/server and it will exit from target server
+
+one control server can connect to 100's of server and can install packages and we can perform multiple tasks
+
+
+PUSH based (by default):
+------------------------
+Ansible is by default push based architecture.Controller decides WHEN changes happen.The control node/server connects to target servers/nodes and The push happens only when u run (ansible-playbook main.yaml )
+Nothing happens automatically.The control node is just sitting idle.
+When you execute:
+ansible-playbook main.yaml    
+--> Control node wakes up reads inventory and ansibe.cfg and playbook and connect via ssh and push modules/tasks and Changes performed in managed nodes and takes the result and remove the temporary playbook files(path : ./ansibe/tmp/) and exit from remote server
+
+Important: Managed node does not ask/check for any changes --> Controller pushes the changes when u execute playbook .
+
+we do manually like ansible-playbook main.yaml but
+Then how companies automate it?
+They don't manually run always. They trigger Ansible using CI/CD tools.
+1)Developer commits change ---> GitHub webhooks ------> Jenkins pipeline starts -----> Jenkins runs : ansible-playbook main.yaml --> Ansible pushes changes
+or 
+2. Jenkins script
+Pipeline:
+sh """
+ansible-playbook main.yaml
+"""
+or
+3. Scheduler
+Example cron: 
+crontab -e --> Run every night 1 AM(we place this line in that file) ---->  0 1 * * * ansible-playbook main.yaml
+4. Ansible Automation Platform / AWX
+Enterprise way: Schedule: Every day 10 PM --> Run playbook automatically
+
+Ansible follows push-based architecture. Managed nodes do not continuously check for changes. The control node initiates communication and pushes configurations whenever a playbook execution is triggered manually,or through CI/CD pipelines like Jenkins, or through scheduled automation(like crontab). There is no default polling interval because Ansible is agentless.
+
+How it woks:
+------------
+1)You run a playbook from the Control Node (ansible-playbook site.yml).
+2)The Control Node wakes up and reads your ansibe.cfg, playbooks and inventory file to find the IP/hostname of the target nodes.
+3)It connects to those target nodes via SSH (for Linux) or WinRM (for Windows).
+4)It copies the required Ansible modules (Python scripts) over to the remote host's temporary directory (~/.ansible/tmp/).
+5)It executes the modules/tasks on the remote host, reads the JSON return payload i.e., takes the result, and cleans up the temporary files.
+
+Example:
+--------
+Requirement: Install nginx on 100 servers.
+solution:
+---------
+Inventory:
+[web]
+server1
+server2
+server3
+
+Playbook:
+- name: install nginx
+  hosts: web
+  become: yes
+  tasks:
+  - name: install nginx
+    yum:
+      name: nginx
+      state: present
+
+Run:
+ansible-playbook -i inventory.ini -e ansibe_user:ec2-user -e ansibe_password=DevOps321 nginx.yml
+
+Now what happens internally?
+
+Step 1:Ansible reads inventory file and playbooks and ansible.cfg config file and decides in Which servers we have to perform playbooks?
+
+Step 2:Creates SSH connection.
+Control node -->  SSH  --> Target server
+
+Step 3:Pushes module code temporarily.
+Example: yum module
+
+Step 4:Target server executes task --> Install nginx
+
+Step 5:Result comes back.
+changed=1
+failed=0
+
+step 6 : remove temporary files
+
+Adv:
+Immediate Execution --> run command Changes happen immediately.
+No Agent Required   --> Ansibe uses  ssh no background agenr
+Less resource usage --> No daemon running on every server.
+Simple Troubleshooting
+
+Disadvantages
+Controller server Must Reach target Servers
+Very Large Scale Challenges --> Controller opening many SSH sessions can be heavy. --> 100000 servers
+
+PULL based 
+----------------
+Target servers regularly connect to a contol/central server and pull their required configurations at every interval like ex 30 mins / 1 hr etc.
+Servers decide WHEN to check updates
+
+In pull-based configuration management, managed nodes have an agent installed. The agent(installed in managed node) periodically contacts the central/master server, checks if there are any configuration changes, downloads the required configuration, and applies it locally in managed nodes .
+in central server --> Stores desired state
+
+ex tools: puppet and chef 
+
+Which agent do we install?
+for puppet install  --> puppet-agent    -->  yum install puppet-agent and systemctl status puppet
+for  chef --> chef-client
+
+Time interval:
+For Puppet: Yes, commonly: Default run interval = 30 minutes --> for every 30 mins agent will check with central server if any changes found it applies in managed nodes/servers
+Can we change the interval --->  Yes ✅
+It is configurable.
+[agent]
+runinterval = 1h               --> Agent checks every 1 hour
+
+For chef : Usually configured using: chef-client interval
+chef-client --interval 1800       --> means 30 mins
+
+Here managed node decides when to check for changes.
+
+Example (Puppet/Chef Style)
+Server has an agent(it is an extra software it consumes resource like cpu ram etc and issues with software).
+Agent connects to control node: Every 30 minutes
+It asks:Master, any new configuration for me?
+Master replies: Yes,Install nginx --> Server applies.
+
+ex:
+Desired state of nginx installation present in central server 
+nginx installed on node/target server
+Already installed but Someone removes --> yum remove nginx
+desired state is missing in target node 
+After 30 min:
+Agent checks: nginx missing --> Reinstalls.
+No Need Direct SSH from Master -->Nodes contact server.
+Puppet Agent wakes up --> Checks master ---> Desired:nginx installed ---> Current nginx missing in target node ---> yum install nginx --> Server fixed ✅
+This is called Configuration Drift Correction
+
+Adv:
+1.Better for Huge Infrastructure --> Each server checks itself.
+2.Automatic Configuration Enforcement   --. Desired state is continuously checked.
+3. No inbound SSH required
+In Ansible:
+Controller  ----> ssh --->  Nodes
+Need SSH access.
+but in
+Puppet:
+Node Agent ---> Master 
+Nodes(target server agent) initiate connection and connect to master
+
+Disadvantages
+Agent Required
+Not immediate
+Agent Maintenance(like upgrades ,agent issues)
+Resource usage (like cpu ram and disk)
+
+
+Can Ansible Work as Pull
+--------------------------------
+ yes Ansible can work in pull-based architecture also, but by default Ansible is push-based. Here each managed server pulls configuration itself.
+Using : --> ansible-pull cmd         --> in node server
+and likepuppet and chef it doesnt have agent even for ansible pull 
+There is no default time interval like puppet and chef for 30 mins. we have to configure scheduling using crontab --> Cron/systemd timer
+crontab -e 
+add this insdie file now server pulls latest configuration for every 30 mins  --> */30 * * * * ansible-pull -U https://github.com/company/ansible.git site.yaml
+
+Ansible pull: No special agent
+
+Ansible itself installed
+     |
+ansible-pull command runs
+
+When use ansible-pull?
+Usually:
+huge server count
+servers behind firewalls
+no SSH access from controller
+auto scaling servers
+
+By default Ansible follows push-based architecture where the control node connects to managed nodes through SSH and executes playbooks. However, Ansible also supports pull-based execution using ansible-pull. In this model, managed nodes have Ansible installed and periodically pull playbooks from a version control system like Git using cron or systemd timers and apply configurations locally.
+
+
+| Push (Ansible)           					| Pull (Chef/Puppet)          |
+| ------------------------ 					| ------------------------------- |
+| Controller sends changes 		| Server fetches changes          |
+| No agent                 					| Agent required                  |
+| Uses SSH                 					| Uses agent communication        |
+| Immediate execution      			| Scheduled execution      |
+| Simple setup             					| More setup                      |
+| Controller initiated     				| Node initiated                  |
+| Good for deployments				| Good for continuous enforcement |
+
+diff:
+Ansible follows push based architecture by default. The control node connects to managed nodes using SSH and pushes modules/configurations so that we can execute playbooks. It does not require agents on target machines. 
+In pull based architecture, in node server/target servers we need to install or run agents and those agents periodically connect to a controller server and pull their desired configuration, like Puppet or Chef. 
+
+Push is better for immediate automation and deployments, while pull is useful for continuous configuration enforcement at very large scale
+
+"Ansible control node connects to managed nodes using SSH. We define target servers in inventory, configure authentication using SSH keys or passwords, and Ansible pushes modules to target nodes, executes them, collects output, and removes temporary files in target nodes"
+
+Internal working:
+-----------------------
+When you run cmd ---> ansible web -m ping
+1. control node Read inventory and ansibe.cfg config file and playbook ---> 2. Get server IP from inventory file ---> 3. Connect using SSH ---> 4. Copy Ansible module temporarily from control node to managed node into ./ansibe/tmp/ folder ---> 5. Execute module using Python ---> 6. Return/takes result ---> 7. Remove temporary files
+
+Ex: 
+sudo ansible -i <Ip address>, all -e ansible_user=centos -e ansible_password=DevOps321 -m ping 
+
+ansible -i <Ip address> --> without comma ansible thinks it is file name(i., <Ip address>) and it will seach for it and it is not there so fail 
+ansible -i <Ip address>, --> with comma tells Ansible: This is directly a host IP
+ping is a --> module name
+
+ansible connects to the target node and check the proper internet connection happen or not --> if success green color u will get pong as msg
+
+sshpass -p "DevOps321" ssh ec2-user@54.161.47.33
+
+Example: install & run & start & stop nginx through ansible commands 
+--------
+install nginx
+ansible -i <ip address>, all -e ansible_user=ec2-user -e ansible_password=DevOps321 --become -m yum -a "name=nginx state=present"
+------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+start nginx:
+ansible -i <ip address>, all -e ansible_user=ec2-user -e ansible_password=DevOps321 --become -m service -a "name=nginx state=started"
+
+stop nginx
+ansible -i <ip address>, all -e ansible_user=ec2-user -e ansible_password=DevOps321 --become -m service -a "name=nginx state=stop" 
+
+-i --> expects inventory file(target server details)
+all --> Run this command on all hosts from inventory or  run against all hosts from inventory
+-e --> Extra variable
+--become or -b --> it will become root user from normal user(Run the command with sudo/root privileges on target server.)
+-m --> module
+-a ---> Arguments for module
+
+install --> state=present --> nginx should exist/create/install
+Remove  --> state=absent   --> Remove nginx
+Latest version --> state=latest --> Install or upgrade latest nginx
+
+output colors:
+------------------
+yellow  	--> changed/newly installed
+green 		--> already installed nothing changed
+red 			--> errors
+
+output scenario:
+---------------
+Successful output:
+
+54.161.47.33 | SUCCESS => {
+
+"changed": true
+
+}
+Meaning: run first time
+changed=true
+nginx installed now
+
+Run second time:
+Output: "changed": false
+Meaning: nginx package already installed --> No action taken --> That is Ansible idempotency.
+
+
+playbook:
+------------
+An Ansible playbook is a YAML file that contains a set of automation instructions used to configure servers, deploy applications, and perform IT automation tasks on managed nodes.
+A playbook defines the desired state of servers and tells Ansible what actions need to be performed or tells Ansible what has to execute on target servers.
+
+Playbook describes/tells to ansibe -->  What to execute?
+ex: tasks 
+Install packages,Create users,Copy configuration files,Start/stop services,Deploy applications
+
+Ex playbook: Install & Run Nginx server through ansible playbook
+---------------
+- name: Install and run nginx server 
+  hosts: web
+  become: yes
+  tasks:
+  - name: Install nginx package
+    yum:                        							or ansibe.builtin.package/dnf/yum: 
+      name: nginx
+      state: present
+  - name: run nginx
+    service:
+      name: nginx
+      state: started
+	  or
+  - name: Run nginx
+	ansible.builtin.service:
+	  name: nginx
+   	  state: started
+	  
+u can write syntax like above formats 2 types
+inventory file
+[web]
+172.31.10.10
+172.31.10.20
+
+run : ansible-playbook -i inventory -e ansible_user=ec2-user -e ansible_password=Devops321 nginx.yml
+
+ Playbook contains plays, and plays contain tasks
+1 playbook file is nothing but 1 or multiple plays or list of plays(- name: ...)  below example
+
+1)- name: play1 and task1
+  hosts: web
+  become: yes
+  tasks:
+  - name: install git 
+	ansible.builtin.package:
+      name: git
+      state: present
+
+2)- name: play2 and task2
+  hosts: localhost
+  tasks:
+  - name: install mysql
+    ansible.builtin.package:
+      name: mysql
+      state: present
+
+3)- name: Play3 and task3
+  hosts: web
+  tasks:
+  - name: debug
+    ansible,builtin.debug:
+      msg: "Hi Im learning ansible"
+	  
+	  
+inventory file
+[web]
+172.31.10.10
+172.31.10.20
+
+run : ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=Devops321 nginx.yml	  
+	  
+Inventory (-i):
+------------------
+Inventory is a file that contains the list of managed nodes/servers (i.e.,managed nodes ip addresses) or group of servers information which Ansible has to connect using ssh and executes commands, modules, and playbooks.
+or
+Ansibe inventory file defines the hosts & group of hosts ip addresses upon which commands,modules and tasks a playbook operate
+
+we can give filename as inventory or any other name but while running we have to give same name (ex if i give ipaddress.ini while running ansibe-playbook -i ipaddress.ini ....)
+
+Inventory = Where to execute?
+it tells ansible:
+Which servers?
+Which group?
+Which username?
+Which SSH key/password?
+Which connection method?
+Which variables?
+
+1)
+ex: static inventory file --> Manually maintained
+inventory.ini(file content)
+[web]                                    ---> group of host ips   
+172.31.10.10					
+172.31.10.20
+[database]                           ---> single host ip
+172.31.20.30
+ex: ansible -i inventory.ini web -m ping
+
+it will list all hosts related to web group ---------> ansible -i inventory web --list-hosts 
+
+Instead of passing in terminal Every time, we can keep inside inventory:
+[web:vars]                    for all hosts  [all:vars]
+ansible_user=ec2-user
+ansible_password=DevOps321
+
+in ansible.cfg we can pass instead of ppassing in terminal
+[defaults]
+inventory=inventory.ini
+
+
+2)Dynamic Inventory ---> Automatically fetches servers from cloud.
+
+Variables
+------------
+Variables in Ansible are used to store dynamic values that can be reused across playbooks, roles, tasks, and templates. 
+They help avoid hardcoding and make automation reusable across different environments.
+
+why do we use variable:
+1. Avoid hardcoding values 
+2. Reuse same playbooks for mutiple environments
+3. Environment differences(like dev,prod) 
+4. Dynamic configuration --->  
+catalogue.service.j2 inside file Environment=MONGO_URL={{ MONGODB_HOST }}
+in variables file ---> MONGODB_HOST: mongodb.devopswitharun.online
+5. Easier maintenance
+
+Without Variables 
+Example --> Need separate playbooks ❌ for diff environments
+
+DEV:
+- name: install package
+  yum:
+    name: nginx
+
+PROD:
+- name: install package
+  yum:
+    name: httpd
+
+With variable:
+ex:
+in variables file
+package_name: nginx
+
+Playbook:
+ansibe.builtin.package:
+ name: "{{ package_name }}"                   {{ package_name }} called  Jinja2 expression / variable interpolation   and same playbook for diff environments and Only variable value changes in variables file
+
+
+Variable Precedence concept:
+----------------------------------------
+1)playbook level variables --> Variables defined inside playbook and those variables available for all tasks inside this play.
+
+Ex:
+---
+- name: install packages
+  hosts: web
+  become: yes
+  vars:
+    package_name: nginx
+  tasks:
+  - name: Install package
+    yum:
+      name: "{{ package_name }}"
+      state: present
+
+run: ansibe-playbook -i inventory.ini -e ansibe_user=ec2-user -e ansibe_password=DevOps321 install-nginx.yaml 
+
+
+2)task level variables --> it takes from task level and if there is a  same variable name in play level and task level ..task level variable will be prefered by ansible or Task variable overrides play variable.(like in java variable shadowing )
+
+ex:
+  tasks:
+  - name: Variables from task level
+    vars:
+      course: "DevOps with Azure from task level"
+    ansible.builtin.debug:
+      msg: "Hi, Im learning {{course}} and Duration is {{Duration}} with Trainer {{Trainer}}"
+	  
+run: ansibe-playbook -i inventory.ini -e ansibe_user=ec2-user -e ansibe_password=DevOps321 example.yaml 
+	  
+3)variables from vars.yaml/variables.yaml file --> values comes from seperate variables file
+Ex: 
+- name: Variables from files
+  hosts: web
+  become: yes
+  vars_files:
+    - variables.yaml 														# it will take variables from variables.yaml file
+  tasks:
+  - name: Variables from files
+    ansible.builtin.debug:
+      msg: "Hi, I'm learning {{course}} and Duration is {{Duration}} and Trainer is {{Trainer}}"
+	  
+in variables.yaml file u need to define variables and values for it 
+course: "DevOps"
+Duration: "110 hrs"
+Trainer: "shiva"
+
+run: ansibe-playbook -i inventory.ini -e ansibe_user=ec2-user -e ansibe_password=DevOps321 example.yaml  
+ 
+4)variables from prompt --> in terminal it willl prompt for input
+Ex:
+  vars_prompt:
+  - name: USERNAME
+    prompt: Pls enter ur username
+    private: false 												# user can see wt characters they are entering at terminal
+  - name: PASSWORD 
+    prompt: Pls enter ur PASSWORD
+    private: true													# user can't see wt they are entering in terminal --> usually for passwords and secrets
+  tasks: 
+  - name: Enter and check from prompt
+    ansible.builtin.debug:
+      msg: "Username is {{USERNAME}} AND Password is {{PASSWORD}}"
+	  
+run: ansibe-playbook -i inventory.ini -e ansibe_user=ec2-user -e ansibe_password=DevOps321 example.yaml 
+now it will prompt for those two values 
+	  
+5)variables from inventory file --> Define variables inside inventory.
+[web]
+34.233.134.11
+
+[web:vars]
+course= "DevOps from inventory"
+Duration= "6 months"
+Trainer= "Shiva kumar"
+
+- name: variables from inventory
+  hosts: web
+  become: yes
+  tasks:
+  - name: Variables from inventory
+    ansible.builtin.debug:
+      msg: "Hi, I'm learning {{course}} and Duration is {{Duration}} and Trainer is {{Trainer}}"
+
+#no need to mention inventory file in this it will automatically check in that file by default but Not always.
+
+Only if configured in --> ansible.cfg    --> automatically picks up always no need to give any where
+ansible.cfg  file
+[defaults]
+inventory=inventory.ini
+
+run : ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=DevOps321 08-variables-from-inventory-file.yaml
+
+6)variables from cmd line args --> Value comes from command.
+Ex:
+- name: variables from command line args
+  hosts: web
+  become: yes
+  tasks:
+  - name: variables from command line args
+    ansible.builtin.debug:
+      msg: "Hi {{person}}, Good {{morning}}"
+	  
+run : ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=DevOps321 -e "person=arun" -e "morning=Morning"  <filename>
+or
+run: ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=DevOps321 -e "Associate=Arun from cmd args level" -e "jobtitle=Software Engineer from cmd args level" 10-variables-preference-by-ansible.yaml
+
+or
+yum:
+ name: "{{ package_name }}"
+run : ansible-playbook app.yml -e package_name=nginx
+ex run: for prod
+ansible-playbook deploy.yml \
+-e ENV=prod \
+-e VERSION=1.2
+
+7)Roles using vars folder main.yaml 
+ex:
+- name: variables from roles folder
+  hosts: web
+  become: yes
+  tasks:
+  - name: variables from command line args
+    ansible.builtin.debug:
+      msg: "Hi {{person}}, Good {{morning}}"
+
+create a vars folder with main.yaml inside in roles folder  and give 
+in varsfolder/main.yaml
+person: "arun"
+morning: "good morning"
+
+Important difference:
+
+Role vars: roles/catalogue/vars --> higher priority
+Role defaults: roles/catalogue/defaults --> lowest priority
+
+8)Host Variables (host_vars) : Variables for one specific server.
+
+Variables for one specific server.
+
+Structure:
+project/inventory
+host_vars/
+    server1.yml
+
+server1.yml(file content) --> Only server1 gets these values.
+	package_name: nginx
+	port: 80
+Example
+Server1:
+port 80
+
+Server2:
+port 8080
+
+9)Group Variables (group_vars) --> Variables for server groups.
+structure
+group_vars/
+
+   web.yml
+
+   db.yml
+
+10)Registered Variables : Used to save command output.
+Ex: 
+- name: check uptime
+  command: uptime
+  register: output
+- name: print result
+  debug:
+    msg: "{{ output.stdout }}"
+
+11)Facts Variables --> Ansible automatically collects system information.(Gathering Facts)
+
+Ex:
+
+{{ ansible_hostname }}
+{{ ansible_os_family }}	
+{{ ansible_memory_mb }}
+
+- debug:
+    msg: "{{ ansible_os_family }}"
+	
+when: ansible_os_family == "RedHat"
+
+
+Variable Precedence (Important Interview)
+
+If same variable exists in multiple places: below is the preference 
+
+Prefernce of a taking variable in ansible(it will take the data either from one of them based on prefernce one by one it will check and take where ever data present)
+1)Take Variables data from command line args
+2)Take Variables data from Task level
+3)Take Variables data from variables.yaml file
+4)Take Variables data from prompt level
+5)Take Variables data from play level
+6)Take Variables data from inventory file
+
+run: ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=DevOps321 -e "Associate=Arun from cmd args level" -e "jobtitle=Software Engineer from cmd args level" 10-variables-preference-by-ansible.yaml
+
+variable precedence:
+1. Extra vars (-e) ---> 2. Task vars ---> 3. Block vars ---> 4. Role vars ---> 5. vars_files ---> 6. Play vars / vars_prompt ---> 7. host_vars ---> 8. group_vars ---> 9. Inventory variables ---> 10. Role defaults
+
+Ansible supports variables from multiple locations like inventory, group_vars, host_vars, playbooks, vars files, roles, prompts, and command line arguments. If the same variable exists in multiple places, Ansible follows variable precedence rules. Extra variables passed using -e have the highest priority, while role defaults have the lowest priority.
+
+Variables in Ansible are used to make playbooks reusable and dynamic by avoiding hardcoded values. Variables can be defined at playbook, inventory, host, group, role, and command levels. Ansible uses Jinja2 syntax to access variables. We commonly use variables for environment-specific configurations, templates, deployments, and storing task output using register.
+
+data types: Ansible variables support different YAML data types like String,integer,float,boolean,list,dictionary and list of dictionaries 
+--------------
+1)String ---> Stores text values.
+
+name: "nginx" or name: nginx
+
+2)Integer: Stores numeric values.
+vars:
+  http_port: 80
+  max_connections: 100
+- debug:
+    msg: "Application running on {{ http_port }}"
+o/p: Application running on 80
+
+3)Float ---> Stores decimal values.
+in yaml 
+app_version: 1.5
+cpu_limit: 2.5
+
+4)Boolean ---> Stores true/false values.
+vars:         in vars play level variables
+  install_nginx: true
+  enabled: true
+
+- name: install nginx
+  ansibe.builtin.package:
+    name: nginx
+    state: present
+  when: install_nginx         install_nginx: true --> then only this task will run if false task will be skiped 
+  
+4)List / Array Data Type : Stores multiple values ⭐⭐⭐
+instead of 
+package1: nginx
+package2: mysql
+package3: git
+
+using list 
+packages:
+  - nginx
+  - mysql
+  - git
+  
+ex: 
+- debug:
+    msg: "{{ packages }}"
+	
+Access specific item : {{ packages[0] }}  o/p --> nginx
+
+install multiple packages
+---
+- hosts: web
+  become: yes
+  vars:
+    packages:
+    - nginx
+    - git
+    - mysql
+  tasks:
+  - name: Install packages
+    ansibe.builtin.package:
+      name: "{{ item }}"
+      state: present
+    loop: "{{ packages }}"
+	
+loops can write above one or below directly
+	or 
+	loop:
+	- nginx
+	- git
+	- mysql
+	
+5) Dictionary / Map Data Type : Stores data in key : value pairs ⭐⭐⭐
+
+Ex: 
+app:            --> in vars file or play level variables
+  name: roboshop
+  port: 8080
+  user: roboshop
+  
+- debug:
+    msg: "Application {{ app.name }} running on {{ app.port }}"
+	
+5.1	
+List of Dictionaries⭐⭐⭐ --> combination of List + Map
+Ex:
+users:
+ - name: arun
+   group: devops
+ - name: ramesh
+   group: testing
+ - name: suresh
+   group: admin
+   
+- name: create users
+  user:
+    name: "{{ item.name }}"
+    group: "{{ item.group }}"
+  loop: "{{ users }}"
+  
+7) Registered Variable --> Not a data type. It stores task output.
+
+- name: check uptime
+  command: uptime
+  register: result
+  
+now result contains
+stdout
+stderr
+return code
+changed status
+ 
+- debug:
+    msg: "{{ result.stdout }}"
+
+Example from your RoboShop:
+- name: Check catalogue count
+  shell: mongo count()
+  register: product_count
+  
+  and access by using ---> when: product_count.stdout == "0"
+
+String ----> package names , users names, urls 
+integer ----> ports and counts
+boolean --> Enable/Disable tasks
+list ---> list multiple packages
+Dictionary ---> Application configuration
+List of Dictionary --->Multiple users/multiple services/configs
+Register  --> Store command output
+
+conditions: 
+---------------
+Conditions allow Ansible to execute tasks only when a specific criteria is satisfied and Conditions are implemented using the when keyword.
+if condition true --> Execute the task and
+if condition false --> Skip the task
+
+syntax: when: condition
+
+Example:
+------------
+- name: condition example
+  hosts: web
+  become: yes
+  vars:
+    install_nginx: true
+  tasks:
+  - name: Install nginx
+    yum:
+      name: nginx
+      state: present
+    when: install_nginx          --->  install_nginx: true then only  task will be executed first condition will be checked by ansible based on the result tasks will be executed or skipped decided
+ 
+it will check when condition first if install_nginx is set to true yum task will execute else skipped 
+
+when condition by using String and number comparison:
+--------------------------------------------------------------------------
+- hosts: all
+
+  vars:
+    environment: prod
+	http_port: 8080
+  tasks:
+  - name: Production deployment
+    debug:
+      msg: "Deploying production"
+    when: environment == "prod"
+	
+  - debug:
+      msg: "Application running on {{ http_port }}"
+
+    when: http_port == 8080
+
+prod == prod so task execute if we give environment: dev so dev == prod it is false so skip the task 
+8080 == 8080 so task execute if we give http_port: 9080 so 9080 == 8080 it is false so skip the task 
+
+operaters:
+-------------
+==    equal
+!=    not equal
+>     greater
+<     smaller
+>=    greater/equal
+<=    smaller/equal
+
+when: memory > 80
+
+4) Multiple Conditions (AND)
+Ex
+vars:
+  environment: prod
+  version: 2
+tasks:
+- debug:
+    msg: "Deploying"
+  when:
+    - environment == "prod"
+    - version == 2
+or 
+  when: environment == "dev" or version == "2"
+
+if condition 1 and condition 2 satisfied then only task will execute if we change one of them with other value not mentioned in vars file it wont execute ex: version == 3 AND condion means 2 condition is failed so and condition both should be true 
+
+OR condition:
+------------------
+
+- debug:
+    msg: "Non production"
+  when: environment == "dev" or environment == "test"
+ 
+if we give dev or prod it will execute OR means if one condition true it will execute
+
+
+Conditions Using Ansible Facts ⭐⭐⭐ --> Facts are automatically collected server information.
+ex:
+ansible_os_family
+ansible_distribution
+ansible_hostname
+
+- name: install package on RedHat
+  ansible.builtin.package:
+    name: nginx
+    state: present
+  when: ansible_os_family == "RedHat"        --> when this condition true task will execute
+
+
+Conditions with Loops
+------------------------------
+vars:
+ packages:
+ - nginx
+ - git
+ - mysql
+tasks:
+- name:debug:
+   ansibe.builtin.debug:
+		msg: "{{ item }}"
+  loop: "{{ packages }}"
+  when: item != "mysql"
+  
+  
+Example:
+-----------
+- name: Conditions
+  hosts: web
+  become: yes
+  tasks:
+  - name: Check roboshop user exist or not
+    ansible.builtin.command: id roboshop                               #if there is no module for any command we can use this to execute like command
+    register: user                                                                            #user is a variable name to store id
+    ignore_errors: true                                                                 #if it is true even if pgrm have error it wont exit it will run the total program/task
+  - name: Print exit status
+    ansible.builtin.debug:
+      msg: "Exit status is {{ user.rc }}"
+  - name: Create user
+    ansible.builtin.user:
+      name: roboshop_user
+      state: present
+    when: user.rc != 0                                                                  #if user present it will return 0 so i=create user task will be skipped if 1 create user task executes 
+	
+	
+rc --> mentions exit status here 0 -- success and non-zero number is failed/error (i.e., 1 or other number) -- failed
+when condition is checked before executing the task ✅
+In Ansible, multiple conditions written as a list mean AND ✅
+ignore_errors doesn't remove errors, it only allows playbook execution to continue ✅ by skipping errors
+Add facts conditions and list of dictionaries loops (important)
+
+Loops: 
+--------
+Loops allow us to execute the same task multiple times with different input values.
+ex:
+installing multiple packages, creating multiple users, copying multiple files, creating directories, etc.
+
+create multiple users using loops
+-------------------------------------------
+- name: create users
+  hosts: web
+  become: yes
+  tasks:
+  - name: create multiple users
+    ansible.builtin.user:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - arun
+      - ramesh
+      - suresh
+  - name: create multiple users
+    ansible.builtin.package:
+      name: "{{ item }}"
+      state: present
+    loop:
+      - nginx
+      - git
+      - mysql
+
+
+List of Dictionary Loop ⭐⭐⭐
+ex:
+users:
+- name: arun
+  group: devops
+- name: ravi
+  group: testing
+  
+- name: create users
+  ansible.builtin.user:
+    name: "{{ item.name }}"
+    group: "{{ item.group }}"
+  loop: "{{ users }}"
+Ansible by default manage idempotency so if user exists it wont create if user not present it will create user
+
+Conditions in Ansible are used to control task execution based on variables, facts, command outputs, or environment values using the when keyword. Loops are used to execute the same task multiple times with different values. In projects we commonly combine conditions, loops, and registered variables to create dynamic and reusable automation.
+
+Conditions in Ansible are used to control task execution based on variables, facts, command outputs, or environment values using the when keyword. Loops are used to execute the same task multiple times with different values. In projects we commonly combine conditions, loops, and registered variables to create dynamic and reusable automation.
+
+
+
+Register Variable in Ansible:
+------------------------------------
+register is used to capture and store the output/result of a task into a variable. This registered variable can be reused in later tasks for conditions, debugging, validations, and decision making.
+
+Task executes ----> Output generated ----> register variable stores generated output ----> Use that output in next tasks
+
+Why do we use register?
+
+Main uses:
+Store command output
+Use output in conditions (when) by using register variable
+Debug/print values
+Validate/check task result
+Control next task execution (ex register: count  in next condition when: condition.rc == "0"  if value 0 executes the tasks or else skipped)
+Troubleshooting
+
+ex:
+- name: Check uptime
+  ansible.builtin.command: uptime
+  register: server_uptime
+  
+server_uptime ---> contains the complete task result.
+
+in next task:
+- name: Print uptime
+  ansible.builtin.debug:
+    msg: "{{ server_uptime.stdout }}"
+	
+Output:
+10:25:30 up 5 days
+
+What does register store?
+
+Example: register: result
+
+creates a dictionary:
+result:
+  stdout:
+    command output
+  stderr:
+    error output
+  rc:
+    return code
+  changed:
+    true/false
+  failed:
+    true/false
+  start:
+    start time
+  end:
+    end time
+	
+imp fields in register variable output:
+------------------------------------------------
+1) stdout  --> Successful output.
+ex:
+ register: output      --> in above task
+- debug:
+    msg: "{{ output.stdout }}"
+	
+2) stderr ---> Stores error messages.
+
+3) rc (return code)  ⭐⭐⭐
+0 = success and non-zero = failure
+ex:
+If user exists:
+user_status.rc = 0
+If missing:
+user_status.rc = 1
+
+in when condition:   when: user_status.rc != 0
+
+4) changed ---> Shows whether task modified anything.
+ex: output.changed
+
+Value: true  means changed or false means tasks not changed
+
+output.changed
+
+Value: true or false
+
+Normal variable: package_name: nginx  ---> Already defined value.
+flow  : You provide value --> Ansible uses it
+
+Register: register: output  --> Dynamic value. 
+flow : Task runs ---> Output generated ----> Ansible stores it ----> Reuse later
+
+Register in Ansible is used to capture the output of a task and store it in a variable. The registered variable contains information like stdout, stderr, return code, changed status, and failure status. We mainly use register for decision making with when conditions, validations, debugging, and controlling dependent tasks.
+
+
+
+
+
+Roboshop-project:
+-----------------
+Create 1 ec2 instance and attach a role(with Ec2fullaccess and route53fullaccess policies in role) to the ec2 instances
+now open superputty and clone script-to-create-ec2-route53 --> go into folder and run sh roboshop.sh --> it will create ec2 instances and route53 records of roboshop project modules
+
+mongodb:
+------------
+ansible.builtin.copy:
+copy module: copy module in Ansible is used to copy files or directories from the Ansible control node to managed nodes. 
+It can also create files with specific content, permissions, ownership, and group settings.
+
+Why do we use copy?
+Used for: Copy configuration files,Copy service files,Copy scripts,Copy application files,Create small files,Set permissions,Set ownership
+syntax:
+- name: Copy file
+  ansible.builtin.copy:
+    src: source_file
+    dest: destination_path
+1)Copy a normal file
+ex:
+
+- name: Copy catalogue service file
+  ansible.builtin.copy:
+    src: catalogue.service
+    dest: /etc/systemd/system/catalogue.service
+	
+2)from roles 
+roles folder/
+ catalogue application/
+      |
+      |
+      files/
+        |
+        catalogue.service  
+
+ex:
+- name: Copy service file
+
+  ansible.builtin.copy:
+    src: catalogue.service
+    dest: /etc/systemd/system/catalogue.service
+	
+src: roles/catalogue/files/catalogue.service -->  no need to mention in tasks Because Ansible automatically checks in above ex only dest mentioned
+
+3)Copy directory
+ex:
+- name: Copy scripts directory
+  ansible.builtin.copy:
+    src: scripts/
+    dest: /opt/scripts/	
+
+
+4)Create file content directly
+ex
+ - name: Create message file
+  ansible.builtin.copy:
+    content: "Welcome to DevOps"
+
+    dest: /tmp/message.txt
+ 
+set Permissions,set owner group and backup a file using copy module : if u want u can use any one option like only permission set or group set etc 
+ ex:
+ ansible.builtin.copy:
+    src: test.sh
+    dest: /tmp/test.sh
+    mode: '0755'
+	owner: roboshop
+	group: roboshop
+	backup: yes      --->  when u use this /tmp/test.sh becomes  --->/tmp/test.sh.12345.backup New file copied.
+	
+ansible.builtin.package:is a generic package management module used to install, remove, and install latest version packages or manage software packages on different operating systems. It automatically selects the underlying package manager based on the target system
+rhel:
+ansible.builtin.dnf: is  specific package management module for DNF-based Linux distributions
+ansible.builtin.yum:
+ubuntu: apt 
+ex:
+- name: Install nginx
+  ansible.builtin.package:
+    name: nginx
+    state: present
+
+ansible.builtin.service: module is used to manage system services on managed nodes. It can start, stop, restart, reload services and enable/disable services during system boot.
+ex:
+- name: Start nginx
+  ansible.builtin.service:
+    name: nginx
+    state: started                 state can be started ,stopped,restarted and reloaded(Reload configuration without stopping service.) 
+    enabled: yes                  Controls service startup after reboot.
+ansible.builtin.replace: module is used to find and replace text inside an existing file on managed nodes using regular expressions (regex). It helps automate configuration changes without manually editing files.
+ex:
+- name: Replace text
+  ansible.builtin.replace:
+    path: file_location
+    regexp: old_value
+    replace: new_value
+ex:	
+- name: Update ssh config
+  ansible.builtin.replace:
+    path: /etc/ssh/sshd_config
+    regexp: 'PasswordAuthentication no'
+    replace: 'PasswordAuthentication yes'
+    backup: yes
+
+Replace multiple values using regex:     regexp: 'PORT=.*'
+
+
+catalogue
+---------
+diff b/w shell and command module
+ansible.builtin.command:
+command module executes commands directly without invoking a shell, so shell operators like pipes, redirects, and variables do not work.
+or
+command runs commands without using shell features.It directly executes the binary.
+command example:
+  ansible.builtin.command:
+    cmd: dnf module enable nodejs:20 -y
+	
+ansible.builtin.shell:
+shell module executes through /bin/sh, so it supports shell features. shell will login to bash and execute tasks and it is slow
+or
+shell executes commands through Linux shell.
+We prefer command for security and idempotency and use shell only when shell functionality is required."
+
+shell example: supports ---> >,>>,&&,||,*,$VARIABL and command does not support all this
+  ansible.builtin.shell:
+    curl url | bash
+or
+	ansible.builtin.shell:
+    cat file.txt | grep error | wc -l
+	
+
+ansible.builtin.user: module is used to manage user accounts on managed nodes. It can create, remove, modify users and manage groups, home directories, shells, and passwords.
+ex: create user
+- name: Create application user
+  ansible.builtin.user:
+    name: roboshop
+    state: present
+
+remove: yes 	 --> if u use this it removes user ffrom  home ddirectory also 
+state: absent   --> delete user
+to modify also same present
+
+Add user to group
+  ansible.builtin.user:
+    name: arun
+    groups: devops
+	
+change UID AND Lock existing user
+  ansible.builtin.user:
+    name: roboshop
+	password_lock: yes
+    uid: 2001
+    state: present
+
+Modify user group
+in shell  : usermod -aG devops roboshop (i.e., add it as secondary group)
+- name: Add user to group
+  ansible.builtin.user:
+    name: roboshop
+    groups: devops
+    append: yes
+    state: present
+
+ansible.builtin.file: module manages files, directories, permissions, ownership, and symbolic links on managed nodes.
+Equivalent Linux commands: mkdir,rm,chmod,chown,ln,touch
+Create Directory
+Example:
+- name: Create app directory
+  ansible.builtin.file:
+    path: /app
+    state: directory
+Create Directory with permissions
+- name: Create directory
+  ansible.builtin.file:
+    path: /app
+    state: directory
+    owner: roboshop
+    group: roboshop
+    mode: '0755'
+
+to remove directory : state : absent
+Create empty file
+ ansible.builtin.file:
+    path: /var/log/app.log
+    state: touch
+create Symbolic link:
+- name: Create link
+  ansible.builtin.file:
+    src: /app/current
+    dest: /var/www/html
+    state: link
+	
+
+ansible.builtin.get_url: module downloads files from HTTP, HTTPS, or FTP URLs directly to managed nodes.
+Equivalent : wget,curl 
+syntax:
+- name: Download application
+  ansible.builtin.get_url:
+    url: https://example.com/app.zip
+    dest: /tmp/app.zip 
+
+if u want to download with permission mention ---> mode: '0775'
+Download with checksum --.  checksum: sha256:xxxxx
+
+In our RoboShop deployment we used user module to create application users, file module to create and clean application directories, and get_url module to download application artifacts from S3 before deployment.
+
+ansible.builtin.unarchive: module is used to extract compressed files like zip, tar, tar.gz on managed nodes. It can extract files copied from the Ansible control node or files already available on the target server.
+equivalent: unzip,tar -xvf ,tar -xzvf
+usde for :
+Extract application packages,Extract build artifacts,Extract downloaded files ,Extract backups
+
+syntax:
+- name: Extract application
+  ansible.builtin.unarchive:
+    src: app.zip
+    dest: /app
+
+3) remote_src ⭐⭐⭐	
+remote_src: no (default)  ----> File exists on Ansible control node. whie extracting
+remote_src: yes                 ----> File already exists on managed node. we are explicitly telling to ansibe Don't search on controller node for file File already exists on target server . if we dont mention remote_src: yes it will search in controller node and ended up with error status 
+ansible.builtin.systemd_service:module is used to manage systemd services on Linux servers. It provides advanced systemd operations like daemon reload, start, stop, restart, enable, and masking services.
+equivalent: systemctl
+ex:
+  ansible.builtin.systemd_service:
+    name: nginx
+    state: started             --> start service            and state: restarted --> Restart service
+	enabled: yes              -->  Enable service
+	
+daemon-reload:
+- name: Reload systemd
+  ansible.builtin.systemd_service:
+    daemon_reload: true
+
+systemd_service module manages Linux systemd services. We use it for service operations and systemd-specific actions like daemon reload. In our project, after deploying custom service files, we executed daemon_reload so systemd could recognize the new services.
+
+ansible.builtin.debug:module is used to print messages, variables, and task outputs during playbook execution. It is mainly used for troubleshooting and validation.
+syntax:
+- name: Print message
+  ansible.builtin.debug:
+    msg: "Hello Arun"
+	msg: "Learning {{ course }}"      --> give course variable and value in variable
+
+Debug with register ⭐⭐⭐
+- name: Check uptime
+  command: uptime
+  register: result
+  
+- name: Print uptime
+  ansible.builtin.debug:
+    msg: "{{ result.stdout }}"
+web
+---
+ansible.builtin.find:
+module is used to search files and directories on managed nodes based on criteria like name, pattern, size, age, file type, and permissions.
+Why do we use find : Find old log files,Find backup files,Find temporary files,Find application files,Cleanup automation,Disk management
+syntax:
+- name: Find files
+  ansible.builtin.find:
+    paths: /var/log
+	file_type: file
+    patterns: "*.log"
+	recurse: yes                  --> Search inside subdirectories.  in linux recursively  default: recurse: false
+	age: 7d                          --> Files older than 7 days
+	size: 100m                    --> Find based on file size.
+
+file_type : Search specific type.
+Options:
+file
+directory
+link
+any
+ age --> Find files based on time.     ex: age: 7d
+telnet mongodb.devopswitharun.online 27017 or nc -zv mongodb.devopswitharun.online 27017
+
+Find + Delete Files ⭐⭐⭐ Real-time
+
+Example: Delete logs older than 7 days.
+---------------------------------------------------
+Step 1: Find
+- name: Find old logs
+  ansible.builtin.find:
+    paths: /var/log
+    patterns: "*.log"
+    age: 7d
+  register: old_logs
+
+Step 2: Delete
+- name: Delete old logs
+  ansible.builtin.file:
+    path: "{{ item.path }}"
+    state: absent
+  loop: "{{ old_logs.files }}"
+  
+flow:
+find module ----> Search old logs -----> register result ----> loop files ----> delete one by one
+
+
+
+Running Ansible Playbook in Background
+------------------------------------------------------
+Why do we run in background --> Sometimes playbooks take a long time 
+ex: Application deployment,Multiple server patching,Package upgrades,Database activities
+
+If SSH session disconnects, normal execution stops.
+To avoid this we use:
+nohup + &
+
+nohup ansible-playbook -i inventory.ini -e ansible_user=ec2-user -e ansible_password=DevOps321 <modulename>.yaml &
+Check live output : tail -f nohup.out
+
+nohup (no hang up)     --> allows a command to continue running even after closing the terminal or SSH session.
+&    								    --> Runs process in background.
+Output automatically goes to -----------> nohup.out
+	
+flow:
+Terminal --> Start playbook --> Close terminal --> Still running in background
+
+If you don't want logs
+nohup ansible-playbook main.yaml &> /dev/null &     ---> Run background Don't store output
+
+/dev/null --> Output is removed.
+
+
+nohup ansible-playbook main.yaml > deployment.log 2>&1 &
+2   >   &1
+|   |    |
+|   |    |
+|   |    +---- same place where 1 is going
+|   |
+|   +--------- redirect
+|
++------------- STDERR
+
+last & --> Run command in background terminal will be immediately available to execute other cmds --> without this terminal wait until command execution /terminal will be blocked 
+
+Send error output (2) --> to the same destination as --> normal output (1)
+
+
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+
+ROLES:
+--------
+
+Ansible roles are a way to organize playbooks into a standard folder structure so that code can be reused, shared, and maintained easily.
+or
+Ansible roles provide a reusable directory structure to organize automation code. Roles separate tasks, variables, files, templates, handlers, and configurations into different folders. This improves code reusability, readability, and maintainability across multiple environments.
+
+Instead of writing one big playbook YAML file, roles allow us to split automation logic into tasks,variables,files,templates,handlers,defaults,meta etc into separate folders or smaller reusable components.
+
+or 
+Ansible roles provide a reusable directory structure to organize automation code. Roles separate tasks, variables, templates, files, and handlers, which improves reusability and maintainability. We use roles to avoid duplicate code and standardize configuration management across multiple environments.
+
+in every directory main.yam will be called directly by ansible
+
+DRY Principal --> dont repeat your self
+
+roles/
+    common/               # this hierarchy represents a "role"
+        tasks/            #
+            main.yml      #  <-- tasks file can include smaller files if warranted
+        handlers/         #
+            main.yml      #  <-- handlers file
+        templates/        #  <-- files for use with the template resource
+            ntp.conf.j2   #  <------- templates end in .j2
+        files/            #
+            bar.txt       #  <-- files for use with the copy resource
+            foo.sh        #  <-- script files for use with the script resource
+        vars/             #
+            main.yml      #  <-- variables associated with this role
+        defaults/         #
+            main.yml      #  <-- default lower priority variables for this role
+        meta/             #
+            main.yml      #  <-- role dependencies
+        library/          # roles can also include custom modules
+        module_utils/     # roles can also include custom module_utils
+        lookup_plugins/   # or other types of plugins, like lookup in this case
+
+    webtier/              # same kind of structure as "common" was above, done for the webtier role
+    monitoring/           # ""
+    fooapp/               # ""
+
+tasks/main.yml ⭐⭐⭐                 ---> Contains automation tasks.	Automatically executed when role runs. (main.yaml)
+files/catalogu.service                         ---> Stores static files. Ansible automatically checks files folder. ( copy module)
+
+templates/catalogue.service.j2        ---> Stores dynamic configuration files. used with  (ansible.builtin.template:)
+PORT={{PORT}}
+MONGO={{MONGO_HOST}}
+
+handlers/main.yml                             ---> Runs only when notified.
+Example:
+- name: restart nginx
+  service:
+    name: nginx
+    state: restarted
+- name: Copy nginx config
+  copy:
+    src: nginx.conf
+    dest: /etc/nginx.conf
+  notify:
+    - restart nginx
+
+vars/main.yml                             ---> Stores role variables. Higher priority variables. inside roles folder create vars folder 
+defaults/main.yml                      ---> Default values. Lowest priority Can easily override.
+meta/main.yml                           ---> Defines role information and dependencies.
+ex:
+dependencies:
+- role: common
+meaning Before current role run common role
+
+
+Your Practice Flow
+
+Correct:
+
+Step 1: Create Ansible controller EC2.
+
+Step 2: Attach IAM role:
+EC2 Full Access
+Route53 Full Access
+
+Step 3: Clone infra script repo.
+
+Step 4:Run script.
+Creates:
+EC2 instances
++
+Route53 records
+
+Step 5: Clone Ansible roles repo.
+
+Step 6:
+Run: ansible-playbook -i inventory.ini -e component=mongodb main.yaml
+
+Ansible:
+Connects existing EC2 ----> Runs mongodb role ---> Configures server
+
+or
+to practice :
+===========
+create ansible controller server ec2 then attact a role name with ec2 full access and route53 full access to create a role and attch that role to ansible controller server and run script-to-create-ec2-route53 git repo clone u will get created all ec2 of modules and route53 records created 
+to run thos modules :
+$ansible-playbook -i inventory.ini -e component=mongodb main.yaml 
+--> no need to mention -e ansible_user and ansible_password because we mentioned them in inventory.ini file like 
+[all:vars]
+ansible_user: ec2-user
+ansible_password:Devops321
+
+Final Interview Answer
+In our RoboShop project we implemented Ansible roles to follow reusable automation standards. Each component like MongoDB, Catalogue, User, and Payment has its own role. Common repeated tasks are moved into a common role. We used files for static configurations, templates for dynamic configurations, handlers for service restarts, and variables for environment-specific values. This helped us follow DRY principles and maintain scalable automation.
+
+
+
+
+
+
+ansible.cfg: 
+--------------
+ansible.cfg is the main configuration file of Ansible. It controls Ansible behavior such as inventory location, remote usernamer, SSH connection settings, roles path, privilege escalation, logging, and performance-related configurations.
+
+Instead of passing options repeatedly in command line, we configure them once in ansible.cfg.
+
+and password wont work or cant keep in this file we have to mention inventory fie like 
+[all:vars]
+ansible_password=DevOps321
+
+Check active ansible.cfg
+Command:  ansible --version
+config file = /home/ec2-user/project/ansible.cfg
+it is ansible configuration file and it will be store in /etc/ansible/ansible.cfg(do $ansible --version u will get that file)
+
+Ansible checks/searches for configuration files in this order and where ever file found it will take and use and First matching file is used
+we have 4 types of config files ansible 
+1. ANSIBLE_CONFIG environment variable
+            |
+2. ./ansible.cfg (current proj directory)
+            |
+3. ~/.ansible.cfg (user home directory)
+            |
+4. /etc/ansible/ansible.cfg (global configuration)
+
+create a test folder in ansible controller server and go insdie test folder and do 
+cp /etc/ansible/ansible.cfg .     --> copied to test folder 
+setting below
+we can set to show when u version check and do below command
+1)export ANSIBLE_CONFIG=/home/centos/test/ansible/ansible.cfg               ----> Force Ansible to use specific config:
+2)now exit from that folder and come to somepath home or some where if u do  ---> ansible --version u can see that test folder config file
+if u want to unser that path and then only Ansible follows normal priority again(above order).   ---->  
+unset ANSIBLE_CONFIG --> it will add again /etc/ansible/ansible
+
+ansible.cfg file in roboshop project
+[defaults]
+inventory=inventory.ini
+ansible_user=ec2-user
+#password given in inventory file because it wont work here
+
+inventory.ini file
+[web]
+web.devopswitharun.online
+[mongodb]
+mongodb.devopswitharun.online
+etc..........
+
+[all:vars]
+ansible_password=DevOps321
+
+
+example ansible.cfg file
+-------------------------------
+[defaults]
+inventory = inventory.ini
+remote_user = ec2-user
+roles_path = roles
+host_key_checking = False        avoids --> Are you sure you want to continue connecting yes/no? prompting
+log_path = ansible.log                Stores execution logs.
+forks = 10                                      Controls parallel execution. ex : lets say we have 100 servers this set only 10 servers configured at once so Improves speed.
+
+Instead of writing: become: yes  in every playbook u can mention like below 
+
+[privilege_escalation]
+become = True
+become_method = sudo
+become_user = root
+become_ask_pass = False
+
+[ssh_connection]
+
+ssh_args = -o ControlMaster=auto -o ControlPersist=60s
+pipelining = True
+
+
+interview answer
+------------------------
+In our project we maintained ansible.cfg at rep  ository level. We configured inventory path, roles path, remote user, SSH options, privilege escalation, logging, and performance parameters like forks and pipelining. This avoided repeated command-line arguments and provided consistent execution across environments.
+
+
+templates:
+--------------
+Templates in Ansible are used to create dynamic configuration files by replacing variables at runtime. Ansible uses the Jinja2 templating engine and template files usually have .j2 extension.
+or
+Instead of maintaining multiple configuration files for different environments like dev, test, and prod, we maintain a single template file and pass environment-specific values using variables(diff variables.yaml files for diff env like varibles-prod.yaml , variables-dev.yaml and same for inventory file).
+
+ex:
+ansible.builtin.template:
+ src: catalogue.service.j2
+ dest: /etc/systemd/system/catalogue.service
+ 
+ 
+Instead of maintaining multiple config files(jinja templates) for different environments, we create one template and replace values dynamically.
+like below in same file 
+MONGO_URL=mongodb://{{MONGODB_HOST}}:27017/catalogue         --> DEFINE that variable in variables file and add that in main.yaml
+Dev environment 
+MONGO_URL=mongodb://mongodb-dev.devopswitharun.online:27017/catalogue
+Prod environment
+MONGO_URL=mongodb://mongodb-prod.devopswitharun.online:27017/catalogue
+
+and we can create
+In real projects, when using Ansible templates, we usually maintain different variable files for different environments, but keep one common .j2 template.
+├── group_vars/
+
+      ├── dev.yaml
+
+      └── prod.yaml
+
+with out template : we need to create multiple files 
+catalogue-dev.service
+catalogue-prod.service
+catalogue-test.service
+
+duplicate files ❌
+
+ex: roles/catalogue/templates/catalogue.service.j2
+in tasks 
+- name: Copy catalogue service
+  ansible.builtin.template:
+    src: catalogue.service.j2
+    dest: /etc/systemd/system/catalogue.service
+	
+	
+same as copy module copy vs template module
+| copy                    							| template                          |
+| ----------------------- 						| --------------------------------- |
+| Static files            						| Dynamic files                     |
+| No variable replacement 		| Supports variables                |
+| Uses files folder       					| Uses templates folder             |
+| Same output always     			| Output changes based on variables |
+
+
+
+
+In our project we maintained common Ansible roles and templates. Templates were created using Jinja2 syntax, and environment-specific values were maintained separately using group_vars. During deployment, the same template generated different configuration files for dev, test, and production environments based on variables. This avoided duplicate configuration files and followed DRY principles.
+
+In real projects, when using Ansible templates, we usually maintain different variable files for different environments, but keep one common .j2 template.
+one template + multiple environment variable files is the standard approach. ✅
+
+
+handlers folder: 
+---------------------
+Handlers are special tasks in Ansible that execute only when they are notified by another task. 
+They are mainly used to perform actions ---> restarting services, reloading configuration, or running daemon reload after a change happens.
+
+lets say one task we modified if this is changed other task msut be exeuted 
+ex: i have changed roboshop.conf in web.yaml --> if we change configuration then nginx server must restart for that nginx task has to run 
+
+we changed some thing in the roboshop.conf file after that server has to restart
+
+- name: copying roboshop configuration file 
+  ansible.builtin.template:
+    src: roboshop.conf.j2
+    dest: /etc/nginx/default.d/roboshop.conf 
+  notify: 
+  - Restart nginx
+  
+create a handlers folder in web role folder and create main.yaml and paste below task 
+
+- name: Restart nginx               --> this name and above notify name should be same 
+  ansible.builtin.service:
+    name: nginx
+    state: restarted
+    enabled: yes
+	
+-->when we change roboshop.conf and run it will automatically trigger Restart nginx task
+
+Multiple notify example --> One task can call multiple handlers.
+  notify:
+  - daemon reload
+  - Restart nginx
+	
+Handler runs only once even if u mention ntify in below multiple tasks in  a playbook and Handler After all normal tasks complete runs at end of play
+
+Force handler immediately ---->   If needed: - meta: flush_handlers    ------------>  Now handler runs immediately.
+ - name: 
+   notify:
+   - daemon reload
+   - Restart nginx
+ - meta: flush_handlers
+ 
+ In our project we used handlers to avoid unnecessary service restarts. Whenever configuration files were updated using template or copy modules, we notified handlers. Handlers executed only when changes happened and restarted services like nginx, catalogue, and MongoDB. Multiple tasks can notify the same handler, but Ansible executes it only once at the end of the play.
+  
+  
+vars folder: used in shipping module
+---------------
+vars folder in Ansible roles is used to store role specific variables and use those variable keys/names in tasks, templates, handlers, etc.(vars folder main.yaml)
+i.e., if variables are used in only particular role we can create vars folder in that role(ex: shipping component) and mention them in main.yaml (role specific)
+but if those variables are required for multiple module we keep them in variables.yaml it is outside of roles folder 
+
+Instead of hardcoding values inside tasks, we keep them in vars folder in particular role 
+It improves:
+reusability
+easy maintainability
+avoiding duplicate values
+
+ex: vars folder/main.yaml
+MONGODB_HOST: mongodb.devopswitharun.online
+APP_USER: roboshop
+APP_LOCATION: /app
+DOMAIN_NAME: devopswitharun.online
+
+In Ansible roles, vars directory stores variables specific to that role. We keep values like application user, installation paths, package names, ports, and endpoints inside vars/main.yml instead of hardcoding them in tasks. This makes roles reusable and easier to maintain. For configurable values we prefer defaults, and for role-specific fixed values we use vars.
+
+| defaults                            		| vars                    |
+| -----------------------------------  | ----------------------- |
+| Low priority                        	| High priority           |
+| Easily overridden                   | Hard to override        |
+| Default values                      | Fixed role values       |
+| Recommended for configurable values | Internal role variables |
+
+Example:
+defaults/main.yml
+PORT: 8080
+
+Meaning: "I suggest this value, but you can change"
+Override: ansible-playbook main.yml -e PORT=9090
+
+vars/main.yml
+JAVA_VERSION: 17
+Meaning: "This role expects this value"
+
+In our RoboShop project, we used the vars directory inside roles to maintain role-specific variables instead of hardcoding values. Variables like application paths, package versions, service names, and endpoints were stored in vars/main.yml and reused in tasks and templates. For values shared between multiple roles or environments, we used group_vars. For configurable default values, we used defaults.
+
+Tags:
+------
+Tags in Ansible are used to execute specific/particular/single task from a playbook instead of executing the entire playbook(i.e., entire automation.) tasks 
+or
+scenario: lets say u have mutiple tasks in a playbook and if u want to run particular task u can run through this tags and without tags u need to run whole playbook
+Tags don't only work at task level. They can be applied to ----> play,role,block,task
+
+they help in ---> faster execution,debugging,running selected configuration changes,skipping tasks,Partial deployments,Avoid unnecessary changes,Production hot fixes
+
+
+
+Example: 
+single tag mentioned 
+playbook.yaml
+------------
+- name: tags example
+  hosts: localhost
+  become: yes
+  tasks:
+  - name: install nginx
+    ansible.builtin.package:
+      name: nginx
+      state: present
+    tags:
+    - install
+	
+  - name: download catalogue code
+	ansible.builtin.get_url:
+		url: https://roboshop-builds.s3.amazonaws.com/catalogue.zip
+		dest: /tmp/catalogue.zip
+  tags:
+  - deployment
+  
+  - name: start nginx
+    ansible.builtin.service:
+      name: nginx
+      state: started
+    tags:
+    - service
+	
+  - name: restart catalogue
+    ansible.builtin.service:
+      name: catalogue
+      state: restarted
+    tags:
+    - restart
+	
+run : ansible-playbook web.yaml 16-tags.yaml --tags install        --->   now install nginx task will be executed and start nginx task will be skipped 
+or
+ansible-playbook web.yaml 16-tags.yaml --tags install                 
+
+not this ---> ansible-playbook -t install 16-tags.yaml       wrong format 
+
+multiple tags:   One task can have multiple tags.       
+------------------
+based on above example and give like below in task 
+  tags:
+  - install
+  - restart
+  
+run multiple tags :   ansible-playbook 16-tags.yaml --tags "install,deployment"
+
+or 
+below both run above task we can give anyone
+
+ansible-playbook main.yaml --tags install
+
+or:
+
+ansible-playbook main.yaml --tags restart
+  
+skip tags : it will skip mentioned task execute remaining tasks     in above example
+-----------
+run : ansible-playbook 16-tags.yaml --skip-tags restart                             --> except restart task remaining all tasks will run
+
+Special tags:
+------------- 
+1)always 					--> Runs every time.
+
+- name: gather information
+  ansible.builtin.debug:
+    msg: hello
+  tags:
+  - always
+run : ansible-playbook main.yaml --tags install  -----> still executes
+
+2)never  					--> normally skipped and it Will not run unless explicitly called. to call  -----> ansible-playbook main.yaml --tags cleanup
+
+- name: Cleanup old logs
+  ansible.builtin.file:
+    path: /tmp/logs
+    state: absent
+  tags:
+  - never
+  - cleanup
+ 
+Run manually ------------> ansible-playbook main.yaml --tags cleanup
+
+3)Check available tags i.e.,  list of tags written in playbook  ---> run: ansible-playbook main.yaml --list-tags   			
+
+Check tasks for a tag :ansible-playbook main.yaml --tags install --list-tasks
+
+
+
+
+In our RoboShop project we used Ansible tags to perform selective execution of roles. We created tags like install, configuration, deployment, and restart. During application releases we executed only deployment-related tasks instead of running complete roles, which reduced execution time and avoided unnecessary configuration changes.
+
+new deployment for our application --> in common folder written syntax new-deployment.yaml 
+lets say application is running ex: catalogu now we want to deploy new code or version 
+
+ex:
+stop the service
+remove old code
+download new code
+restart server
+
+in common folder --> new-deployment.yaml
+
+
+
+Ansibe vault:
+-----------------
+Ansible Vault is used to encrypt sensitive data such as passwords, API keys, tokens, certificates, and secrets inside Ansible projects.
+Instead of storing plain text credentials in repo's, we encrypt them using Vault.
+interview:
+In our Ansible automation we used Ansible Vault for secrets management. We encrypted sensitive information like database passwords, API tokens, and application credentials instead of storing plain text values in Git. During execution we passed vault credentials using ask-vault-pass or vault password files integrated with CI/CD tools like Jenkins.
+What should be encrypted?
+like --> Database passwords,SSH passwords,API tokens,Cloud credentials,Private keys,Application secrets,Certificates
+
+without vault:  --> Anyone with repo access can see secrets.	
+MYSQL_PASSWORD: RoboShop@1
+AWS_SECRET_KEY: abc123456
+
+
+with vault: ---> Encrypted data.
+$ANSIBLE_VAULT;1.1;AES256
+
+6638646534383832
+3532326639636134
+6432663632366535
+We should not expose --> DB passwords,SSH passwords,API tokens,Cloud credentials,Application secrets
+so  secrets --> encrypt with vault --> commit encrypted file to git 
+
+Vault commands:
+----------------------
+ansible-vault create <filename>.yaml      		  --> create vault    ask to set new password 
+ansible-vault view <filename>.yaml         		  --> view encrypted file
+ansible-vault edit <filename>.yaml                    --> edit ansible vault
+
+ansible-vault encrypt password.yaml 		          --> Encrypt existing file 
+ansible-vault decrypt <filename>.yaml              --> Decrypt the already encrypted file  i.e., Encrypted → Plain text
+ansible-vault rekey <filename>.yaml                 --> change vault password
+
+Encrypt single variable (means instead of openning file  in terminal and giving we can give in cmd line like this) Useful when only one value should be encrypted.
+
+run : ansible-vault encrypt_string 'RoboShop@1' --name MYSQL_PASSWORD
+
+Example: currently we have 
+-------------
+mysql.yaml
+- name: setup password
+  ansible.builtin.command:
+    mysql_secure_installation --set-root-pass RoboShop@1            --> password is visible move to valut
+
+by using vault:
+
+1)Create vault file: 
+ansible-vault create secrets.yaml 			--> asks for password enter and add
+MYSQL_ROOT_PASSWORD: RoboShop@1
+RABBITMQ_PASSWORD: roboshop123          --> now save file is encrypted
+
+2)cat secrets.yaml         --> u will get output u cant understand password 
+
+3)Use vault variable
+- name: mysql password setup
+  ansible.builtin.command:
+    mysql_secure_installation --set-root-pass {{MYSQL_ROOT_PASSWORD}}
+
+4)Include vault file
+- name: Install {{component}}
+  hosts: "{{component}}"
+  become: yes
+  vars_files:
+  - secrets.yaml                    ---> we encrypted this using vault option 
+  roles:
+  - "{{component}}"
+ 
+5) Run playbook with vault 
+1st way 
+-----------
+ansible-playbook main.yaml --ask-vault-pass      --> enter vault password   --> execution continues
+
+2nd way
+-----------
+mention in ansible.cfg  --->  ask_vault_pass=True
+run: ansible-playbook main.yaml       --> it will automatically prompt for valut password because we mentioned in ansible.cfg file 
+
+3rd way: Avoid typing password in cmd line every time  
+-----------
+--> Create file:
+vim vault-pass.txt   									-->  add vault password inside file ex: mypassword
+
+run like : ansible-playbook --vault-password-file vault-pass.txt main.yaml 
+
+Production:
+Do not commit vault-pass.txt ❌
+Store in:
+Jenkins Credentials
+AWS Secrets Manager
+HashiCorp Vault
+
+| Normal vars         			 | Vault           |
+| -----------------------------	| --------------- |
+| Plain text           				| Encrypted       |
+| For normal configs   		| For secrets     |
+| Can commit carefully	 | Safe to commit  |
+| Ports, paths        			 | Passwords, keys |
+
+Jenkins Flow Example
+Developer ---> writes password variables(creates secrets.yaml) ---> ansible-vault encrypt ---> push encrypted file to Git hub---> Jenkins pipeline ---> Fetch vault password from Jenkins credentials ---> ansible-playbook execution
+
+encoding: Encoding converts data from one format to another format so systems can read or transfer it properly. It is not for security.
+-------------
+Anyone can decode it.  Base64 encode
+encrypt
+Arun --> QXJ1bg==
+decrypt
+ QXJ1bg== -->  Arun    --> No password/key needed ❌
+ 
+ Encryption (i.e ansible vault)
+ ---------------
+Encryption converts readable data into unreadable data using cryptographic algorithm(may be mathematical algorithm) and secret keys to protect information. It is for security. Need key/password to decrypt.
+ex:
+
+1)Password: RoboShop@1   
+2)Encryption (AES256 + Key) -->a7f9c82d9x92kls0
+3)Decrypt:
+encrypted data --> give secret key --> RoboShop@1
+
+| Encoding          | Encryption        |
+| ----------------- | ----------------- |
+| Data conversion   | Data protection   |
+| No security       | Provides security |
+| No key required   | Key required      |
+| Easily reversible | Only key holder    |
+Base64 example       AES256 example
+
+encrypt:
+Used in Kubernetes secrets: 
+echo -n "RoboShop@1" | base64   
+o/p : Um9ib1Nob3BAMQ==
+Decode : echo "Um9ib1Nob3BAMQ==" | base64 -d 
+o/p : RoboShop@1              
+So Kubernetes secrets are encoded ✅ not encrypted by default
+
+interview answer:
+In our project we used Ansible Vault to protect sensitive information like database passwords and API keys. We encrypted secret variable files using AES256 encryption and stored only encrypted content in Git. During Jenkins deployments, vault passwords were injected securely from Jenkins credentials to decrypt secrets at runtime.
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+group_vars:
+---------------
+in inventory file we give  without group_vars
+[web:vars]                   --> all below varibles applied to web group 
+ansible_user:centos
+ansible_password: DevOps321
+MONGODB_HOST: mongodb.devopswitharun.online
+course: DevOps
+Trainer: Siva
+
+but we can create group_vars folder 
+Example:
+-----------
+1)create a vault folder in Ansible folder
+2)01-playbookvault.yaml
+- name: Ping playbook
+  hosts: web
+  tasks:
+  - name: Ping the Target server
+    ansible.builtin.ping:
+3)ansible.cfg
+[defaults]
+inventory=inventory.ini                ---> giving path of inventory where it exists 
+ask_vault_pass=True                     ---> this u can mention in ansible.cfg file like this or in terminal u can use like-->   --ask-vault-pass then terminal will prompt for password 
+4)inventory.ini
+[web]
+web.devopswitharun.online
+5)create a group_vars folder in local vs code and push (dont create file inside if we create file we need to encrypt not create command )and inside linux terminal to create vault below steps and clone repo and go insdie group_vars/filename.yaml
+ansible-vault create group_vars/web.yaml
+6)inside file web.yaml
+ansible_user=ec2-user
+ansible_password=DevOps321
+
+now run -> ansible-playbook 01-playbookvault.yaml
+
+important point :  [web] inside name and inside group_vars folder file i.e(web.yaml --> vault file name)  should be same then only it will pic if different it will not take 
+
+in our application roboshop-ansible-with-roles
+-------------------------------------------------------------
+1)
+1)without group vars we just give like below first 2 steps but now 
+in ansible.cfg --> comment this --> ansible_user=ec2-user
+in inventory.ini -->  comment this two
+[all:vars]
+ansible_password=DevOps321
+
+2)create a folder called group_vars inside roboshop-ansible-with-roles folder and inside that all.yaml
+
+3)ask_vault_pass=True and inventory=inventory.ini --> mention this in ansible.cfg file inside roboshop-ansible-with-roles folder 
+
+4)now go to ec2 instance clone this repo and cd roboshop-ansible-with-roles
+
+5)now we already create a file all.yaml in local so we can use ansible-vault create group_vars/all.yaml it will tell already exists
+
+6)we have to use ansible-vault encrypt group_vars/all.yaml  --> encrypt existing file and 
+
+7)ansible-vault edit group_vars/all.yaml  --> add ansible_user: ec2-user and ansible_password: DevOps321 inside all.yaml
+
+8)now run --> ansible-playbook -e component=mongodb main.yaml  --> and we mentined ask_vault_pass in ansible.cfg it will promt for vault password and take credentials from that encrypted file
+
+#all.yaml name i used because all modules i have same user and password  so all.yaml 
+#now go to linux terminal 
+#1)we already created a file all.yaml in local with user and password and just encrypt (ansible-vault encrypt <filename>.yaml)  in linux terminal ec2 
+or 
+#2nd way u can create empty all.yaml in local and in linux first encrypt command and then edit the file with user name and password
+#so we already created a file in local all.yaml so we cant use ansible-vault create <filename>.yaml cmd it will tell already file exist ..if file not created just folder created we can use create command like below
+#if file created in local we can do by using encrypt ansible-vault encrypt group_vars/all.yaml and then if u want to edit anything u can use aansible-vault edit <filename>
+
+2)
+now rabbitmq module we used rabbitmq user and password 
+1)create a vars folder and inside that main.yaml  empty file in rabbitmq role folder 
+2)replace {{rabbitmq_user}} and {{rabbitmq_password}} in tasks folder main.yaml
+3)now in ansible controller server clone the roboshop-ansible-with-roles repo and go into rabbitmq role 
+4)inside vars folder there is a main.yaml --> now run that  --> ansible-vault edit vars/main.yaml and give
+ rabbitmq_user: roboshop
+ rabbitmq_password: roboshop123
+ :wq!
+ 5)now encrypt the file --> ansible-vault encrypt vars/main.yaml
+ 6)run ansible-playbook -e component=rabbitmq main.yaml     --> it asks for vault password and enter it will replace them in tasks folder user and password
+ 
+Def:
+group_vars and host_vars are used to manage inventory-based variables.Instead of hardcoding variables inside playbooks/roles, we keep variables based on:
+server groups → group_vars
+individual servers → host_vars
+This helps manage different environments like:
+dev,qa,stage,prod
+
+group_vars -->  stores variables that apply to a group of hosts(multiple servers/applications).
+Ex: for all servers below have same username and password 
+[web]
+web.devopswitharun.online
+[catalogue]
+catalogue.devopswitharun.online
+[mysql]
+mysql.devopswitharun.online
+
+folder structure:
+├── group_vars
+│      |
+│      ├── all.yaml                   --> for all servers below we have same username and password 
+│      ├── web.yaml                --> if u have different variables for diff modules u can create like this 
+│      ├── catalogue.yaml
+│      └── mysql.yaml
+
+group_vars/all.yaml
+content
+APP_USER: roboshop
+DOMAIN: devopswitharun.online
+ENV: dev
+
+the above creds are used for all applications
+
+host_vars ---> host_vars stores variables for that one specific server only.
+ex:
+[mysql]
+mysql.devopswitharun.online
+[mongodb]
+mongodb.devopswitharun.online
+
+folder structure:
+host_vars/
+|
+|-- mysql.devopswitharun.online.yaml           --> variables Only mysql server receives it.
+|
+|-- mongodb.devopswitharun.online.yaml
+
+
+| group_vars               | host_vars                  |
+| ------------------------ | -------------------------- |
+| For group of servers     | For one server             |
+| Common values            | Server-specific values     |
+| More commonly used       | Less commonly used         |
+| Example: all app servers | Example: special DB server |
+
+
+example with environments:
+------------------------------------
+in main.yaml :
+replicas={{REPLICAS}}
+
+in inventory.ini
+[dev]
+catalogue-dev.example.com
+[prod]
+catalogue-prod.example.com
+
+in group_vars folder
+group_vars/dev.yaml
+ENV: dev
+REPLICAS: 1
+group_vars/prod.yaml
+ENV: prod
+REPLICAS: 5
+
+Variable priority
+---------------------
+Simple order:
+
+1)extra vars (-e)
+       ↑
+2)host_vars
+       ↑
+3)group_vars
+       ↑
+4)role defaults
+
+when we give variables in tasks first priority it will search variables in terminal where we give like -e ansible_user like that if not found it will search variables in host_vars folder(second priority) if not found 3rd priority it will search variables in group_vars folder if not present in that it will search in inventory [defaults]
+
+
+in our robosho project 
+all.yaml 
+APP_USER: roboshop
+APP_LOCATION: /app
+MONGODB_HOST: mongodb.devopswitharun.online
+REDIS_HOST: redis.devopswitharun.online
+MYSQL_HOST: mysql.devopswitharun.online
+RABBITMQ_HOST: rabbitmq.devopswitharun.online
+
+whetre ever in tasks u want u can mention this variable  --> "{{MYSQL_HOST}}" , "{{REDIS_HOST}}"  etc....
+
+
+
+
+
+
+check in chatgpt below question
+Example:
+
+host_vars/mysql.devopswitharun.online.yaml
+
+MYSQL_PORT: 3306
+INSTANCE_TYPE: t3.small
+
+Only mysql server receives it.         and group_vars/catalogue.yaml
+
+Only for catalogue hosts.
+
+PORT: 8080
+MONGODB_HOST: mongodb.devopswitharun.online
+
+Only:
+
+[catalogue]
+catalogue.devopswitharun.online
+gets these valu both are same no 
+
+it is serving only one server what is the differences.
+
+below answer:
+group_vars are used when multiple hosts in an inventory group share common configuration, while host_vars are used for individual host-specific overrides. For example, all application servers can get common ports and environment variables from group_vars, but one server requiring different memory, role, or configuration can be customized using host_vars.
+
+group_vars
+==========
+[catalogue]
+server1
+server2
+server3
+
+same values for everyone
+
+
+host_vars
+=========
+server2 only
+
+special configuration
+
+---------------------------------------------------------------------------------------------------------------
+
+
+
+we use SSM Parameter store from aws platform instead of ansible vault 
+
+
+
+Dynameic inventory:
+--------------------------
+Dynamic Inventory automatically fetches server details from external sources like AWS, Azure, GCP, Kubernetes, etc., instead of manually maintaining inventory.ini files.It dynamically discovers hosts at runtime.
+
+Why do we need Dynamic Inventory?
+ex: In your RoboShop project currently you use static inventory and This works for small projects.
+but in companies there will be autoscaling at the time of big billion days autoscaling create resources to fecth the server ips and configure them needs dynamic inventory
+Dynamic inventory only fetches existing ec2 servers/resources ip address and connect with them and gives them to Ansible for configuration. It does not create EC2 or Route53.
+Dynamic inventory does not provision infrastructure. It queries cloud providers like AWS and fetches existing resources dynamically based on metadata like tags. Once hosts are discovered, Ansible executes roles/playbooks on those instances. Infrastructure provisioning is usually handled separately using Terraform.
+
+Terraform = BUILD/CREATE servers in aws 
+
+Dynamic Inventory = FIND server ip's and handover them to ansible
+
+Ansible Roles = CONFIGURE servers
+
+inventory.ini   --> our static inventory
+[mongodb]
+mongodb.devopswitharun.online
+[catalogue]
+catalogue.devopswitharun.online
+[redis]
+redis.devopswitharun.online
+[mysql]
+mysql.devopswitharun.online 
+
+Problem in real companies:
+
+Imagine AWS Auto Scaling:
+
+in Morning we have 2 catalogue servers
+catalogue servers:
+catalogue-1
+catalogue-2
+because of Traffic increases(like ecommerce sales time)
+Auto Scaling creates:
+catalogue-1
+catalogue-2
+catalogue-3
+catalogue-4
+catalogue-5
+Your inventory.ini still has New servers missing ❌
+catalogue-1
+catalogue-2
+
+
+now Dynamic inventory 
+
+AWS EC2
+ |
+ |
+ Tags:
+ Name=catalogue
+ Environment=prod
+ |
+ |
+Ansible dynamic inventory
+ |
+ |
+Automatically gets
+
+catalogue-1
+catalogue-2
+catalogue-3
+catalogue-4
+catalogue-5
+
+and handover the to ansibe and ansible will configure and deploy applications
+
+Static Inventory							Dynamic Inventory
+Manually created						Automatically generated
+inventory.ini								Plugin/script
+Fixed servers								Cloud discovered
+Small environments					Cloud production
+Manual updates						Auto scaling support
+
+
+In our project we used Ansible dynamic inventory to automatically discover cloud resources instead of maintaining static inventory files. For AWS, we used the aws_ec2 inventory plugin, which fetches EC2 instances based on tags and groups them dynamically. This helped us handle auto scaling environments because newly created instances were automatically included during playbook execution.
+
+
+Setup AWS dynamic inventory:
+1)Install collection
+ansible-galaxy collection install amazon.aws
+2)Install boto libraries
+pip3 install boto3 botocore           --> Because Ansible(uses python in background install python also ) and it uses boto3 and botocore to connect/talk to aws.
+Step 3: Create inventory file
+Instead of --> inventory.ini
+Create: aws_ec2.yaml     or web.aws_ec2.yaml for web group of hosts 
+
+content in file:
+-------------------
+plugin: amazon.aws.aws_ec2            --> Uses AWS EC2 inventory plugin. 
+regions:
+- us-east-1                                             --> Search EC2 in this region.
+keyed_groups:
+- key: tags.Component
+  prefix: ""
+filters:
+  instance-state-name: running		  -->   Only running servers.Stopped servers ignored.			
+compose:
+  ansible_host: private_ip_address   --> Connect using private IP.
+   
+ run ansible-inventory -i aws_ec2.yaml --graph
+ 
+ for this no inventory.ini needed 
+ 
+ in ansible.cfg we can give like 
+ 
+ [defaults]
+inventory=aws_ec2.yaml
+
+Real project usage  
+Terraform --> creates EC2 with Tags --> AWS Dynamic Inventory --> finds/fetches servers --> Ansible Roles do --> Configure applications
+
+
+
+ROBOSHOP PROJECT Dynameic Inventory EXAMPLE
+--------------------------------------------------------------------
+
+dynamic inventory example for our roboshop project
+Yes 👍. For your RoboShop project, because you already created all EC2 instances manually, you only need to replace static inventory.ini with AWS dynamic inventory.
+
+No need to touch your roles (mongodb, catalogue, cart, web etc.). Only inventory part changes.
+
+Your current flow:
+
+Manual EC2 creation ✅
+
+        |
+        |
+
+inventory.ini
+(manually writing DNS)
+
+        |
+        |
+
+Ansible Roles
+(mongodb, catalogue, web...)
+
+Change to:
+
+Manual EC2 creation ✅
+
+        |
+        |
+
+EC2 Tags
+
+        |
+        |
+
+AWS Dynamic Inventory
+
+        |
+        |
+
+Same Ansible Roles
+Step 1: Add tags to your existing EC2 instances
+
+Go AWS Console:
+
+EC2 → Instance → Tags
+
+Add:
+
+mongodb EC2
+Key: Component
+Value: mongodb
+catalogue EC2
+Key: Component
+Value: catalogue
+web EC2
+Key: Component
+Value: web
+
+Like this for all:
+
+mongodb   Component=mongodb
+redis     Component=redis
+mysql     Component=mysql
+rabbitmq  Component=rabbitmq
+catalogue Component=catalogue
+user      Component=user
+cart      Component=cart
+shipping  Component=shipping
+payment   Component=payment
+web       Component=web
+Step 2: Install AWS inventory requirements
+
+On Ansible controller:
+
+ansible-galaxy collection install amazon.aws
+
+Install boto:
+
+pip3 install boto3 botocore
+Step 3: Create dynamic inventory file
+
+Remove dependency on:
+
+inventory.ini ❌
+
+Create:
+
+vi aws_ec2.yaml
+
+Add:
+
+plugin: amazon.aws.aws_ec2
+
+regions:
+- us-east-1
+
+filters:
+  instance-state-name: running
+
+keyed_groups:
+- key: tags.Component
+  prefix: ""
+
+compose:
+  ansible_host: private_ip_address
+Step 4: Check AWS permissions
+
+Your Ansible controller needs permission:
+
+ec2:DescribeInstances
+
+If controller is EC2, attach IAM role.
+
+Example policy:
+
+{
+ "Effect": "Allow",
+ "Action": [
+   "ec2:DescribeInstances"
+ ],
+ "Resource": "*"
+}
+Step 5: Test dynamic inventory
+
+Run:
+
+ansible-inventory -i aws_ec2.yaml --graph
+
+Expected:
+
+@all
+
+ |--@mongodb
+ |    |
+ |    |--172.31.20.10
+
+
+ |--@catalogue
+ |    |
+ |    |--172.31.25.15
+
+
+ |--@web
+      |
+      |--172.31.30.20
+
+Now Ansible automatically created groups.
+
+Step 6: Your main.yaml remains SAME
+
+No change.
+
+Your current:
+
+- name: "Install {{component}}"
+  hosts: "{{component}}"
+  become: yes
+
+  roles:
+  - "{{component}}"
+
+Keep it.
+
+Step 7: Run components
+
+Before:
+
+ansible-playbook \
+-i inventory.ini \
+-e component=mongodb \
+main.yaml
+
+Now:
+
+ansible-playbook \
+-i aws_ec2.yaml \
+-e component=mongodb \
+main.yaml
+
+For catalogue:
+
+ansible-playbook \
+-i aws_ec2.yaml \
+-e component=catalogue \
+main.yaml
+Optional: Update ansible.cfg
+
+Before:
+
+[defaults]
+
+inventory=inventory.ini
+
+Change:
+
+[defaults]
+
+inventory=aws_ec2.yaml
+
+Now simply:
+
+ansible-playbook \
+-e component=web \
+main.yaml
+What about Route53?
+
+Your application configs can remain:
+
+mongodb.devopswitharun.online
+redis.devopswitharun.online
+
+Dynamic inventory doesn't replace application DNS.
+
+It replaces only:
+
+Ansible target server finding
+
+Before:
+
+[mongodb]
+mongodb.devopswitharun.online
+
+After:
+
+AWS tag Component=mongodb
+Your final RoboShop architecture
+Existing EC2
+(created manually)
+
+        |
+        |
+
+Tags
+Component=web
+Component=catalogue
+
+        |
+        |
+
+aws_ec2.yaml
+
+        |
+        |
+
+Ansible Dynamic Inventory
+
+        |
+        |
+
+main.yaml
+
+        |
+        |
+
+roles/
+
+mongodb
+redis
+mysql
+catalogue
+cart
+user
+payment
+shipping
+web
+
+Interview explanation for your project:
+
+In RoboShop, EC2 instances were tagged with component names. We configured AWS EC2 dynamic inventory plugin to discover running instances based on tags. This removed manual inventory management, and the same reusable Ansible roles were executed against dynamically discovered hosts.
+
+This is exactly how you upgrade your current project. ✅

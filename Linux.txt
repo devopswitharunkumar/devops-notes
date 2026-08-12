@@ -1,0 +1,2326 @@
+Devops:
+=======
+Client --> A client is a system/application/browser/mobileapp/device that sends requests to a server to access data,services, applications, or resources over a network.
+Server --> A server is a system or software that receives client requests, processes them, and provides data/services/applications/resources over a network.
+
+using protocols like HTTP, HTTPS, or TCP/IP.”
+
+windows
+OS 
+
+
+SSH stands for Secure Shell.
+It is a secure way to connect remotely from one server to another server over a network or internet.
+or 
+“SSH is a secure protocol used to remotely connect and manage servers over an encrypted network connection.”
+
+1)ssh key-gen -f <filename> --> it will generate the public key and privatekey
+2)ssh-rsa <publickey code> <laptopname> -->This line tells the server: “Allow the owner of the matching private key to authenticate/login.”
+
+We use ssh-rsa public keys for secure passwordless SSH authentication.
+When SSH connection starts, the server verifies the matching private key before allowing access.”
+SSH creates an encrypted tunnel so nobody can easily read the data.
+
+ssh username@server-ip
+
+What Happens Internally:
+-----------------------
+1)SSH client starts connection on your machine
+2)Server checks identity i.e public keys
+3)Authentication happens --Server sends encrypted challenge.
+4)Secure encrypted connection is established -- when private key matches public key(✅ Authentication successful)
+5)Terminal access opens -- You get terminal access to server.
+Types:
+------
+1)Password Authentication
+ssh user@ipaddress  --> prompt for password u have to enter 
+2)SSH Key Authentication 
+ssh -i privatekey.pem ec2-user@<public ip>
+
+default ssh port is ---> 22
+
+3)ssh -i <private key> <user@private ip address> -->is used to securely connect to a remote server using SSH key-based authentication instead of passwords.”
+
+Step 1 — SSH Client Starts --> Your laptop starts SSH program. it reads private key
+Step 2 — Connection to Server --> connects/verify to -> 54.23.11.90 and prot -22((default SSH port))
+Step 3 — Server Sends Challenge --> server says “Prove you own the matching private key.”
+Step 4 — Private Key Verification --> my laptop use - mykey.pem (to generate encrypted response.)
+Step 5 — Server Checks Public Key --> Server already has matching public key inside:(ssh-rsa cmd)-- if succeeds --> ✅ Authentication successful
+Step 6 — Secure Session Created --> Encrypted SSH tunnel established --> You get terminal access.
+
+
+Absolute path --> Complete/full path from the root directory(it always starts with /(root))
+Relative path --> Path relative to your current directory-- It does NOT start with /. -- projects/app/file.txt --> Because system starts searching from current location.
+
+pwd --> present working directory(give current location ur in that path)
+cd --> change directory (move between directories)
+# --> root directory (u r in root directory)
+$ --> ur a normal user
+
+$sudo su - --> enter into root access
+
+COMMANDS
+========
+uname(unix name): to print certain system information
+----------------
+“uname command is used to display Linux system information and kernel information.”
+
+#uname - Shows OS/kernel name.
+uname/uname -s		OS or kernel name
+uname -a	All system info
+uname -r	Kernel release
+uname -v    Kernel version
+uname -n	Hostname/node name
+uname -m	Machine hardware name
+uname -o    print the operating system
+uname -s    kernel name
+uname -p    processor name
+
+man (manual):
+------------
+“man command is used to view the manual/documentation of Linux commands.”
+ Ex: man <cmd>
+ 
+ls(list): used to list files and folders/directories 
+--------
+ls/ls -r	List files
+ls -l		Long detailed list (ex: -rw-r--r-- 1 arun users 1200 May 18 file.txt)
+ls -a		Show hidden files (filename starts with .)- mostly these files are configurations adn environment settings files
+ls -lh		Human readable sizes
+ls -lt		Sort by latest modified file will be on top(Shows files inside all subdirectories also.)
+ls -R		Recursive listing
+ls -d		Show directory itself
+ls -i		Show inode number
+ls -al		hidden and all info details reg file
+ls /home/arun --> list specific folder files
+ 
+==========================================
+
+
+touch --> used to create empty files or update file timestamps of a file
+------
+Ex :1)  touch <filename>    --> create single file
+If file does NOT exist:
+✅ New empty file created
+
+If file already exists:
+✅ current timestamp gets update for the existing file 
+When touch is executed on an existing file, Linux updates the file’s timestamps in the inode metadata to the current system time.
+
+2)touch file1.txt file2.txt file3.txt --> create multiple files at a time 
+
+mkdir(make directory) --> is used to create directories/folders
+---------------------
+Ex: 
+1)mkdir <folder name>    ---> create single  directory
+    
+2)mkdir folder1 folder2 folder3 --> create multiple directories
+
+3)mkdir -p <dirname>      ---> creates parent directories
+ex: mkdir -p java/projects/data ---> Create Nested Directories if java/projects folders not present then command fails
+
+4)mkdir -v demo           --->-v verbose --> It displays a message for every directory created. --> o/p: mkdir: created directory 'demo'
+
+5)mkdir -m 777 public  	  ---> Create Directory With Permissions
+
+cat(concatenate)--> is used to display, create, append, and combine file contents
+---------------
+1)cat <filename> --> shows file contents
+2)cat > filename --> create if file not exists and add the content to the file
+3)cat >> filename --> content will append to the existing content at the end 
+4)cat file1 file2 --> show combined content of both files
+5)cat file1 file2 > merged.txt --> file will be created and combined content will be added to merged.txt file 
+6)cat -n notes.txt--> it will show line numbers of content
+
+
+CAT/LESS
+| `cat`                          | `less`              |
+| ------------------------------ | ------------------- |
+| Shows full content immediately | Scroll page by page |
+| Good for small files           | Good for large logs |
+
+
+
+rm(remove) ---> used to delete files and directories permanently from system without recycle bin.
+----------
+*In production environments we use options like -r and -f carefully because deletion is permanent and incorrect usage can impact systems severely.
+
+1) rm filename -> delete file with content/without content
+2) rm file1.txt file2.txt  --> delete multiple files
+3) rm -r projects  --> delete directory with file content/empty directories
+	-r --> recursive deletion means it will delete folder,subfolders and files inside folders  -r =recursive
+4) rm  -f file.txt -->  force delete without confirmation       -f = force
+5) rm -rf <folder>   --> Deletes everything inside immediately.
+6) rm -rf /    --> This attempts to delete entire Linux filesystem
+7) rm -ri -> it will ask for conformation before deleting the each file       -i = interactive
+
+internally
+Removes file entry from directory
+Decreases inode reference count
+Marks disk blocks as free
+
+File becomes inaccessible.
+
+
+rmdir(remove directory): used to remove empty directory
+----------------------
+rmdir <folder> 
+if directory is not empty it will show error like ==>  rmdir: failed to remove 'projects': Directory not empty
+
+Difference Between rmdir and rm -r
+-----------------------------------
+rmdir	Removes empty directory only
+rm -r	Removes non-empty directory and empty directories
+
+cp(copy): used to copy files and directories from one location to anaother location
+--------
+*In production environments, options like -r and -p are commonly used for recursive copying and preserving file metadata during backups and deployments
+Ex : 
+1)cp <source> <destination>  --> cp file1.txt backup.txt --> to copy only files not folders from one loc to another location                                                           
+2)cp app.log /home/arun/logs/ 
+3)cp -r project backup_project   --> recursive copy folders,subdirectories and files from one project folder to another folder
+4)cp -i file.txt backup.txt  --> Asks before overwriting:
+5)cp -v file1.txt backup.txt  --> output : 'file1.txt' -> 'backup.txt'  --> it will display the message like output 
+6)cp -p nginx.conf nginx.conf.bkp --> means same timestamp,permissions and ownership(of source file) will be copied to nginx.conf.bkp(destination file also)
+		Preserves:
+			timestamps
+			permissions
+			ownership
+			
+diff cp -p nginx.conf nginx.conf.bkp --> means same timestamp,permissions and ownership(of source file) will be copied to nginx.conf.bkp(destination file also)
+ and cp nginx.conf nginx.conf.bkp  --> only file content will be copied and may change above items	
+
+Very important in production systems.
+
+
+mv(move): used to move or rename files and directories and mv usually removes original location after moving file/folder   
+rename --> with in the same folder if we perform mv command it will act as rename for file/folder
+---------
+*In production environments it is commonly used during deployments, log rotations, backups, and configuration management.
+
+Ex : mv <source> <destination>
+1)mv file1.txt file2.txt    
+--> it will rename file because file1.txt and file2.txt which we are creating(file2.txt) in the same location so it will just rename the file it will not move if we are giving diff location in destination so it will move the file
+2)mv app.log /home/arun/logs/ -->Move File to Another Directory
+3) mv test project  --> rename directory
+
+Difference Between cp and mv
+cp	Copies file
+mv	Moves/renames file
+
+******************************************************************************************************************************************************
+
+
+grep(Global Regular Expression Print):used to search text and find patterns and filter files, logs, and command outputs.
+------------------------------------
+
+Ex: grep "word" filename
+
+1)grep "ERROR" app.log --> it will search for only ERROR word in app.log file and it is case sensitive 
+(ex: only ERROR and ERROR123 etc... not error/Error/Error123 etc..)
+grep devops app.log --> it will display devops/devops123/devopserts but not display Devops/Devops123/DEVOPS etc...
+
+2)grep -i error app.log --> it will search for error word in app.log file and it is not case sensitive it will show either error and ERROR words in file
+   ex: error123,error,ERROR,Error etcc.. -->  it will show all which has error word
+3)grep -w devops samplefile.txt --> it will display exact word match devops ex : devops exact match 
+
+grep -iw devops samplefile.txt --> it will search for exact word but ignore case 
+      ex : like devops,DEVOPS etc but not like devops12e 
+4)grep -n ERROR app.log --> show line numbers --> 2:ERROR Database failed
+5)grep -v INFO app.log --> Exclude matching lines means Shows all lines except INFO line.
+6)grep -r "database" /logs --> Searches all files recursively.
+7)grep -c ERROR app.log --> count matches means it will count the ERROR words in a file and give count number like ERROR,ERROR123 not Error,error etc..
+
+ps -ef | grep nginx
+cat app.log | grep ERROR
+
+8) grep "^ERROR" app.log --> Matches lines starting with ERROR.
+
+grep -r devops grepfile.txt prod2.txt  --> display both files data 
+
+
+piping: is used to send/pass the output of one command as input to another command using the | operator
+-------
+*It enables efficient command chaining for filtering, processing, and automating tasks, and internally works through inter-process communication between stdout and stdin.
+
+Ex: command1 | command2  --> ls | grep txt
+
+Why Pipes Are Powerful
+
+Instead of:
+saving output to file
+reading manually.Linux directly transfers data between commands.
+
+Efficient and fast.
+--
+Internally (Important for Interview)
+Pipe creates:
+inter-process communication (IPC)
+Kernel creates temporary data stream:       stdin : input, stdout: normal output, stderr: error output
+stdout of command1
+→ stdin of command2      ==> stdout → stdin
+
+** 1. Search Running Process    --> 
+ps -ef | grep nginx
+ps -ef --> lists all processes.
+grep nginx --> filters nginx processes.
+2. View Errors in Logs --> cat app.log | grep ERROR
+3)Check Open Ports --> netstat -tulpn | grep 8080
+4)cat app.log | grep ERROR | wc -l  -->Read log | Filter ERROR | Count lines
+
+
+Wget(Web get) : used to download files from internet/remote servers via HTTP, HTTPS, and FTP protocols. or downloading a file from browser using terminal.
+--------------
+*In DevOps environments it is commonly used for downloading binaries, deployment artifacts, installation packages, and automation scripts.”
+Ex :  
+1)wget URL  --> wget https://example.com/file.zip --> it will download a file.zip in current directory
+2)Wget -O app.zip https://example.com/file.zip --> file/zip will be saved with diff name in current working directory (saved as app.zip)
+3) wget -c largefile.iso --> Continues interrupted download. or resume download -c = continue/resume
+4) wget -b https://example.com/bigfile.zip --> Runs in backgnround.
+5) wget -q URL --> Suppresses output(when u run this in terminal it wont print anything like msg )
+diff :
+------
+ when u run below command
+   wget url --> it will show some msg on terminal and
+   wget -q url --> when u run same with -q that msg will not print in terminal it shows directly entre diff command 
+6) wget --limit-rate=500k URL
+
+wget https://www.geeksforgeeks.org/linux-unix/mkdir-command-in-linux-with-examples/ --> it wil download html file because browser direct download basically browser is html only 
+
+We usually use wget for ---> binaries,packages,scripts,artifacts and zip files 
+
+Example:
+
+internally what happens
+
+Resolves DNS
+Connects to remote server
+Sends HTTP/HTTPS request
+Receives file data
+Saves file locally
+
+real devops examples
+-------------------
+wget https://get.jenkins.io/war/latest/jenkins.war		 --> Download Jenkins WAR
+wget https://dl.k8s.io/release/bin/linux/amd64/kubectl	 --> Download Kubernetes Binary
+wget http://artifact-server/app.jar                      --> Download Deployment Artifact
+
+curl(client url):used for transferring data using protocols like HTTP and HTTPS. or talking directly to a web server from terminal.
+---------------
+It is a command-line tool used to: send/transfer HTTP/HTTPS requests,interact with APIs,transfer data,download/upload files,test end point services
+* In DevOps it is widely used for API testing, health checks, service validation, automation, and interacting with REST endpoints.”
+
+Ex: curl url --> Fetches webpage/API response in html format
+
+curl -L -o /tmp/user.zip https://roboshop-builds.s3.amazonaws.com/user.zip
+
+Difference Between wget and curl
+wget							curl
+Mainly download files			API/data transfer tool
+Better for recursive downloads	Better for REST/API calls
+Simpler downloading				More flexible
+
+internally:
+Resolves DNS
+Connects to server
+Sends HTTP/HTTPS request
+Receives response
+Prints output to terminal
+
+
+cut: used to extract specific fields/words/columns or character positions from files or command outputs.
+----
+ex: cut [option] file 
+options
+-d	Delimiter
+-f	Field number
+-c	Character position
+
+suppose example.txt file has
+101:Arun:DevOps
+102:John:AWS
+103:Mike:Linux
+
+ex:
+1) cut -d ":" -f 2 emt.txt -->  output = arun john mike  --> extract single fields/words/columns
+2) cut -d ":" -f 2,3 emt.txt  ---> extract Multiple Fields/ columns
+o/p
+101:DevOps
+102:AWS
+103:Linux
+3) cut -c 1-2 emt.txt    o/p : 10 10       --> exact first 2 characters of file /row
+or echo "DevOps" | cut -c 1-3  op: Dev --> extract multiple characters 
+now i want to extract 2nd column first 3 characters from file 
+cut -d ":" -f 2 emp.txt | cut -c 1-3      ---> o/p : Aru Joh Mik
+4)cut -d ":" -f 2 cutcmd.txt | cut -c 2 or  echo "Linux" | cut -c 2     --> extract single character
+5) echo linux:dev:test | cut -d ":" -f 2  --> op: dev no file name because we used echo command
+
+
+awk:
+----
+text-processing utility used for pattern scanning, field extraction, filtering, and report generation.
+or
+awk is a powerful text-processing tool used for filtering,searching,extracting columns,reporting,pattern matching,data manipulation
+*In DevOps it is widely used for log analysis, automation scripts, monitoring outputs, and parsing structured command data.”
+
+
+Why It Is Powerful
+Unlike cut,
+awk can:
+
+apply conditions
+perform calculations
+format output
+process structured text intelligently
+
+Ex : awk 'pattern { action }' file
+
+emp.txt file
+101 Arun DevOps 50000
+102 John AWS 60000
+103 Mike Linux 55000
+
+1) awk '{print}' emp.   -> print entire file 
+2) awk '{print $1,$2}' emp.txt --> print specific columns      o/p: 101 Arun 102 John 103 Mike
+
+$1	First column
+$2	Second column
+$3	Third column
+$0	Entire line
+
+3) awk '{print $NF}' emp.txt --> print last column   NF --> No of fields        o/p 5000 60000 55000
+4) awk '$4 > 55000 {print $2}' emp.txt --> Conditional Filtering   --> print employee names where salary > 55000  o/p : john
+5) awk -F ":" '{print $2}' emp.txt --> using delimeter 
+
+| Variable | Meaning             |
+| -------- | ------------------- |
+| `NR`     | Current line number |
+| `NF`     | Number of fields    |
+| `$0`     | Entire line         |
+
+awk '{print NR,$0}' emp.txt
+df -h | awk '{print $5}'
+kubectl get pods | awk '{print $1}'
+ps -ef | awk '{print $2,$8}'
+
+
+Command	Usage
+grep			Search lines
+cut				Extract simple columns
+awk				Advanced text processing
+
+
+head: Display the first few lines of a file i.e.,by default first 10 lines 
+----
+for log checking,config validation,quick file inspection
+
+Ex: 1) head filename
+2)head -n 5 app.log --> first 5 lines
+3) head -c 20 file.txt --> first 20 characters/bytes
+3)head -2 file.txt ---> shows first 2 lines of a file
+
+Check Log Start --> head /var/log/messages
+
+tail:Display the last few lines of a file i.e., by default last 10 lines of a log/file  or watching latest messages in live chat when log running.
+----
+*In DevOps and production environments, tail -f is extensively used for real-time log monitoring and troubleshooting application or server issues.”
+for live log monitoring,troubleshooting,application debugging
+
+1) tail app.log --> last 10 lines of log/file 
+2)tail -n 5 app.log --> last 5 lines of log/file
+3)tail -c 20 file.txt --> first 20 characters/bytes
+
+Live Log Monitoring (VERY IMPORTANT)
+tail -f app.log ---> Continuously displays new log
+ entries in real time.   -f = follow
+tail -f /var/log/app.log
+tail -f /var/log/nginx/access.log
+tail -f app.log | grep ERROR
+
+Find:
+----
+find is used to search files and directories based on name, size, type, permissions, owner, modified time, etc.
+or
+"find command is used to search files and directories recursively in Linux based on different criteria like name, type, size, permissions, ownership, and modified time.
+
+syntax : find <path> <condition> <action>
+options:
+--------
+find /home -name test.txt                      --> find file by name --> in /home directory it will search for a file called test.txt
+find / -iname nginx.conf                       --> in root directory it will search for nginx.conf filee and it is case sensitive -i 
+find /app -type f                              --> find only files  --> f -- regular files
+find /app -type d                              --> find only directories d -- means directory
+find /var/log -name "*.log"                    --> find files by extension
+find / -size +100M 						       --> Files bigger than 100 MB
+find / -size -10M                              --> find less than 10 mb
+find /tmp -empty                               --> find empty files and directories
+find /home -user roboshop                      --> find files based on owner 
+find / -perm 777                               --> find based on permissions
+find /app -mtime -1 						   --> find files modified less than 1 day old
+find /app -mtime +7 						   --> Older than 7 days and Used for log cleanup.
+-  means LESS THAN  -->show files modified in recent 7 days
++  means GREATER THAN/older than --> Do NOT show files modified from today to the last 7 days.Show only files modified more than 7 days ago (older files).
+(no symbol) means EXACT -->  exactly around 7 days old ex : find /app -mtime 7
+find /var/log -name "*.log" -mtime +30 -delete --> Find .log files older than 30 days and delete
+find / -type f -size +1G                       --> Find files larger than 1 GB.(Production Use)
+find /var/log -mmin -10                        --> Find Logs modified within last 10 minutes
+find /app -type f -exec chmod 644 {} \;        --> Find files and change permissions For every matched file run chmod 644
+find /app/logs -mtime +15 -delete              --> Clean old application logs
+
+| Option    | Purpose              |
+| --------- | -------------------- |
+| `-name`   | Search by name       |
+| `-iname`  | Ignore case          |
+| `-type f` | Files only           |
+| `-type d` | Directories only     |
+| `-size`   | Search by size       |
+| `-user`   | Search owner         |
+| `-perm`   | Permissions          |
+| `-mtime`  | Days modified        |
+| `-mmin`   | Minutes modified     |
+| `-delete` | Remove matched files |
+| `-exec`   | Run command          |
+
+
+
+LESS:
+-----
+less is used to view/read the contents of a file page by page without opening the entire file into memory.
+or
+"less is a Linux file viewer command used to read large files efficiently page by page. Unlike cat, it does not load the entire file output onto the terminal and provides navigation, searching, and live log viewing capabilities, making it useful for troubleshooting production logs."
+EX:
+less <filename> --> It opens the file in read-only viewer mode.
+
+
+vim(VI Editor):
+--------------
+Vim is a terminal-based text editor widely used for editing configuration files, scripts, and deployment manifests directly on servers. It operates mainly in normal, insert, and command modes.”
+or Notepad inside Linux terminal, but much more powerful.
+
+
+Why DevOps Engineers Use Vim
+
+Used for:
+
+editing config files
+updating scripts
+modifying Kubernetes manifests
+troubleshooting production systems
+quick server changes
+
+Ex:
+vim filename --> 
+1.if exist enter directly into file 
+2.If file does not exist:✅ Vim creates new file and entyer into the inside file.
+
+Vim Modes (VERY IMPORTANT)
+
+Vim works mainly in 3 modes:
+
+Mode					Purpose
+Normal Mode			Navigation/commands(copy/delete/search) -- default mode when vimm opens
+Insert Mode			Typing/editing                          -- i to enter insert mode. and Now you can type/edit text.
+Command Mode		Save/quit/search 						-- Esc :w :wq :q :q!
+
+
+
+
+******************************************************************************************************************************
+
+
+
+
+Permissions:  Who can access a file/directory and what actions they can perform. or who can read, write, or execute files and directories.
+------------
+*“Linux permissions control access to files and directories using read, write, and execute permissions for owner, group, and others. Commands like chmod and chown are used to manage permissions and ownership, which are critical for system security and controlled access in production environments.”
+
+Permission	Symbol	  Meaning
+------------------------------
+Read		  r		View content
+Write	   	  w		Modify content
+Execute	      x		Run file/script
+
+Category	  Meaning
+----------------------
+User (u)	File owner
+Group (g)	Group users
+Others (o)	Everyone else
+
+-rwxr-xrw- --> - => file type means it indicats it is file or dir  and rwx --> owner related permissions and r-x --> user related rw- => others related
+if permissions starts with 
+- => file                     ex: -rwxr-xrw-
+d => directory                ex: drwxr-x--x
+l => symlink
+
+numeric way:
+------------
+4--> read
+2--> write 
+1--> execute
+Ex:
+Owner  = rwx = 4+2+1 = 7
+Group  = r-x = 4+0+1 = 5
+Others = r-x = 4+0+1 = 5
+
+chmod --> change mode 
+chmod u+x deploy.sh  --> Adds execute permission for owner.
+chmod g-w file.txt --> Remove Write Permission
+chmod +x script.sh or chmod a+x script.sh --> Give Execute to Everyone
+chmod 755 script.sh --> it will update permissions for a file like user --> rwx group --> r-x o --> r-x
+chmod u+x script.sh --> it will update execute (x) permissions for user of that file 
+
+chmod ug+r -R deployfolder  --> it will update the permission for folder along with inside files also   -R ==> recursively
+
+chown(change ownership):
+-----------------------
+when we create a user automatically group will be created with the same name so if we want to change we can use the chown
+
+ex: chown <user>:<group> file.txt          
+chown arun:devops file.txt          
+
+Directory Permissions (VERY IMPORTANT)
+| Permission | Meaning                |
+| ---------- | ---------------------- |
+| `r`        | List files             |
+| `w`        | Create/delete files    |
+| `x`        | Enter/access directory |
+
+
+
+s is a special permission it usually represents 
+1)SUID -> set userid
+2)SGID -> set groupid
+ex : rwsr-xr-x
+1) When another user executes file: process runs with file owner permissions instead of current user permissions
+chmod u+s file.sh
+2) Process runs with: file’s group permissions instead of user's primary group.
+ex : chmod g+s project   --> ✅ all new files inherit directory group automatically.	
+
+Numeric Values
+| Permission | Value |
+| ---------- | ----- |
+| SUID       | 4     |
+| SGID       | 2     |
+| Sticky Bit | 1     |
+ex: 4755,275,1777
+| Permission | Real-Life Meaning                           |
+| ---------- | ------------------------------------------- |
+| SUID       | Temporary admin access                      |
+| SGID       | Team shared access                          |
+| Sticky Bit | Shared room but only owner can remove items |
+
+“s in Linux permissions represents special permissions like SUID and SGID. SUID allows execution with file owner privileges, while SGID allows execution with group privileges or group inheritance on directories. These are commonly used for controlled privilege escalation and shared access management in Linux systems.”
+
+
+chgrp(change group):
+-------------------
+used for Change the group ownership of a file or directory.
+Example:
+Check Current Ownership : ls -l o/p : -rw-r--r-- 1 ec2-user devops 100 test.txt
+means
+Owner  → ec2-user
+Group  → devops
+File   → test.txt
+
+Change Group of file:
+chgrp <groupname> <filename>  
+ex:e 
+chgrp developers test.txt   ---> Only group will change to developers from devops group
+
+Change Directory Group
+ex: chgrp devops /app
+
+Recursive Change --> Change all files inside directory
+chgrp -R devops /app                      ---> -R --> Recursive (directory + inside files)
+
+chgrp vs chown
+chgrp --> Changes only group
+ex
+chgrp devops file.txt
+
+chown --> Can change user and group
+ex: chown ramesh:devops file.txt
+
+
+
+user management:
+-------------
+Creating, modifying, deleting, and managing users/groups in Linux systems. and their permissions(like who can login and what files they can access)
+
+user related commands:
+
+Ex: $ useradd <name>   --> create user but here permissions denied error because it is a normal user 
+1)# useradd <name> --> create user -->  only root user can add/create the user    #root user
+
+sudo su - --> enter into root access or sudo useradd <name>   -- sudo will give root access
+2)passwd ramesh --> ask to set the password for ramesh user 
+
+/etc/passwd --> all user entries available in this file 
+/etc/group --> will get list of groups present
+/etc/shadow --> is used to store user passwords in an encrypted hashed format
+/etc/ssh/sshd-config  --> enables password authentication 
+
+getent group  -->This prints all group entries, which can be large and hard to read.
+
+
+
+What Happens Internally
+
+Linux:
+
+Creates user entry in:/etc/passwd
+Creates password hash in:/etc/shadow
+Assigns UID
+ 
+cat /etc/passwd
+
+3) id <user> --> show id will get like user,groupid etc..
+4) sshd -t /etc/ssh/sshd-config --> check for the syntax of the file if there is any mistakes it will display
+   systemctl restart sshd
+   
+group related commands
+#groupadd <devops>  --> to create group
+
+to change the group of the particular user ---> usermod -g <groupname> <username>
+ex: #usermod -g devops ramesh -->  
+usermod -aG devops ramesh -->      
+
+user will be added to diff groups based on options
+-g == > primary group and -G = secondary group     -a ==> append 
+
+chown (change ownership):It is used to change the user and/or group ownership of files, directories, and only root user can do the changes because they only have sudo previlages
+
+1) chown master file1.txt    --> Change the Owner/user of a File
+2) chown :group1 file1.txt --> Change the Group of a File
+3) chown  ramesh:devops  --->Change Owner and Group of a File
+4) chown --reference=greek1 greek2 ---> Copy Ownership from One File to Another (--reference) 
+5) chown master:group greek2 greek3 --> Change Owner and Group of Multiple Files
+
+
+to remove a user from particular group
+#gpasswd -d ramesh testinggroup
+
+6) userdel <username> --> delete particular user from linux system
+
+to delete user --> first user has to remove from the group then only u can delete user
+7) groupdel devops  --> delete the particular group
+
+--> -m 
+
+Important Files
+File				Purpose
+/etc/passwd		Users information
+/etc/shadow		Encrypted passwords
+/etc/group		Group details  -->  Create Home Directory --> useradd -m arun
+
+
+
+
+process management(ps):
+----------------------
+A process is a running instance of a program in Linux.
+Process management involves monitoring, controlling, troubleshooting, and terminating processes using commands like ps, top, kill, and nohup
+when we run 10 commands it will create 10 processes
+
+ps(process status) :Used to display running processes information,process details,process IDs (PID) in current session/terminal
+
+Linux reads process information from /proc file.Each running process has entries under: /proc/PID
+1)ps --> Shows processes of current terminal/session only.
+2)ps -ef --> shows all processes along with full detailed info  -e = show all process in current machine/system and -f = shows full detailed info of each process
+
+$pwd - present working directory
+
+3)ps -p PID(Processid) --> ps -p 2839 -> Display information about a specific process using its Process ID (PID).
+4)ps -p 2839 4564 --> Display information about a multiple process using its Process ID (PID)
+ 
+5)ps -H -> Displays processes in hierarchical/tree format showing parent-child relationships.   -h =>hierarchy
+
+systemd --> parent process
+sshd    --> child of systemd/system/
+bash    --> child of sshd
+java    --> child of bash
+ 
+6)ps -aux --> Shows all running processes in BSD-style detailed format.
+| Option | Meaning                                  |
+| ------ | ---------------------------------------- |
+| `a`    | Processes of all users                   |
+| `u`    | User-oriented detailed output            |
+| `x`    | Include background/no-terminal processes |
+ 
+7)ps -u <username> --> Shows processes belonging to specific user.
+ ps -ef --forest -->  Displays all processes in tree/hierarchy format with parent-child relationships.
+ 
+ ps -ef | grep java , ps -ef | grep jenkins
+ 
+ 
+Column		Meaning
+UID			User running process
+PID			Process ID(unique process id )
+PPID		Parent Process ID
+CMD			Command/process name
+Daemon		Background service process
+ 
+ 
+Kill:
+-------
+sends signal to the process like restart,stop,terminate) or to kill the running process(background process)
+kill does NOT directly “kill” process always.It sends a signal to process stop gracefully,ignore signal, terminate immediately depending on signal type.
+
+
+*In production environments, SIGTERM is preferred for graceful shutdown, while SIGKILL (kill -9) is used only for unresponsive processes because it forcefully terminates execution without cleanup.”
+
+kill PID --> send a signal to the particular process for graceful termaination
+kill -9 PID1,PID2 ETC--> kill multiple process at a time
+Linux kernel:
+
+Finds process using PID
+Sends signal
+Process handles signal
+Process exits or responds
+
+Most Important Signals
+Signal		Number			Meaning
+----------------------------------------
+SIGTERM		15			Graceful termination
+SIGKILL		9			Force kill
+SIGHUP		1			Reload/restart config
+SIGSTOP		19			Pause process
+SIGCONT		18			Continue paused process
+
+SIGTERM:	kill 2345 same as kill -15 2345 
+SIGKILL:    kill -9 1234 --> no shutdown directly force kill or Immediately terminates process.
+SIGHUP :    kill -1 1234 --> Reload/restart config
+SIGSTOP:    kill -19 1233 --> Pause process
+SIGCONT:    kill -18 2133 --> Continue paused process
+
+kill --> kill using PID
+pkill --> Kill using process name      ex : pkill nginx
+killall --> Kill all matching names	 ex: killall nginx 
+
+Types:
+Processes in Linux can run in:
+* “Foreground processes run interactively and occupy the terminal session, while background processes run independently without blocking the shell. In production environments, background execution with &, bg, and nohup is commonly used for long-running applications, deployments, and monitoring tasks.”
+1)Foreground process(blocks terminal)
+ it runs on ur terminal and occupy the terminal u must wait for it to complete it before entering another command 
+ and if u want execute diff commands immediately u can open another shell and u can enter commands 
+ ex: sleep 100  --> Terminal waits for 100 seconds. You cannot type other commands until process completes,or interrupted
+2)Background process:Runs independently without blocking terminal(i.e., runs in background).You can continue same terminal for diff commands while running the process .
+
+ex; sleep 100 &   --> it will create a process and run in background and once 100 seconds over u cant see thet process in system 
+
+Background processes usually stop after logout. To keep running after logout:    --> nohup java -jar app.jar &
+
+real devops usage :
+./deploy.sh &    --> Start Deployment Script	
+nohup java -jar app.jar & --> Run Long Java App
+tail -f app.log &     --> Background Log Monitoring
+
+**************************************************************************************************************************************
+
+package management:
+-------------------
+used for installing, updating, removing, and maintaining/managing software packages and dependencies using tools like apt, yum, and dnf.
+A package contains application binaries,libraries,dependencies,configuration files,metadata
+Ex : nginx , docker,git, java etc
+
+
+Examples:
+1)yum install nginx							--> install particular package with dependencies.
+2)yum  list installed						--> display the list of installed  packages in the system
+3)yum list installed  | grep git			--> display the list of installed packages related to git diff versions og git
+4)yum list available						--> display the list of packages available in repo which are not installed yet but ready for installation
+5)yum search mysql 							--> it will search the packages and display the available packages
+6)yum remove <pkgname> 						--> it will uninstall/remove that package but may keep config files.
+7)yum update            					--> Updates all installed packages to latest available versions.
+8)yum update <pkgname>						--> it will update the particular package with latest available versions(like dependencies,binaries etc..)
+9)yum info <pkgname>						--> display detailed info about a package
+10)yum clean all 							--> cleanup meta data and cache of that package
+11)yum repolist 							--> list configured repos or Display all enabled YUM repositories configured in the system. 
+12)yum history								--> show transaction history which we performed previously
+13)yum upgrade 								--> Updates packages and may remove obsolete/conflicting packages if required.
+14)yum purge <packagename>					--> it removes package and config files
+15)apt show <pkgname>             			--> show package info ---> in apt but in yum yum info <<pkgname> command
+16)yum check-update                         --> checks for available package updates without actually installing them.
+
+
+
+Service management: 
+------------------
+used for managing background system/application services that includes starting,stopping and enableing and disableing the services 
+
+* “Service management in Linux involves controlling background services using systemctl and systemd. In production environments, we use commands like start, stop, restart, status, and enable to manage application and infrastructure services such as Docker, Jenkins, Nginx, and Kubernetes components.”
+
+commands:
+--------    replace pkgname in place of nginx
+ex : yum install nginx 
+
+systemctl start <pkgname>           ---> 	Start service
+systemctl stop <pkgname>			--->	Stop service
+systemctl restart <pkgname>			--->    Restart service
+systemctl status <pkgname>          --->    Check service status (whether it is active state or stopped state u can see)
+systemctl enable <pkgname>          ---> 	Auto-start at boot like when u restart,shutdown or etc .. 
+systemctl disable <pkgname>         ---> 	Disable auto-start means we have to run services manually after restart or shutdown 
+systemctl reload <pkgname>          ---> 	Reload config without restarting the services
+
+systemctl --failed --> view failed services
+journalctl -u nginx --> Shows service logs
+
+/var/cache/yum/ --> where yum stores downloaded package to manage yum repo config's
+/etc/yum.repos.d/  --> directory containing reposting definations (.repo files)
+yum-config-manager --> to manage yum repo config's
+
+
+
+Service Unit Files Stored in: /etc/systemd/system/  or /usr/lib/systemd/system/
+
+systemctl enable nginx -->When you run
+ systemd creates symbolic links (symlinks) from: /usr/lib/systemd/system/nginx.service  or /etc/systemd/system/nginx.service
+ into target directories like: /etc/systemd/system/multi-user.target.wants/
+ Linux boots using targets  -->  multi-user.target means Normal server mode
+ when system enters multi-user.target-->  systemd checks: --. /etc/systemd/system/multi-user.target.wants/ --> If nginx symlink exists:✅ systemd automatically starts nginx.
+ 
+systemd --> linux manager 
+
+“systemctl enable nginx configures nginx to start automatically during system boot by creating symbolic links in systemd target directories like multi-user.target.wants. disable removes those symlinks, preventing auto-start during boot while keeping the service installed and usable manually.
+
+System Boot
+   ↓
+systemd starts
+   ↓
+target reached (multi-user.target)
+   ↓
+systemd checks wants directory
+   ↓
+service symlink found
+   ↓
+nginx.service starts
+
+systemctl deamon-reload --> reload systemd config files 
+systemctl is-enabled nginx --> we can check whether the service is enabled it for start at boot
+systemctl is-active nginx --> we can see whether the service is in active state or not 
+
+
+->service management helps u to control system deamons and ensures your service behaves expected across reboots
+->service management refers to starting,stopping,restarting,enabling and disableing and checking the status of the background services like deamons which runs continuosly in background to provide system functions/applications
+
+
+Network management:
+------------------
+it involves configuring, monitoring, and troubleshooting network connectivity using commands like ip, ping, ss, netstat, curl, and nslookup.
+To check 	
+Applications depend on network for:
+server communication,APIs,databases,internet access,microservices,SSH connectivity etc 
+
+Ex:
+ip addr --> check ip address
+ifconfig --> old systems now a days ip used 
+
+ping google.com   -- conectivity check
+
+
+Check Open Ports
+netstat -tulpn --> old  --> display the list of protocols/ports
+ss -tulpn -->   -t = TCP -u = UDP -l = only listening ports -p process ids -n numeric format
+ss -tulpn | grep 8080
+
+DNS resolution --> nslookup google.com  --> DNS working or not and ip mapping 
+
+ip route --> shows default gateway and routing table 
+
+hostname --> show systemname 
+curl http://server:8080   -->  Test HTTP Connectivity --. common for api testing and health checks 
+
+| File               | Purpose                 |
+| ------------------ | ----------------------- |
+| `/etc/hosts`       | Static hostname mapping |
+| `/etc/resolv.conf` | DNS servers             |
+| `/etc/hostname`    | System hostname         |
+
+| Command      | Purpose                     |
+| ------------ | --------------------------- |
+| `ip`         | Network configuration       |
+| `ifconfig`   | Old network tool            |
+| `ping`       | Connectivity check          |
+| `netstat`    | Network statistics          |
+| `ss`         | Socket statistics           |
+| `nslookup`   | DNS lookup                  |
+| `dig`        | Detailed DNS query          |
+| `curl`       | Test HTTP/API               |
+| `wget`       | Download/check connectivity |
+| `traceroute` | Packet route tracing        |
+| `hostname`   | System hostname             |
+
+
+
+
+3-Tier Architecture:
+-------------------
+“3-tier architecture separates an application into presentation, application, and database layers. This improves scalability, security, maintainability, and availability. In production environments, frontend servers handle user requests, backend services process business logic, and databases manage persistent storage.”
+
+
+1. Presentation Layer (Frontend/Web Layer) ---> This is the layer users interact with.
+Examples: web UI,mobile app,React/Angular frontend,web server
+
+Responsibilities ---> receives user requests -> displays UI -> sends requests to backend -> handles basic validations
+Examples
+nginx webserver
+
+Real time example: 
+User opens: amazon.com
+Frontend displays: -> product pages -> login page -> cart UI etc..
+
+2. Application Layer (Business Logic Layer) ---> This is the core backend layer.
+Contains: business logic,APIs,authentication,processing
+
+Responsibilities ---> processes requests,validates business rules,communicates with DB,returns responses
+
+Component	Example
+Java App	Spring Boot
+
+Real time example: 
+When user clicks: Place Order
+Application layer: -> validates stock -> calculates price -> processes payment -> updates database 
+
+3. Database Layer : Stores application data.
+
+Responsibilities
+data storage,retrieval,transactions,backups
+
+Examples
+Database	Example
+Relational	MySQL, PostgreSQL
+NoSQL	MongoDB
+
+Real-Time Example : Stores: users,orders,payments,products info/data
+
+
+Full Request Flow: 
+Step 1 — User Request
+
+User accesses website.
+
+Step 2 — Presentation Layer
+
+Nginx/web server receives request.
+
+Step 3 — Application Layer
+
+Backend API processes logic.
+
+Step 4 — Database Layer
+
+Database stores/fetches data.
+
+Step 5 — Response Back
+
+Response travels back to user.
+
+Why 3-Tier Architecture Is Important
+
+1. Scalability --> Each layer can scale independently.
+Example: add more web servers,scale APIs separately,scale DB vertically
+
+2. Security --> Database not directly exposed to usersand Only application layer accesses DB
+
+3. Maintainability --> Frontend/backend teams can work separately.
+
+4. High Availability --> Layers can be deployed independently.
+
+
+Cloud Example in Amazon Web Services
+Layer				AWS Service
+Presentation		ALB + EC2
+Application			EC2/EKS
+Database			RDS
+
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+
+
+
+
+
+To check system resources 
+=========================
+1)cpu memory  -->  $top or htop    -> Used to monitor CPU usage,memory usage,running processes,load average,process resource consumption| `
+
+| `top`         | 		`htop`           |
+| ------------- | ---------------------- |
+| Basic         | Interactive UI         |
+| Pre-installed | Usually manual install |
+| Less colorful | Better visualization   |
+
+from /proc filesystem ex : /proc/meminfo, /proc/stat,/proc/PID 
+
+Real DevOps Usage : $top Used when: ,server slow,high CPU,memory leak,Java app issue
+
+2)Hard Disk full     --> df -hT ----> Checks: filesystem usage,mounted disks,available space,filesystem type
+-h  -- humanreadable 
+-T  -- show filesystem type  
+Real DevOps Usage ---> Used when: server full,logs consuming space,deployment failure
+Production Alert --> if 
+Use% > 90%      ---> server may crash/fail.
+
+3)RAM         --> free -m     -m ==> show in mb 
+Purpose --> Displays:  RAM usage,free memory,cache memory,swap usage
+4)Checks whether process/service is running --> ps -ef | grep <servicename>
+5)to check open ports   --> netstat -lntup
+
+6)Check Firewall Status -->   
+Purpose --------> Checks whether firewall: ===> running,blocking ports,allowing traffic
+Open Firewall Port ---> firewall-cmd --add-port=8080/tcp --permanent
+Reload Firewall ---> firewall-cmd --reload
+Real DevOps Usage ---> Used when: ---> app unreachable,SSH blocked,port inaccessible
+
+7)check health  of a disk                 --> smartctl -a <mounted disk>
+Purpose ---> Checks: hard disk health,SMART status,disk failures
+yum install smartmontools --> to get smartctl command work
+
+8)to check internet working      --> ping google.com or ping Ipaddress
+Purpose ---> Checks:internet connectivity,DNS resolution,latency,packet loss
+
+
+How to give access to linux server:
+-----------------------------------
+
+linux admin  --> full access
+Devops admin --> limited access
+
+
+sudo su -
+groupadd linux
+groupadd devops
+useradd ramesh
+useradd suresh 
+
+usermod -g devops suresh
+usermod -g linux ramesh
+-----------------------------
+/etc/sudoers --> Main configuration file:who gets sudo access,which commands allowed,password requirements,privilege rules
+
+sudo(superuser Do) --> Allows normal users to execute commands as root or another user.. Linux gives controlled admin access using:✅ sudo
+and Which users can run commands with elevated/root privileges using sudo.
+or
+It defines which users or groups can execute commands as root or other users. The configuration is managed using visudo for safe syntax validation
+
+Internally What Happens
+
+When user runs: sudo <command> --> Linux checks: /etc/sudoers --> If permission exists: ✅ temporary root privilege granted
+ex : arun ALL=(ALL) ALL
+Breakdown
+Part			Meaning
+-----         -----------
+arun			Username
+ALL	Any			host
+(ALL)			Can act as any user
+ALL	Can 		run all commands
+User:
+
+arun can run: ✅ any command as root.
+
+Group-Based Sudo Access
+%wheel ALL=(ALL) ALL or in ubuntu --> %sudo ALL=(ALL) ALL  --> any user in wheel or sudo group can get sudo access
+
+
+visudo --> Why visudo It:validates syntax,prevents corruption,locks file safely
+
+/etc/sudoers.d/  --> additional modular sudo configuration files.
+Purpose
+
+Used to: separate sudo rules,manage application/user-specific permissions,avoid modifying main sudoers file
+
+| Entry                  | Meaning                 |
+| ---------------------- | ----------------------- |
+| `root ALL=(ALL) ALL`   | Root can run everything |
+| `%wheel ALL=(ALL) ALL` | Wheel group gets sudo   |
+
+
+“/etc/sudoers is the primary sudo configuration file containing global privilege and policy definitions, while /etc/sudoers.d/ is a modular directory used to store additional user- or application-specific sudo configurations. In production environments, /etc/sudoers.d/ is preferred for scalable and safer privilege management.”
+--------------------------------------------------
+
+verify ssh config syntax: sshd -t
+
+/etc/ssh/sshd_config ---> configuration file for SSH server daemon (sshd).
+SSH Daemon (SSH Server Process) --> It listens for incoming SSH connections.
+ex: ssh ec2-user@server-ip
+when client connect sshd handles authentication and session creation.
+Purpose of sshd_config ---> This file controls ---> SSH login behavior,authentication methods,allowed users,security settings,SSH port,root login access
+When SSH service starts: systemctl start sshd
+
+1)Starts sshd daemon
+2)Reads:/etc/ssh/sshd_config
+3)Applies all SSH server rules
+4)Listens for SSH connections
+
+SSH Client
+   ↓
+sshd daemon
+   ↓
+Reads sshd_config
+   ↓
+Checks auth rules
+   ↓
+Validates password/key
+   ↓
+Creates session
+
+| File                   | Purpose           |
+| ---------------------- | ----------------- |
+| `/etc/ssh/ssh_config`  | SSH client config |
+| `/etc/ssh/sshd_config` | SSH server config |
+
+| File                     | Purpose             |
+| ------------------------ | ------------------- |
+| `/etc/ssh/sshd_config`   | SSH server config   |
+| `~/.ssh/authorized_keys` | Allowed public keys |
+| `~/.ssh/id_rsa`          | Private key         |
+
+/etc/ssh/sshd_config is the configuration file for the SSH server daemon. It controls SSH server behavior such as authentication methods, root login permissions, SSH ports, access restrictions, and security policies.
+
+
+Putty session create and ppk file load and open :
+------------------------------------------------
+download putty -> open putty -> give session name --> 
+click on data -> in auto-login session box give -- ec2-user 
+click on ssh - Auth - credentials -> in private key file for authenticate --> load ppk file 
+
+how to get ppk file --> download puttygen -- open -- click on load - now load pem file - ok - now click save private key tab - yes - create ppk file with some name and save as ppk --> now load that ppk file in above ssh section 
+
+now session was created and now copy public ip from instance and select session name u created in below saved sessions
+
+
+cd /usr/share/nginx/html -->is the default document root directory used by Nginx to serve static web content such as HTML, CSS, JavaScript, and images. When users access the web server, Nginx retrieves files from this location and returns them as HTTP responses.”
+how nginx know this directory\
+/etc/nginx/nginx.conf
+/etc/nginx/conf.d/default.conf
+root /usr/share/nginx/html;
+
+
+
+/ --> the top-most directory in Linux filesystem hierarchy.Everything in Linux starts from here and from which all other directories originate.”
+ex: cd /hone/ec2-user , /etc/ etc....
+
+/boot --> contains files required for Linux system boot process or startup files required to turn on Linux OS
+or
+“/boot is a Linux system directory that stores files required during the operating system boot process, including the Linux kernel, initramfs, and GRUB bootloader configuration. It plays a critical role in loading and initializing the operating system during startup.”
+
+Stores:Linux kernel,bootloader files,initramfs/initrd,GRUB configuration,needed to start operating system
+
+BIOS/UEFI
+   ↓
+Bootloader (GRUB)
+   ↓
+Kernel loaded from /boot
+   ↓
+initramfs loaded
+   ↓
+Linux OS starts	
+
+/boot/grub2 --> contains boot menu,kernel entries,boot configuration
+/boot/grub2/grub.cfg -> available kernel and boot options
+
+bootloader is first software that loads Linux kernel. common boot loader GRUB 
+
+
+dev --> device files --> like external devices like mouse,keyboard and usb all are mounted here except mother board
+
+/etc/:
+“/etc is a Linux system directory that stores system-wide configuration files for the operating system, services, networking, user management, and applications. Most Linux services read their startup and runtime configuration from files located under /etc.”
+
+/lib/
+/lib contains essential shared libraries and kernel modules required for the system and applications to boot and run properly.
+/media --> cd/dvd drivers or mount point for external devices like usb,cd's
+/mnt --> if u attach hard disk etc those will mount here
+/opt --> optional manual installation of services or applications will be downloaded here 
+
+/proc --> /proc is a virtual filesystem that provides real-time information about running processes, kernel, CPU, memory, and system status.
+
+| Path                   | Purpose                                                                     |
+| ---------------------- | --------------------------------------------------------------------------- |
+| `/bin`                 | Contains essential user commands like `ls`, `cp`, `mv`, `cat`.              |
+| `/sbin`                | Contains system administration commands like `reboot`, `fdisk`, `ifconfig`. |
+| `/etc/hostname`        | Stores system hostname.                                                     |
+| `/etc/hosts`           | Maps hostnames to IP addresses locally.                                     |
+| `/etc/crontab`         | Stores scheduled cron job configurations.                                   |
+| `/etc/network`         | Contains network configuration files.                                       |
+| `/etc/ssh/sshd_config` | SSH server configuration file.                                              |
+| `/root`                | Home directory of root user.                                                |
+| `/run`                 | Stores temporary runtime process/system information since boot.             |
+| `/tmp`                 | Stores temporary files created by users and applications.                   |
+
+
+
+NAT(Network Address Translation) -->  
+problem is suppose if we want public ip's in our home for multiple devices it will be more expensive and public ip addresses shortage
+because of this NAT concept came into picture
+in NAT one public ip address assigned to modem and multiple private ips from that one public ip and private ip's used by multiple devices at home 
+when we use public ip if we search anything communication goes out (means goes to ISP )and come in the response in this case latency,cost increases because it has to go some and search take ip travel cost through wires  will be calculate and cost is high for public ip's
+
+Private IP ---> Router ---> Public IP ---> Internet
+now when i search for  facebook.com first it will search/check whether it is available in modem cache storage if it is not there it will goto ISP here in ISP they maintain DNS sevres and get the ip address of facebook 
+
+NAT converts private IP addresses into public IP addresses so devices inside a private network can access the internet using one public IP.
+
+Why NAT is Important
+1. Saves Public IPs One public IP for many devices.
+2. Security : Internet cannot directly see internal devices.Private devices are hidden.
+3. Cost Efficient : ISP gives fewer public IPs.
+         
+Why Private IP is Faster Inside Network Your note says : if using public IP inside network, traffic goes outside and comes back
+
+DNS --> DNS converts google.com -> 142.250.x.x Because computers understand IPs, not names.
+Browser
+   |
+Router/ISP DNS
+   |
+Find facebook.com IP
+   |
+Connect to Facebook Server
+
+DNS Cache ==> If DNS already knows the IP: Faster response,No need to ask ISP again,This is called DNS caching.
+
+
+Monolithic vs Microservices
+Monolithic Architecture -- Everything is ONE big application.
+
+Example: Frontend,Backend,Payment,Login,Orders,Inventory
+
+All together in one app.
+
+Diagram
+Single Application
+ ├── Login
+ ├── Payment
+ ├── Orders
+ └── Products
+Problems
+
+If one module crashes - entire app may crash - Scaling is difficult - Deployments are harder.
+
+Microservices Architecture
+
+Application divided into smaller services.
+
+Example: Login Service,Payment Service,Product Service,Order Service
+
+Each independent.
+
+Diagram
+User
+  |
+Frontend
+  |
+-------------------------
+|     |       |         |
+Login Payment Orders Products
+Advantages
+Independent Scaling -If payment traffic increase - Only payment service scales.
+Faster Deployment - Deploy one service without affecting others.
+Better Fault Isolation - Payment failure won’t crash login service.
+
+frontend(public ip) - backend (private ip ) - database (private ip)
+frontend sends the request to backend through api and backend reaches database 
+
+Public Server :Accessible from internet.
+Example       :Website frontend and Load balancer Has Public IP
+Private Server: Not accessible directly from internet.
+Example       : Backend servers and Databases Has Private IP only
+
+
+Autoscaling
+
+Your notes mention:
+
+if many users login, automatically scale up
+
+Correct.
+
+What is Autoscaling?
+Automatically: adds servers when traffic increases and removes servers when traffic decreases
+Example : During sale: Users increase - CPU increases and AWS launches more servers
+After traffic reduces: AWS removes extra servers and Benefits High availability,Cost saving,Better performance
+
+
+
+Very Important Interview Summary
+Public IP 			- Accessible from internet.
+Private IP 			- Used inside internal network.
+NAT					- Converts private IP to public IP.
+DNS 				- Converts domain name to IP.
+Monolithic 			- Single large application- 
+Microservices 		- Multiple small independent services.
+Security Group 		- Firewall in AWS.
+Autoscaling 		- Automatically increase/decrease servers. 
+One-Line Interview Answers
+NAT 				- NAT converts private IPs into public IPs for internet communication.
+Private IP 			- Used for internal communication within a network.
+Public IP 			- Used for communication over the internet.
+DNS 				- DNS converts domain names into IP addresses.
+Microservices		- Application split into independent smaller services.
+Security Group 		-Virtual firewall controlling inbound and outbound traffic.
+Autoscaling 		- Automatically adjusts server count based on traffic.
+
+
+
+Telnet : Test conectivity whether one server can connect to another server on a specific port
+--------
+or
+Telnet is used to test network connectivity between one server to another server on a specific port. It helps verify whether a service is reachable and whether firewall or security group rules allow traffic.
+ex:
+in 1st server
+telnet <public IPaddress> <PORT>  --> second server's public ip and port
+public ip : if we have a 2 instances and frontend and user if we didnt added frontendsg in user sg we need to use public ip
+private ip : if we add frontend sd added in user sg we have to use priate ip 
+telnet <USER-SERVER-PRIVATE-IP> 80
+on successful
+on Trying 10.0.2.20...
+Connected to 10.0.2.20
+Escape character is '^]'.
+
+on fail :Connection refused,Connection timed out
+
+Why We Use Telnet in DevOps/AWS
+To check:
+Is server reachable?
+Is port open?
+Is application running?
+Is security group allowing traffic?
+
+
+
+
+ROBOSHOP PROJECT:
+^^^^^^^^^^^^^^^^^				
+dB applications  --> statefull
+app applications --> stateless
+
+nginx is (reverse proxy ) --> nginx will get requests based on the request and scanning of the request it will send /route it over to diff applications(cart,products,users)
+
+STATEFULL,STATE LESS AND REVERSE PROXY   --> CONCEPTS
+
+nginx:
+	
+| Path                    | Purpose             |
+| ----------------------- | ------------------- |
+| `/etc/nginx/`           | nginx configuration |
+| `/etc/nginx/default.d/` | custom config files |
+| `/usr/share/nginx/html` | website files       |
+| `index.html`            | webpage content     |
+
+
+forward proxy vs reverse proxy:
+------------------------------
+
+servers are not ware of clients are behind the vpn and we use vpn for anonymous action or to hide our info/identity from the server
+
+forward proxt cant unserstand real clients
+
+PROXY:
+-----
+A proxy server acts as an intermediate system between client and destination server and Used for security,filtering,caching,anonymity,load balancing
+there are two types 
+1)Forward Proxy(Client side)
+2)Reverse Proxy(Server side)
+
+1)Forward Proxy:A forward proxy sits between client and internet/server. It hides clients identity.
+or 
+assistant sending requests on behalf of employee.
+Ex: Client --> Forward proxy --> internet/server.
+Instead of client directly accessing website Laptop → Proxy → Google/youtube  google sees proxy ip not clients ip and proxy may allow,deny,log,cache request 
+In office/company employees cannot access social media because forward proxy filters requests.
+
+| Use Case           | Purpose         |
+| ------------------ | --------------- |
+| Internet filtering | Block websites  |
+| Corporate security | Monitor traffic |
+| Anonymous browsing | Hide client IP  |
+| Caching            | Faster internet |
+
+real tools
+| Tool     | Example               |
+| -------- | --------------------- |
+| Squid    | Popular forward proxy |
+| Bluecoat | Enterprise proxy      |
+
+
+2)Reverse Proxy:A reverse proxy sits in front of backend servers.Reverse proxy hides backend servers
+Ex: Client → Reverse Proxy → Backend/App Server
+What Happens
+Instead of client directly reaching app server:Client → App Server
+request becomes:Client → Reverse Proxy → App Server
+Client sees --> reverse proxy identity only and Backend servers are hidden.
+
+| Use Case          | Purpose             |
+| ----------------- | ------------------- |
+| Load balancing    | Distribute traffic  |
+| SSL termination   | Handle HTTPS        |
+| Security          | Hide backend        |
+| Caching           | Improve performance |
+| High availability | Traffic management  |
+
+| Tool    | Example        |
+| ------- | -------------- |
+| Nginx   | Very common    |
+| HAProxy | Load balancing |
+| Traefik | Kubernetes     |
+Examples:
+ALB
+Nginx
+API Gateway
+Important DevOps Usage
+
+Reverse proxies commonly handle --> SSL certificates,Kubernetes ingress,microservices routing,rate limiting,API gateway functionality
+
+
+“A forward proxy acts on behalf of clients and is mainly used for internet filtering, anonymity, and access control, whereas a reverse proxy acts on behalf of backend servers and is commonly used for load balancing, SSL termination, caching, and protecting backend infrastructure. Nginx and HAProxy are popular reverse proxy solutions used in modern DevOps environments.”
+
+HTTP STSTUS CODES:
+------------------
+
+| Range | Meaning       |
+| ----- | ------------- |
+| 1xx   | Informational |
+| 2xx   | Success       |
+| 3xx   | Redirection   |
+| 4xx   | Client Errors |
+| 5xx   | Server Errors |
+
+1xx — Informational -> Request received, processing continues.  --> Example:100	Continue
+2xx — Success Codes
+
+Means:
+✅ request successful --> 200 OK -->Meaning: request succeeded --> Example: webpage loaded and API returned success
+201 Created --> ✅ new resource created --> POST APIs
+204 No Content --> Request successful but:❌ no response body
+
+3xx — Redirection Codes
+Means: resource moved/redirection required.
+301 Moved Permanently --> Used for: URL redirects --> HTTP → HTTPS redirect 
+302 Found --> Temporary redirect.
+304 Not Modified --> Browser cache used. and Improves performance.
+
+4xx — Client Error Codes
+Means: issue from client/request side
+400 Bad Request --> Invalid request syntax/data.
+401 Unauthorized --> Authentication required.
+403 Forbidden --> Access denied. --> Example:permission issue and nginx restriction
+404 Not Found --> Requested resource/page missing.
+405 Method Not Allowed -->  Wrong HTTP method used. --> Example:GET instead of POST
+
+
+5xx — Server Error Codes 
+Means:server-side issue
+500 Internal Server Error --> Generic server failure.
+502 Bad Gateway --> Usually: reverse proxy issue and backend server down and common with Nginx and Load Balancers 
+503 Service Unavailable --> Server temporarily unavailable. --> Reasons: maintenance and overload 
+504 Gateway Timeout --> Backend response timeout --> reasons : microservices and load balancers
+
+curl -I http://server-ip   --> HTTP/1.1 200 OK
+| Code Type | Responsibility    |
+| --------- | ----------------- |
+| 4xx       | Client-side issue |
+| 5xx       | Server-side issue |
+
+
+| Code | Meaning               |
+| ---- | --------------------- |
+| 200  | Success               |
+| 201  | Created               |
+| 301  | Permanent Redirect    |
+| 400  | Bad Request           |
+| 401  | Unauthorized          |
+| 403  | Forbidden             |
+| 404  | Not Found             |
+| 500  | Internal Server Error |
+| 502  | Bad Gateway           |
+| 503  | Service Unavailable   |
+| 504  | Gateway Timeout       |
+
+“HTTP status codes are standardized server response codes used to indicate the result of client requests. They are categorized into informational, success, redirection, client error, and server error responses. In DevOps and production troubleshooting, status codes like 200, 404, 502, and 503 are commonly monitored to identify application and infrastructure issues.”
+
+
+
+/etc/ --> /etc/ is a system directory that contains system-wide configuration files for the operating system confg'ns, service config'ns, applications settings, networking settings, and user/account info.
+
+web:
+----
+/usr/share/nginx/html/*
+/etc/nginx/default.d/roboshop.conf 
+mongodb:
+-------
+/etc/yum.repos.d/mongo.repo
+/etc/mongod.conf
+
+
+What Gets Installed
+
+Usually:
+
+Component	Example
+Binary	/usr/bin/mongod
+Config File	/etc/mongod.conf
+Data Directory	/var/lib/mongo
+Log Directory	/var/log/mongodb
+Service File	mongod.service              //usr/lib/systemd/system/mongod.service or /etc/systemd/system/mongod.service
+
+catalogue:
+----------
+dnf module disable nodejs -y
+dnf module enable nodejs:18 -y
+npm install  --> for node js package 
+
+dnf module list nodejs ---> ggive list of nodejs versions available
+			
+/etc/systemd/system/catalogue.service
+/etc/yum.repos.d/mongo.repo
+
+
+1)dnf install mongodb-org-shell -y --> installs only MongoDB client shell utilities tools.
+dnf install mongodb-org-shell --> shell 
+What It Is Used for: connect to MongoDB server,run queries,create databases,test connectivity
+This does NOT install: ❌ MongoDB server and ❌ mongod service
+cmd : mongosh or mongo
+
+2)dnf install mongodb-org -y --> installs complete MongoDB package suite or actual MongoDB database server
+dnf install mongodb-org -y ---> Full MongoDB server + shell
+
+| Component        | Purpose                |
+| ---------------- | ---------------------- |
+| `mongod`         | Database server daemon |
+| `mongosh/mongo`  | Client shell           |
+| Config files     | `/etc/mongod.conf`     |
+| Service file     | `mongod.service`       |
+| Data directories | `/var/lib/mongo`       |
+
+“mongodb-org-shell installs only the MongoDB client shell utilities used to connect and interact with MongoDB servers, whereas mongodb-org installs the complete MongoDB server stack including the mongod daemon, client shell, configuration files, service units, and data directories.”
+
+tail -f /var/log/message --> check running logs
+npm install --> it will read package.json and it will install lib's and dependencies -- developers will mention
+
+
+
+
+when u try to open facebook.com -->it will first check facebook ip address in browser cache if not here  --> browser will contact to OS and check if ip is there in OS cache if not there --> in OS we will configure with ISP resolver (DNS resolution is responsiblity of ISP resolver) os will connect to ISP resolver i want this ip address it will check in ISP resolver cache and if not present --> ISP resolver configured with nearest ROOT SERVERS (13 servers world wide)
+Root servers - TLD(top level domain ex: .com,.in,.org,.net etc)
+.com --> it will consult root servers that we started TLD and provide our info 
+root server will provide TLD info to root server .com -->
+.com comes to ISP resolver and now ISP esolver will approach to .com TLD/facebook.com --> ISP will get name servers 
+.com TLD  --> name servers info and now ISP connect to hostinger  
+
+
+redis: default port : 6379
+------
+/etc/redis.conf 
+redis-cli ping --> Verify Redis Running
+
+| File              | Purpose             |
+| ----------------- | ------------------- |
+| `/etc/redis.conf` | Redis configuration |
+| `/var/lib/redis`  | Redis data          |
+| `redis.service`   | Systemd service     |
+
+
+dnf install https://rpms.remirepo.net/enterprise/remi-release-8.rpm -y
+What Is Remi Repository?
+
+Remi repo is a third-party RPM repository providing newer versions of packages.
+
+What Happens Internally
+
+This command: downloads .rpm file - installs repository configuration - creates repo files under: --> /etc/yum.repos.d/
+example files created :
+remi.repo
+remi-modular.repo
+
+dnf module enable redis:remi-6.2 -y --> Enables Redis 6.2 module stream from Remi repository.
+
+user:
+-----
+/etc/systemd/system/user.service
+vim /etc/yum.repos.d/mongo.repo
+
+cart:
+----
+
+shipping: basically it a java application so maven we have to install 
+--------
+dnf install maven -y
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+**************************************************************************************************************************************************
+
+
+1)lsblk : Check attached disks:
+2)Attach filesystem: mount / unmount file systems
+mount /dev/xvdb1 /data
+umount /data
+/etc/fstab : Persistent disk mounting after reboot.
+
+3)inode management:
+
+File Compression Commands:
+tar
+Create: tar -cvf backup.tar /app
+Extract: tar -xvf backup.tar
+Compress: tar -czvf app.tar.gz /app
+Extract: tar -xzvf app.tar.gz
+gzip
+Compress: gzip app.log
+Creates: app.log.gz
+
+
+5)Environment Variables
+Check:env
+Create:
+export ENV=prod
+Use: echo $ENV
+Permanent:
+~/.bashrc 
+/etc/profile
+
+6)Cron jobs
+
+7)Log Management:
+Important locations:
+/var/log/messages
+/var/log/secure
+/var/log/nginx/access.log
+/var/log/nginx/error.log
+
+Commands: journalctl
+Current boot: journalctl -b
+Follow logs: journalctl -u nginx -f
+
+8)Log Rotation : logrotate : Prevent logs filling disk
+9)Network Advanced Troubleshooting :
+traceroute google.com --> Check packet path
+tcpdump -i eth0 port 80 	--> Capture packets:
+
+nc command  : Alternative for telnet -->nc -zv server-ip 8080
+
+10)Load Average : uptime
+
+High load troubleshooting:
+top
+ps -ef
+iostat
+
+11)Memory Troubleshooting :vmstat
+vmstat 2 : Check: CPU,RAM,IO wait
+
+12)File Descriptors
+
+13)SSH Advanced : ssh-copy-id user@server -- copy key
+ssh -v user@server --> debug ssh
+
+
+
+14. Important Troubleshooting Scenarios (Must prepare)
+✅ CPU 100%
+Commands:
+top
+ps aux --sort=-%cpu
+
+✅ Memory full:
+free -m
+top
+
+✅ Disk full:
+df -h
+du -sh *
+
+✅ Service not starting : systemctl status nginx
+journalctl -u nginx : ✅ Port not listening
+ss -tulpn/netstat -tulpn : ✅ Application unreachable
+
+Flow:
+
+ping
+ ↓
+telnet/nc
+ ↓
+security group/firewall
+ ↓
+service status
+ ↓
+logs
+
+concepts
+1. du command
+10. journalctl
+13. tcpdump
+17. ulimit
+18. lsof
+19. SELinux
+20. Linux troubleshooting scenarios
+
+
+info    --> alternate to man command
+which   --> locate a command
+wc 	    --> print new line,word and byte counts for each file
+locate  --> find files by name
+ln      --> link one file/directory to another
+strings --> print strings of printable characters in files
+quota   --> display disk usage and limits
+du      --> calculated used disk usage
+more    --> view text one screen at a time
+nano    --> terminal text ef
+tar     -->Archive files --> creates an archive file that can store multiple files and directories
+zip     --> compress file --> creates a zip archive from files or directories
+gzip    -->compress files --> using gzip compression
+
+
+
+
+Inode (Index node):
+------
+An inode is a fundamental data structure in Linux filesystem that stores metadata (information) about a file or directory except the file name and actual file content.
+or
+Inode is a filesystem data structure that stores metadata about files such as permissions, ownership, size, timestamps, and disk block locations. It does not store the filename or actual data/file content. Each/every file needs one inode whether it is small or large file doesn't matter, and if inode usage reaches 100%, new files cannot be created even when disk space is available.
+
+
+
+information inode stores :
+| Stores              | Example               |
+| ------------------- | --------------------- |
+| File type           | file/directory        |
+| Permissions         | rw-r--r--             |
+| Owner               | ec2-user              |
+| Group               | devops                |
+| File size           | 10 KB                 |
+| Timestamps          | created/modified time |
+| Link count          | hard links            |
+| Disk block location | where data exists     |
+
+create a file :
+echo "Hello DevOps" > test.txt
+check : 
+ls -li test.txt
+o/p: 12345 -rw-r--r-- ec2-user ec2-user 13 May30 test.txt
+
+1)to check inode number : 
+ls -i 
+o/p : 123456 test.txt
+123456 --> inode number 
+
+2)Check inode usage : 
+df -i
+o/p : 
+Filesystem   Inodes   Used    Free   IUse%
+/dev/xvda1   1000000 900000 100000 90%
+IUse% : inode usage
+
+Important Production Issue ⭐⭐⭐
+some times df -h shows Disk usage = 50% but creating new file fails:No space left on device why? 
+check 
+df -i  -> give details about inode 
+o/p: IUse% = 100% means All inodes are used so we cannott create a new files 
+
+
+Internal Flow When Reading File
+cat test.txt  when u run below will be happened
+cat test.txt 
+      |
+      v
+Directory finds filename
+      |
+      v
+Gets inode number
+      |
+      v
+Reads inode metadata
+      |
+      v
+Finds disk blocks
+      |
+      v
+Reads actual content
+
+Simple memory:
+Filename → points to inode
+Inode → points to data blocks
+Data blocks → actual file content
+
+
+Hard link and Soft link:
+------------------------
+A hard link creates another file/filename pointing to the same inode, so data remains accessible even if the original file is removed. 
+A soft link or symbolic link is a shortcut pointing to another filename and has a different inode; it breaks if the original file is deleted.
+
+Hard link:
+-----------
+A hard link is Another filename pointing to the SAME inode and SAME data blocks.
+or 
+Creating another filename that points to the same inode of an existing file.
+
+Example:
+
+Original file: first file 
+echo "Hello Linux" > file1.txt
+now creating hard link with below command 
+ln file1.txt file2.txt
+
+now check
+ls -li
+o/p:
+12345 file1.txt          
+12345 file2.txt
+
+ --> same inode for both files 
+ 
+Now modify file1.txt(original file) and previously both files has same data "Hello Linux" only 
+but we are modifying file1.txt with below and not updating in file2.txt but if i run cat file2.txt it will get updated data automatically because same inode and same data blocks it will show updated content in file2.txt
+
+echo "DevOps" >> file1.txt --> update first file content
+
+now see cat file2.txt 
+o/p:
+Hello Linux
+DevOps
+
+Why? means Because both share same inode and same data block.
+
+What happens if original file deleted?
+remove :
+rm file1.txt
+cat file2.txt
+o/p :
+Hello Linux
+DevOps
+
+Still works ✅ Why? means because data is not deleted immediately and rm removes only filename reference.
+before delete:
+Link count = 2
+file1
+  \
+   inode
+  /
+file2
+
+after delete
+Link count = 1
+file2
+ |
+ inode
+ |
+ data
+ 
+ When link count becomes: 0  --> then Linux removes data.
+ 
+ 
+Real Production Use Case of Hard Link:
+**************************************
+ 
+1. Backup without duplicate storage
+
+Example:
+Huge file 
+application.log = 10GB
+
+Create hard link 
+ln application.log application_backup.log
+
+Disk usage?
+Not: 20 GB
+Only: 10 GB  --> because same data blocks and same inode it points to
+
+Limitations of Hard Link:
+------------------------
+1. Cannot link directories
+ex : ln /app /backup  --> fails because hard link not allowed for directory reason To avoid filesystem loops.
+
+
+2. Cannot cross filesystem
+
+Example:
+Filesystem1:
+/dev/xvda1
+/home/app.log
+
+Filesystem2:
+/dev/xvdb1
+/data/
+
+Try:
+
+ln /home/app.log /data/app.log
+
+Fails --> Reason: Inode numbers are filesystem specific
+
+Soft link/Symbolic link/symlinkl:	
+--------------------------------
+A shortcut/reference that points to another filename/path.
+or
+A special file that points to another file path/name.
+
+Ex : ln -s original shortcut
+
+create a soft link
+ln -s file1.txt file3.txt
+check
+ls -li
+o/p:
+12345 file1.txt                --> Different inode numbers.
+67890 file3.txt -> file1.txt
+
+test:
+Modify original file:  
+echo "AWS" >> file1.txtt 
+Read link:
+cat file3.txt            when we change data in file1.txt i.e., original file it also updated in file3.txt (soft link file)
+o/p:
+Hello Linux
+AWS
+
+What happens if original file deleted?
+rm file1.txt
+now check soft link file(file3.txt) created bassed on file1.txt
+cat file3.txt
+o/p:
+No such file or directory  so soft link broken and data/file cannot be seen in file3.txt 
+
+Before deleting
+file3
+ |
+file1
+ |
+inode
+ |
+data
+
+after deleting 
+file3
+ |
+ ??? missing
+ 
+ 
+Find Broken Soft Links
+
+Production command:  find / -xtype l
+
+
+
+Real DevOps Use Cases of Soft Links ⭐⭐⭐
+1. Version Switching
+Example application releases:
+in the below folder we store code versions currently we have 3 versions
+
+/app/releases/
+v1
+v2
+v3
+
+Create symlink
+ln -s /app/releases/v3 /app/current
+
+application uses/deployed  --> /app/current      v3 is deployed
+
+now if u want to deploy new version v4 just change the symlink
+
+ln -sfn /app/releases/v4 /app/current     ---> now deployed/current points to version is v4 
+
+lets say we have an issue in version v4 i wan to rollback to previous version just
+
+ln -sfn /app/releases/v3 /app/current
+
+2. Nginx Configuration
+
+example:
+
+Actual file:
+
+/etc/nginx/sites-available/app.conf
+
+Enable:
+ln -s /etc/nginx/sites-available/app.conf /etc/nginx/sites-enabled/app.conf
+
+Hard Link vs Soft Link Deep Comparison
+
+| Concept          | Hard Link       | Soft Link     |
+| ---------------- | --------------- | ------------- |
+| Points to        | inode           | filename/path |
+| Inode            | Same            | Different     |
+| Data             | Same data block | Reference     |
+| Delete original  | Works           | Breaks        |
+| Directory link   | No              | Yes           |
+| Cross filesystem | No              | Yes           |
+| Storage          | No duplicate    | Very small    |
+| Command          | ln              | ln -s         |
+
+
+Troubleshooting Commands
+
+Find inode: ls -li
+Find hard links: find / -inum 12345
+
+Example:
+find / -samefile app.log
+Find soft links: find / -type l
+
+
+"Hard links create another directory entry pointing to the same inode and same data blocks, so deleting one filename does not remove the data until all hard links are deleted. Soft links are separate files with their own inode that store the path of another file. They are mainly used for shortcuts, application version switching, and configuration management."
+
+
+
+
+
+
+sort: Arrange file content in alphabetical or numerical order.
+---- 
+ex: 
+cat names.txt
+with content
+ramesh
+arun
+suresh
+mahesh
+
+cmd : sort names.txt     ---> sort all names in files in an alphabetical order a-z/A-Z
+o/p:
+arun
+mahesh
+ramesh
+suresh
+
+Reverse Sorting (z-a)
+
+sort -r names.txt  --> same values above printed like backward    suresh ramesh mahesh arun\
+
+Numeric Sorting
+Ex : file has data 
+10
+5
+100
+20
+normal sort :
+sort numbers.txt
+10
+100
+20
+5           --> because it sorts like text 
+correct way:
+sort -n numbers.txt
+o/p:
+5
+10
+20
+100
+
+Sort and Save Output --> sort names.txt -o names.txt
+
+Sort by Column
+employees.txt below content present
+Arun 50000
+Ramesh 40000
+Suresh 60000
+
+Sort by salary:
+sort -k2 employees.txt
+
+
+uniq:
+-----
+Remove/countsx	 or display duplicate adjacent lines.
+
+Example:
+1)
+cat names.txt
+content:
+arun
+arun
+ramesh
+suresh
+suresh
+
+uniq names.txt   --> remove duplicate names
+o/p:
+arun
+ramesh
+suresh
+
+2)
+important: uniq removes only nearby duplicates means 
+only deletes this side by side:
+arun
+arun
+ramesh
+suresh
+suresh
+
+it will not delete if data is like below
+arun
+ramesh
+arun
+suresh
+
+for that we can use sort option it will sort the data like above nearby and give o/p to uniq
+
+sort file.txt | uniq 
+
+now o/p:
+arun
+ramesh
+suresh
+
+Count Duplicate Lines     --> sort file.txt | uniq -c
+Show Only Duplicate Lines --> uniq -d file.txt
+Show Only Unique Lines    --> uniq -u file.txt
+
+
+
+| Command   | Purpose                                          | Example                  |
+| --------- | ------------------------------------------------ | ------------------------ |
+| `info`    | Shows detailed documentation/help about commands | `info ls`                |
+| `which`   | Shows executable command location                | `which nginx`            |
+| `wc`      | Counts lines, words, characters, bytes           | `wc file.txt`            |
+| `locate`  | Quickly finds files using database               | `locate nginx.conf`      |
+| `ln`      | Creates hard/soft links                          | `ln -s app.log link.log` |
+| `strings` | Shows readable text from binary files            | `strings /bin/ls`        |
+| `quota`   | Shows disk quota limits                          | `quota -u arun`          |
+| `du`      | Shows disk usage of files/directories            | `du -sh /app`            |
+| `more`    | View file content page by page                   | `more app.log`           |
+| `nano`    | Command line text editor                         | `nano test.txt`          |
+| `tar`     | Combines multiple files into archive             | `tar -cvf app.tar /app`  |
+| `zip`     | Compress files/directories into zip format       | `zip app.zip file.txt`   |
+| `gzip`    | Compress single file using gzip                  | `gzip app.log`           |
+
+
+
+WC(word count): Used to count lines,words,characters,bytes
+--------------
+ex:
+cat users.txt
+
+content:
+
+Arun DevOps
+Ramesh AWS
+Suresh Linux
+
+command :
+wc users.txt --> o/p: 3 6 32 users.txt
+means 
+3  → lines
+6  → words
+32 → bytes
+
+wc -l users.txt   --> Count only lines
+wc -w users.txt   --> Count only words
+wc -m users.txt   --> Count characters
+wc -c users.txt   --> Count bytes
+
+ex:  cat /etc/passwd | wc -l
+
+more: View large files page by page.
+-----
+ex: more /var/log/messages
+
+cat application.log --> print on the terminal
+
+| more           | less               |
+| -------------- | ------------------ |
+| Older command  | Advanced           |
+| Mainly forward | Forward + backward |
+| Less features  | Search, navigation |
+
+
+
+tar(Tape Archive):It is used to Combine multiple files/directories into a single archive file.
+
+imp :  tar alone does not compress.
+
+example : we have a directory called /app in that we have diff files
+/app
+
+file1.txt
+file2.txt
+logs/
+
+Create tar archive   ---> tar -cvf app.tar /app   -->  it creates app.tar
+
+-c = create
+-v = verbose(show files)
+-f = filename
+
+Extract tar file --> tar -xvf app.tar     --> -x = extract
+View tar content --> tar -tvf app.tar
+
+tar with compression (.tar.gz)
+ex: tar -czvf app.tar.gz /app
+-c create
+-z gzip compress
+-v show process
+-f filename
+
+Extract tar.gz
+tar -xzvf app.tar.gz
+
+Real example:
+-------------
+Backup : tar -czvf backup.tar.gz /var/log
+Restore: tar -xzvf backup.tar.gz
+
+Zip: used to Compress files/directories into .zip archive.
+----
+Eample:
+1)Compress single file ---> zip app.zip app.log
+before : app.log After : app.log and app.zip --> original remains 
+2)Compress directory
+     zip -r app.zip /app       --> recursive means include inside files also
+Extract zip ---> unzip app.zip
+
+ex: unzip -o app.zip --> -o : overwrite old files 
+
+
+gzip : gzip compresses files using gzip algorithm. mostly used for logs and backups
+-----
+ex:
+1)gzip app.log --> creates app.log.gz file and Original file removed (i.e., app.log)
+
+2)To Keep original file 
+gzip -k app.log
+now :
+app.log
+app.log.gz
+
+Extract gzip ---> gunzip app.log.gz o/p : app.log
+
+tar vs zip vs gzip
+
+Very important interview question.
+
+| Feature | tar | zip | gzip |
+|-|-|-|
+| Archive multiple files | Yes | Yes | No(single file) |
+| Compression | No by default | Yes | Yes |
+| Original removed | No | No | Yes |
+| Extension | .tar | .zip | .gz |
+
+
+Common DevOps Usage
+--------------------
+Application backup : tar -czvf app-backup.tar.gz /app
+Compress logs      :gzip application.log
+Package code	   :zip -r code.zip project/
+View large logs    : more /var/log/messages
+Count errors       : grep ERROR app.log | wc -l
+
+Interview Short Answer:
+------------------------
+wc     → count lines, words, bytes
+more   → read large files page wise
+tar    → archive multiple files/directories
+zip    → archive + compress files into .zip
+gzip   → compress single file into .gz

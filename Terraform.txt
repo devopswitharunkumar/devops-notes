@@ -1,0 +1,4568 @@
+check this concepts :
+--------------------------
+Terraform import
+terraform console
+terraform init -upgrade
+terraform init -reconfigure
+terraform state show 
+terraform state list 
+terraform tainit 
+
+terraform state-lock
+terraform force-unlock
+terraform refresh
+
+Shift left practice -- we use in pipelines
+Network ALC topic 
+
+Terraform:	
+-------------
+Terraform is an open-source Infrastructure as Code (IaC) tool developed by HashiCorp. It allows us to create, modify, and destroy infrastructure resources using declarative configuration files. Terraform supports multiple providers like AWS, Azure, GCP, Kubernetes, etc.
+
+Terraform is an open-source Infrastructure as Code (IaC) tool developed by HashiCorp. It is used to provision, manage, and automate cloud resources using declarative configuration files(.tf files) written in HCL (HashiCorp Configuration Language). Terraform enables us to create, update, and destroy infrastructure in a consistent, repeatable, and version-controlled manner across multiple environments.
+
+Project-Based Interview Answer (Recommended)
+
+In our project, we used Terraform to provision and manage AWS infrastructure such as EC2 instances, Route53 records, Security Groups, IAM Roles, and S3 backends. We used reusable modules, remote state with S3 and DynamoDB, and environment-specific tfvars files to manage Dev and Production environments. This helped us automate infrastructure provisioning, maintain consistency across environments, and support version-controlled infrastructure deployments.
+
+
+
+2) Manual vs Ansible vs Terraform (Correction needed)
+
+Manual is not preferred because time taking, human errors, login servers
+Human mistakes
+No version history
+No review process
+Slow deployments
+Different environments mismatch(if diff people write code for diff env automatically there will be mismatch of variables/configuration)
+
+Terraform ---> Main purpose is Provision Infrastructure
+Example:
+Create cloud resources ---> EC2,VPC,Subnet,Security Group,Route53,Load Balancer,RDS
+
+Ansible ---> Main purpose Configure Infrastructure
+
+Example: lets say Already EC2 exists so for application deployment we need to setup the servver so that will be done by ansible 
+Install nginx,Java,MongoDB,Application deployment,Configuration files
+
+Interview: Terraform creates servers ---> Ansible configures created servers(it will prepare/configure the server what are all things needed for the application deployment)
+
+
+1)version control
+we can keep our configuration files in git this helps us to track changes,collabrate with team members , Code review from managers, roll back to old version if newer version has issues in production so that bussiness will not impact 
+
+we can track : who changed and what they have changed and why they changed 
+
+2) consistent infrastructure
+Terraform helps us achieve consistent infrastructure across multiple environments like Dev, Test, Pre-Prod, and Production by using the same infrastructure code and but values change based on the environment.(using variables.tfvars file)
+
+ automated infra --> we perform CRUD operations create.read,update,delete
+Terraform allows us to define infrastructure in a declarative manner, where we specify the desired state of resources, and Terraform automatically decides the required actions needed to achieve that state.
+ex:
+means lets say currently we have an ec2 with
+EC2 instance = t3.micro
+Terraform code changed and we want to update ec2 with below
+instance_type = "t3.small"	            --> desired state
+
+When we run ---> terraform apply /plan 
+
+Terraform automatically Reads existing state(.tfstate file) then Compares currentstate file (tfstate + aws existing resource running) vs desired state(.tf diles) then it decides to create/update/delete resources to Achieves desired state	
+
+3)State Management
+Terraform state is a file that stores information about resources created by Terraform(when u run apply cmd).State file is not exactly current cloud state always. It is Terraform's last known recorded state of resources.
+Terraform stores this information in a state file -->  terraform.tfstate
+The state file acts like a database/inventory for Terraform-managed resources. It stores resource details
+
+It tracks the current state of the infrastructure available in cloud platform created by terraform and allowing to understand terraform what resources are currently existing 
+based on that State file enables terraform to perform actions like create ,update,delete based on the existing infrastructure .
+
+my understanding:
+So basically State file stores the information of currently created/managed/running resources in a cloud platform created by using terraform.Whn i change code and when i do plan or apply command it will read/check that state file and configuration files(.tf files) and compare with aws console resource available based on the info it will decide and perform actions like update,delete or create 
+
+Terraform Compares b/w ---> Terraform Code i.e,. desired state (.tf configuration files) VS State File (.tfstate file)+ Real AWS (running resources in ex aws )
+Then decides                      ---> Create?,Update?,Delete? resources 
+Example:
+1)In code we gave   EC2 = t3.small
+2)in state file            EC2 = t3.micro       --> already created and running instance info it is running with t3.micro
+based on the state file info it will decide to update because both are diff values so it will update the resource
+
+
+Terraform state is used to track resources created and managed by Terraform. It stores resource metadata, dependencies, and IDs inside terraform.tfstate file. During terraform plan or apply, Terraform compares the desired configuration(.tf files) with the state file(.tfstate file) and actual cloud infrastructure(aws console infra), then decides whether resources need to be created, updated, or deleted. 
+In production, we store state remotely using backends like AWS S3 with DynamoDB locking for collaboration.
+
+
+4)Cost optimisation:
+Terraform helps in cost optimization by allowing us to create, modify, and destroy infrastructure resources based on business requirements using Infrastructure as Code.
+It helps teams provision only the required resources and remove unused infrastructure, reducing unnecessary cloud costs.
+ex;
+During normal days:  EC2 instance count = 5
+
+During high traffic events (like Big Billion Days):
+We update infrastructure configuration ---> EC2 instance count = 20
+
+AWS Auto Scaling
+Traffic increases
+        |
+        |
+CloudWatch detects high CPU
+        |
+        |
+Auto Scaling Group adds EC2 instances
+        |
+        |
+Application handles load
+
+
+Traffic decreases
+        |
+        |
+Removes extra EC2 instances
+        |
+        |
+Cost reduced
+
+
+5)Dependency Management 
+Terraform automatically understands dependencies.When one resource depends on another resource attribute,Terraform automatically understands the relationship between resources and creates, updates, or deletes them in the correct order.
+In real infrastructure, some resources depend on others Terraform automatically handles this.
+Example:
+resource "aws_vpc" "main" {
+}
+resource "aws_subnet" "public" {                    --> so subnet depends on vpc it automatically understand that first i need to create vpc then subnet 
+vpc_id = aws_vpc.main.id
+}
+resource "aws_instance" "web" {                   --> EC2 depends on Subnet create subnet then it will create ec2
+  ami = "ami-12345"
+  instance_type = "t3.micro"
+  subnet_id = aws_subnet.public.id
+}
+Terraform understands: First create VPC --> then create subnet --> Because subnet depends on VPC --> then create ec2 because ec2 depends on subnet id 
+
+During Destroy
+
+Terraform follows reverse order ----> Delete EC2 --> Delete Subnet --> Delete VPC
+Because VPC cannot be removed while subnet/EC2 exists.
+
+6)Modules
+Terraform modules are reusable collections of Terraform configuration files that are used to organize and reuse infrastructure code.
+Instead of writing the same code multiple times for different projects/environments, we create a module once and call it wherever required with diff varibles file (like ex for prod we have  variables-prod.tfvars and for dev we have variables-dev.tfvars like this)
+
+Types of modules:
+1)Root Modules --> The folder where Terraform command runs. (i.e.,main.tf,variables.tf,provider.tf) This is root module.
+2)Child Module ---> Modules called by root module. (i.e.,modules/ec2,modules/vpc,modules/rds) in asible mongodb inside roles folder 
+
+interview answer:
+Terraform modules are reusable components used to organize and standardize infrastructure code. In our project we created modules for common resources like EC2, VPC, Security Groups, and Route53. The same modules were reused across dev, test, and production environments by passing different variable values(variables.tfvars file). Modules helped us follow DRY principles(dont repeat yourself), reduce duplicate code, and improve maintainability.
+
+7)Declarative way
+Terraform uses a declarative approach, which means we define the desired final state of infrastructure(how it should be), and Terraform automatically decides the steps required to achieve that state(how to do and what to do).
+ex:
+We tell Terraform:
+"What infrastructure I want"
+We don't tell:
+"How to create it step-by-step"
+
+imperative means we need to tell step by step how to do and what to do and Order of execution? like shell script 
+Declarative --> "I want 5 servers" Terraform handles i have 3 servers already it will create 4 th and 5th server
+
+How Terraform Does This Internally?
+Terraform compares 3 things:
+Terraform Configuration (.tf files) (i.e., Desired State) ----> Terraform State File (terraform.tfstate) Existing Managed Resource by terraform + Actual Cloud Resources (AWS) Currently runnning in aws . based on that it will decided to create or delete or update the resources 
+
+Declarative gives Idempotency --> First apply: EC2 not present and Terraform creates EC2
+Second apply without changing terraform code:
+Terraform checks(Terraform compares 3 things:) --> terraform Code: EC2 required i.e., desired state  --> AWS: EC2 already exists ---> Decision: No changes required ---> Output: No changes. and Infrastructure is up-to-date.
+
+That is idempotency. and it follows above menthod  How Terraform Does This Internally? this 
+
+Declarative 						vs                                     Imperative
+Declarative (Terraform)					                 Imperative (Scripts)
+Define final state												Define every step
+What you want													How to do
+Terraform decides actions								User controls actions
+Automatically handles dependency				Manual ordering
+Idempotent														Need extra logic
+Easy maintenance											Complex for large infra
+
+Terraform follows a declarative approach where we define the desired state of infrastructure using configuration files. Terraform compares the desired state (.tf configuration files) with the existing state of resources (terraform.tfstate file) stored in the state file and cloud aws resources currently running and automatically decides whether resources need to be created, updated, or deleted. This reduces manual steps, provides idempotency, and ensures consistent infrastructure across environments.
+
+Easy memory: Declarative: Tell WHAT you want --> Terraform decides HOW to do and what to do 
+
+Ex: Lets say we are working on a proj and we created multiple resources using terraform and it metadata or info of resource state stored in the state file now some associate manually changed the resources(this will be not recorded in state file) in aws which causes issue so it will affect the bussiness so to find that it wil take some time meanwhie business should not impact ryt so we already have a state file simply we do terraform apply so original infra (i.e., desired state of infra) will be created whether it will be create/update/delete so business will run after then u ca find who did and what did and why did he done changes 
+
+8) Hybrid Cloud
+Terraform supports many providers such as AWS,Azure,GCP,Kubernetes,VMware
+
+Terraform Installation flow
+-----------------------------------
+Your diagram:
+Developer Laptop(vs code) --> Terraform CLI --> AWS Provider Plugin(AWS CLI) --> AWS API --> Creates resources
+
+Authentication: Terraform needs Access Key and Secret Key
+or
+In Production we use :    IAM Role
+
+1)Install terraform.exe  ----> from google and install in laptop and paste that path in environment variables
+2)Install AWS_CLI 
+Diagram 
+									github
+										|
+									vs code		---->	  terraform.exe  	   ----->  
+																		|														AWS_Account
+																	AWS_CLI  					 ------> 
+									
+aws_cli --> aws configure --> asks for secret key and access key to authenticate with aws so that if we run apply resources will be created 									
+to check aws cli installed version 
+aws --version                 o/p : aws-cli/2.35.9 Python/3.14.5 Windows/11 exe/AMD64
+
+
+or 
+                GitHub
+                  |
+                  |
+        Terraform Code Repository
+        main.tf, variables.tf
+                  |
+                  |
+             Clone/Pull
+                  |
+                  |
+              VS Code
+        (write/edit terraform files)
+                  |
+                  |
+           terraform.exe
+           (Terraform CLI)
+                  |
+                  |
+           AWS Provider Plugin
+                  |
+                  |
+        AWS Credentials / IAM Role
+          (configured by AWS CLI)
+                  |
+                  |
+              AWS API
+                  |
+                  |
+            AWS Account
+create/update/delete
+      EC2 | VPC | S3 | Route53 | EKS
+	
+
+In our project, we write Terraform configuration files in VS Code and maintain them in Github. Terraform CLI executes commands using git bash. During terraform init, it downloads required provider pluginsfro terraform registry. Terraform plan do compares configuration files(.tf code files) with the state file(.tfstate file) + existing AWS infrastructure in aws to generate an execution plan. Terraform apply communicates with AWS through provider APIs using AWS credentials and creates or updates resources. After execution, Terraform updates the state file to track managed infrastructure.
+
+syntax:
+ resource "what resource ex: ec2,vpc "	"name of resource we want to display as"{
+		key = value pairs
+} 
+	  
+Example Terraform File		  
+main.tf
+provider "aws" {
+ region = "us-east-1"
+}
+resource "aws_instance" "web" {            --> aws_instance we cant change this  "web" --> we can change 
+ ami = "ami-12345"
+ instance_type="t3.micro"
+
+}
+
+This syntax is called HashiCorp Configuration language (HCL)
+
+
+
+Aws provider code  --> it will download aws provider plug in and connect and create resources 	
+-------------------------
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"             #--> aws provider version not terraform version
+    }
+  }
+}
+
+# Configure the AWS Provider
+provider "aws" {
+  region = "us-east-1"
+  #we can give here secret and access keys like but not safe when u push to github it is visible so we are using aws cli
+#   access_key = "my-access-key"
+#   secret_key = "my-secret-key"
+}
+
+----> Instead of giving like above in provider block access key and secret key we used aws configure using IAM roles
+
+In AWS CONSOLE:
+-----------------------
+1)now in aws --> IAM users --> create user --> give name --> permission policies(administrator access) --> next --> create
+2)now  click on created user --> search for security credentials tab --> create access key --> select CLI -->  next -> copy values some where in notepad 
+3)no we installed aws cli already now open cmd or git bash
+     aws configure                     --> ask for secret and access key give them and reagion us-east-1  --> authentication successfull for aws 
+when u do this command .aws folder will be created/stored in local that is  C/users/reddy/.aws    folder name 
+now terraform.exe automatically connect with aws cli and it will fetch credentials 
+
+01-Create EC2 -instance.tf
+----------------------------------
+provider.tf --> copy paste above provider code
+--------------
+
+ec2.tf
+-------
+resource "aws_instance" "ec2" {                        ---> ec2 --> this is terraform name for terraform reference only 
+	ami           = "ami-*********"
+    instance_type = "t3.micro"
+    tags = {
+		Name = "HelloWorld"                                  --> with this name resource will be created in aws 
+  }
+}
+
+SG -->  if u dont provide SG --> takes default SG 
+HelloWorld --> instance name 	
+
+
+Now command flow starts.
+
+1) terraform init ----> Prepare working directory.
+it creates
+1).terraform folder
+2).terraform.lock.hcl
+
+
+Flow:
+terraform init -----> Reads main.tf/provider.tf -----> Finds provider block (provider "aws") -----> Downloads AWS provider plugin -----> Creates .terraform folder(.exe file ) -----> Creates .terraform.lock.hcl
+
+--->  .terraform folder inside .exe file will more mb like 360 mb like that if u push this to git u will face error to ignore that folder we have a small code
+now search in google terraform .gitignore --> open github link and copy paste in terraform folder so it avoids files/folders mentioned in .gitignore 
+
+
+After init:
+Folder:
+project/
+ main.tf
+ .terraform/
+ .terraform.lock.hcl
+ 
+Important: terraform init does NOT create AWS resources. Only prepares Terraform.
+
+2) terraform validate (optional) ----> Checks: Syntax correct? and Configuration valid?
+Example catches: Wrong: instance_typ = "t3.micro"     --> e is not there in type 
+it will run automatically when u run plan command to check syntax 
+
+
+3) terraform plan ⭐⭐⭐ ----> Show what Terraform is going to do on cloud (just plan it will not create resources)
+
+Flow: terraform plan
+
+Reads Terraform code (.tf files) -----> Reads state file (terraform.tfstate) -----> Connects AWS using credentials -----> Checks current resources -----> Compares: (Desired state VS Current state + aws infra already existing in aws)  -----> Creates execution plan (whether to create/update/delete)
+
+Example: No EC2 currently:
+
+1)create resource :
+Terraform says: Plan: + create                           --->   (+) means creating resource
+aws_instance.web
+
+2)update resource
+Change:
+Before: instance_type="t3.micro"
+After:   instance_type="t3.small"
+
+Plan:  ~ update                                                     ---> ~ means modifying resource 
+t3.micro => t3.small                                            ---> udate instance type to t3.small
+
+3)Remove Resource:
+Remove resource: Plan: - destroy              	    --->      (-) symbol  --> incates remove resource
+
+Important: Plan does not change AWS. Only shows.
+
+
+4) terraform apply ⭐⭐⭐ -----> Actually create/update/delete infrastructure in cloud 
+
+Flow: terraform apply                  --> prompt for conformation yes or no
+or
+terraform apply -auto-approve --> it will not prompt for conformation yes or no
+
+Reads execution plan -----> AWS Provider -----> AWS API Call (connect with aws ) -----> Creates EC2 in AWS -----> Updates terraform.tfstate
+
+Example output: Apply complete!
+
+Resources:
+1 added                          ---> added means create
+0 changed					    ---> changed means if there is anything to update
+0 destroyed                   ---> destroyed means destroy 
+
+Now state file: terraform.tfstate ----> stores: EC2 ID : i-098765,AMI,Instance type,IP etc information
+
+
+Second time terraform apply You run again.
+compares 
+Terraform checks code : main.tf says --> Need EC2(desired state)
+State says:Already created
+AWS says: Running  already instance ---> Decision: No changes and Infrastructure up-to-date ---> This is idempotency.
+
+5) terraform destroy
+
+Flow: Reads state file -----> Find resources created -----> Calls AWS API -----> Deletes resources -----> Updates state
+
+
+flow :
+
+Developer ---> Writes code in VS Code ---> terraform init (download providers) ---> terraform plan (compare and preview) ---> terraform apply (create infra) ---> AWS Account (resources created) ---> terraform.tfstate updated
+
+
+
+
+Terraform variables       In gihub  examples: terraform-concepts/create-ec2-using-variables-tf and terraform-concepts/variabes-concept-tfvars
+-------------------------
+Terraform variables are used to store and pass dynamic values into Terraform configuration files instead of hardcoding them.
+Variables make Terraform code reusable, flexible, and easier to maintain across multiple environments like Dev, Test, and Production.
+
+Why do we use Variables?
+1. Avoid hardcoding , 2. Code reusability , 3. Environment separation (dev/prod) , 4. Easy maintenance , 5. Secure value management ,6. Dynamic infrastructure creation
+
+1st scenario: for variables.tf file 
+----------------
+Ex: 
+1) copy paste provider from above 
+2)ec2.tf
+resource "aws_instance" "First ec2 instance" {
+  ami           = var.ami_id
+  instance_type = var.instance_type
+  vpc_security_group_ids = [aws_security_group.allow_all.id] #list
+
+  tags = var.tags
+}
+3)sg.tf
+resource "aws_security_group" "allow_all" {
+  name        = var.sg_name         # with this name SG will be created in aws console
+  description = var.sg_description
+  # vpc_id      = aws_vpc.main.id     #optional takes default vpc
+
+  ingress {
+    description = "Allow-all-ports"
+    from_port        = var.sg_inbound_from_port
+    to_port          = 0
+    protocol         = "tcp"
+    cidr_blocks      = var.sg_cidr_blocks
+    # ipv6_cidr_blocks = ["::/0"]
+  }
+
+  egress {
+    from_port        = 0
+    to_port          = 0
+    protocol         = "-1"
+    cidr_blocks      = ["0.0.0.0/0"]
+    # ipv6_cidr_blocks = ["::/0"]
+  }
+
+  tags = {
+    Name = "allow-all-terraform"
+  }
+}
+variables.tf
+---------------
+4)now variables.tf  we will give default values for above variabes defined in ec2.tf and sg.tf
+variable "ami_id" {
+    type = string
+    default = "ami-0220d79f3f480ecf5"
+  
+}
+variable "instance_type" {
+    type = string
+    default = "t3.micro"
+  
+}
+variable "tags" {
+    type = map
+    default = {
+        Name = "Variable-concept"
+        Project= "Roboshop"
+        Env= "dev"
+        Component= "web"
+        Terraform = "true"
+
+    }
+}
+variable "sg_name" {
+    type = string
+    default = "allow-all-terraform-sg"     #if we give 0 here it will give error
+  
+}
+variable "sg_description" {
+    type = string
+    default = "Allowing all ports"
+}
+variable "sg_inbound_from_port" {
+    type = number
+    default = 0
+}
+variable "sg_cidr_blocks" {
+    type = list
+    default = ["0.0.0.0/0"]
+}
+
+2nd scenario:  terraform.tfvars file 
+-----------------
+terraform.tfvars file is used to override the default values present/given in variables.tf
+Ex:
+in variables.tf i have this value 
+
+variable "instance_type" {
+    type = string
+    default = "t3.micro"
+  
+}
+we already gave instance_type value in variabes.tf file like above if i want to overeide that value we can give it in terraform.tfvars file like it will automatically overrides default value
+Ex:   instance_type="t3.small"     --> now instance will be updated or created with t3.small it ignores value mentioned in variables.tf file
+terraform.tfvars this file name is fixed file terraform automatically takes it and we can give any name roboshop.tfvars etc 
+
+variable "instance_type" {   in variables.tf and instance_type="t3.small"    ------> name should be same to override default values 
+
+And Imp point:
+terraform.tfvars if u give file name like this then only terraform knows to oveeride values automatically and takes values from terraform.tfvars file  (run : terraform apply)
+if we give diff file name for tfvars file(Ex: roboshop.tfvars) terraform doesnt not pic values from this file we have to specifically mention file using -var-file option  
+terraform apply -var-file="roboshop.tfvars"    like this 
+
+3rd scenario: we can pass variable file in terminal
+-----------------
+we created roboshop.tfvars and mention value instance_type="t3.large"
+in terminal --> 
+terraform plan -var-file="roboshop.tfvars"   --> even if values present in variables.tf and variables.tfvars it will oveeride both values and take value form roboshop.tfvars because we mention in terminal
+
+4th scenario:
+----------------
+we can also pass variable value from terminal like below or if default value in variables.tf and terraform.tfvars is there both will overridden from cmd prompt value
+Ex:
+terraform plan -var="instance_type=t3.medium"    --> it will overwrite values present in both variabls.tf and variables.tfvars and ec2 created with t3.medium
+
+5th scenario:
+-----------------
+Environment Variables are operating system variables that Terraform automatically reads if their names start with the prefix TF_VAR_. This allows us to pass variable values without hardcoding them in the Terraform code or specifying them on the command line.
+variables.tf ----> Terraform automatically reads -------> TF_VAR_<variable_name>
+TF_VAR_  --> fixed 
+<variable_name> --> variables namechanges 
+ we can set environment variable
+ Ex
+ in window --->  set TF_VAR_instance_type=t3.micro
+							set TF_VAR_ami=ami-************
+ in linux   	--->export TF_VAR_instance_type="t3.micro" 
+ 
+ run :  terraform plan 
+ 
+ 
+ 
+6th scenario:  prompt for value in cmd line
+-----------------
+we did not mentioned default value of that variable in variabes.tf file and terrafor checks it and not found in variables files now variabe not found any where it will prompt for value when u run plan or apply in terminal
+variable "ami_id" {
+    type = string
+    #default = "ami-0220d79f3f480ecf5"       --> here we commented this and this value not present anywhere in code files so prompt in terminal
+  
+}
+
+ 
+now variable precedence :
+1st preference --> cmd line mentioned variable values                                      	   ex: --> terraform plan -var="instance_type=t3.medium"
+2nd preference --> we mentioned file in cmd line/terminal  .tfvars file			   ex: --> terraform plan -var-file="roboshop.tfvars"
+3rd preference --> it takes from terraform.tfvars                                                     ex: --> terraform plan  (automatically overides variables.tf values)
+4th preference --> environment variable                                                                   ex: -->  set TF_VAR_instance_type=t3.xlarge and terraform plan
+5th preference --> if we dont put variable value in .tfvars file it takes from variables.tf default value   ex: --> terraform plan
+6th preference --> if vaule not found anywhere the terraform will prompt for value in terminal   ex: terraform plan   --> comment all variable values in code files   
+
+
+
+Interview Answer ⭐⭐⭐ Terraform variabes
+
+Terraform variables are used to make infrastructure code dynamic and reusable by avoiding hardcoded values. We define variables in variables.tf and provide values through tfvars files, command line, or environment variables. In our project, we maintained separate variable files for dev and production environments while using the same Terraform modules. Terraform supports data types like string, number, boolean, list, map, object, set, and tuple.
+
+Data Types:
+---------------
+Data types define what kind of values a variable can store and how Terraform should understand and process those values. They help Terraform validate input values and prevent incorrect configurations.
+Why do we use data types?
+1. Validate variable inputs
+2. Avoid wrong values
+3. Improve code readability
+4. Make modules reusable
+5. Maintain standard configuration
+
+1. string  --> String data type is used to store text values.
+type = string            ex: default = "roboshop'
+2. number --> Number data type is used to store numeric values like counts, ports, or sizes.
+type = number        ex: default = 0
+3. bool  --> Boolean data type stores only true or false values and is mainly used for enabling or disabling configurations.
+type = bool              ex: default = true
+4) List ⭐⭐⭐ --> List stores multiple values. Similar to Array.
+List data type stores multiple values of the same type in an ordered collection and values can be accessed using index numbers.
+type = list(string)
+in
+variables.tf 
+variable "availability_zones" {
+
+ type = list(string)
+
+}
+terraform.tfvars 
+availability_zones = [
+
+"us-east-1a",
+
+"us-east-1b"
+
+]
+
+access them via ---> var.availability_zones[0]
+ availability_zone = var.availability_zones[count.index] --> all
+
+5) Map ⭐⭐⭐ ---> Map stores key-value pairs. Like dictionary.
+Map data type stores values in key-value format and is useful for maintaining environment-specific configurations.
+variables.tf
+variable "instance_type" {
+
+ type = map(string)
+
+}
+terraform.tfvars 
+instance_type = {
+
+ dev  = "t3.micro"
+
+ prod = "t3.large"
+
+}
+
+access them ---> var.instance_type["dev"] 
+
+instance_type = var.instance_type[var.environment]
+If: environment="prod"  ---> Output: t3.large
+
+6) Object ⭐⭐⭐ ---> Object stores different types together. Like structured data.
+Object data type groups multiple related values with different data types into a single variable.
+variable "ec2_config" {
+type = object({
+ instance_type = string
+ disk_size = number
+ monitoring = bool
+})
+}
+
+terraform.tfvars 
+ec2_config = {
+ instance_type = "t3.micro"
+ disk_size = 50
+ monitoring = true
+}
+
+access --> var.ec2_config.disk_size
+
+7) Set ---> Similar to list but removes duplicates. 
+Set data type stores a collection of unique values and automatically removes duplicates.
+variable "ports" {
+type=set(number)
+}
+ 
+values --> ports=[80,443,80]     --> terraform store [80,40] --> Duplicate removed.
+
+8) Tuple ---> Fixed collection with different data types.
+Tuple stores a fixed number of values where each value can have a different data type.
+variable "server" {
+type = tuple([string,number,bool])
+default=[
+"web",
+8080,
+true
+]
+}
+Access:
+web
+8080
+true
+
+
+
+Interview Answer ⭐⭐⭐ Terraform Data Types
+Terraform data types define the type of values that variables can accept. They help Terraform validate inputs and maintain reliable infrastructure code. Terraform supports primitive data types like string, number, and bool, and complex data types like list, map, set, object, and tuple. In our project, we used them to make modules reusable and avoid hardcoded configurations.
+
+simple 
+Primitive Types
+================
+string  → text
+number  → numeric
+bool    → true/false
+
+Collection Types
+================
+list    → multiple ordered values
+map     → key-value pairs
+set     → unique values
+Structural Types
+================
+object  → group of named attributes
+tuple   → fixed structure values
+
+
+Conditions: In github : terraform-concepts/conditions folder 
+--------------
+Conditions in Terraform are used to make decisions dynamically based on variable values or expressions.
+They allow Terraform to create flexible infrastructure by choosing different values, enabling/disabling resources, or changing configurations based on requirements.
+syntax:
+---------
+1)nrml condition:
+if(condition) {
+   if true this will run 
+ else
+	if false it will run
+}
+
+2)one line syntax:
+expression ?  "if true this will run "  :  "if false this will run" --> terraform will follow this 
+
+Example : 1
+1)provider.tf
+2)conditions.tf
+resource "aws_instance" "First ec2 instance" {
+  ami           = var.ami_id
+  instance_type = var.env_instance_type == "dev" ? "t3.small" : "t3.medium"
+  #--> here  default = "dev" it will apply t3.small type i.e., true and default = "prod"  or other value  it will take t3.medium i.e., false 
+}   
+variables.tf
+variable "env_instance_type" {
+    type = string
+    default = "dev"
+  
+}
+variable "ami_id" {
+    type = string
+    default = "ami-0220d79f3f480ecf5"
+  
+}
+
+2)conditions with tags
+tags = {
+ Environment = var.env_instance_type
+ Backup = var.env_instance_type == "prod" ? "enabled" : "disabled"
+
+}
+
+3)multiple conditions
+instance_type = (
+var.environment == "prod" ? "t3.large" : "t3.micro"
+var.environment == "stage" ? "t3.medium" : "t3.micro"
+)
+
+4)Conditions with for_each Example
+Operators in conditions
+
+Comparison operators:
+
+==     Equal
+!=     Not equal
+>      Greater
+<      Less
+>=     Greater or equal
+<=     Less or equal
+
+Logical operators:
+
+AND
+var.env == "prod" && var.backup == true ---> Both conditions should be true.
+
+OR 
+var.env == "dev" || var.env == "test"
+
+NOT
+!var.enable_backup ---> Reverse condition.
+
+Interview Answer ⭐⭐⭐
+
+Terraform conditions are used to make infrastructure configurations dynamic based on input values. Terraform uses conditional expressions with the syntax condition ? true_value : false_value. In our project, we used conditions to manage environment-specific configurations like instance sizes, enabling features, and controlling resource creation using count and variables.
+
+outputs.tf: 
+-------------
+ex:  terraform/count-using-loop-concept folder in vs code 
+terraform output is used to get the info from the created resources(takes data from .tfstate file after resource creation) and display/print on terminal.
+Within the same Terraform configuration, resources communicate directly using resource references like aws_instance.web.public_ip. We don't use output blocks for this. Output blocks are mainly used to expose values from one module or Terraform project so they can be consumed by another module or project, especially when using remote state.
+
+we created an instance but we want total info /particular attribute info of that instance we can use this 
+By using out we can take the outpu of one resource and give it as input to another resource  ex: aws_instance.web.public_ip
+
+Interview Answer ⭐⭐⭐
+
+Terraform outputs are used to expose and display information about resources created by Terraform. After provisioning infrastructure, outputs help us retrieve values like instance IDs, IP addresses, DNS names, and ARNs. We also use outputs to pass values between Terraform modules/projects. In our project, modules exposed resource information using outputs.tf, which was consumed by other modules and automation pipelines.
+
+Output Syntax
+-------------------
+output "output_name" {
+  value = resource.attribute
+}
+
+Terraform creates resources ---> Stores details in state file ---> outputs.tf displays required information
+
+Why do we use outputs.tf?
+Main reasons:
+1. Display created resource information 2. Share values between modules 3. Avoid manually checking cloud console 4. Use Terraform output in CI/CD pipelines 5. Pass resource information to other tools
+
+types of uses 
+-----------------
+1)Passing data between resources (No output block needed)
+We created an ec2 and taken that ec2 public ip from outputs and given to anouther resource i.e., securitygroup as a input 
+Ex: we create ec2 
+
+resource "aws_instance" "web" {
+  ami = "ami-12345"
+  instance_type = "t3.micro"
+}
+
+resource "aws_route53_record" "web" {
+
+  zone_id = var.zone_id
+  name    = "web.devopswitharun.online"
+  type    = "A"
+  ttl     = 1
+
+  records = [aws_instance.web.public_ip]       #No output block is used. Terraform directly references: aws_instance.web.public_ip
+}
+
+
+
+run : terraform apply
+
+AWS creates: EC2 instance with below values 
+Instance ID: i-123456789
+Private IP: 172.31.10.20
+Public IP: 54.20.30.40
+
+But how do you get this information?
+Without output:  You login: AWS Console ---> EC2  ---> Copy IP manually
+
+With outputs.tf ✅ --> Create:  outputs.tf
+Add Content:
+
+output "public_ip" {
+  value = aws_instance.web.public_ip
+}
+
+ or aws_instance.web.private_ip or aws_instance.web.public_ip or aws_instance.web.public_dns etcc 
+
+Run: terraform apply  --> Output: Apply complete! 
+
+Outputs: public_ip = "54.20.30.40" --> Now Terraform directly shows the IP in the terminal
+
+How output gets values internally?
+flow:
+In main.tf we have resource "aws_instance" "web" ---> terraform apply ---> AWS creates EC2 ---> Provider returns EC2 details ---> terraform.tfstate stores details ---> outputs.tf reads attributes  ---> Shows output
+
+
+terraform output command
+After apply: You can check anytime: cmd --> terraform output
+Specific output:
+terraform output public_ip
+
+Sensitive Outputs
+-----------------------
+Sometimes output contains secrets.
+ex:
+output "db_password" {
+ value = var.password
+ sensitive = true
+}
+Output: db_password = <sensitive> --> Password hidden.
+
+
+outputs.tf with Modules ⭐⭐⭐
+-------------------------------
+Where output is actually used (Modules)
+You have EC2 module.
+Structure:
+terraform/
+modules/
+  ec2/
+    main.tf
+    outputs.tf
+main.tf
+
+Module creates EC2:
+
+modules/ec2/main.tf
+resource "aws_instance" "server" {
+ ami="ami-123"
+ instance_type="t3.micro"
+}
+
+modules/ec2/outputs.tf
+output "public_ip" {
+ value = aws_instance.server.public_ip
+}
+
+Root module:
+main.tf
+module "web" {
+source="./modules/ec2"
+}
+
+Access module output:
+
+resource "aws_route53_record" "web" {
+records = [
+ module.web.public_ip                                   #public_ip  --> this name is given in output file  output "public_ip" {
+]
+}
+EC2 Module Creates EC2 ---> outputs.tf exposes IP ---> Root Module ---> gets IP ---> Creates Route53 record
+
+
+3)outputs using diff projects
+Project 1 : Creates VPC.
+network/ output.tf
+output "vpc_id" {
+ value = aws_vpc.main.id
+}
+
+State file contains ----> vpc_id = vpc-12345
+Project 2 : Reads
+data "terraform_remote_state" "network" {
+...
+}
+
+Uses ---> data.terraform_remote_state.network.outputs.vpc_id
+
+
+
+Rule to remember for interviews:
+
+Same module/project → Direct resource reference.
+Different modules → output + module.<module_name>.<output_name>.
+Different Terraform projects → output + terraform_remote_state.
+
+Loops:
+--------
+
+ex: without loops
+if i want to create multiple instances ex our roboshop 11 instances with below code we have to repeat that code 11 times  not a good practice it a duplicate code
+resource "aws_instance" "First ec2 instance" {
+  ami           = var.ami_id
+  instance_type = var.env_instance_type == "dev" ? "t3.small" : "t3.medium"
+  tags = {
+    Name = "web"
+  }
+}  
+
+Def:
+Terraform loops are used to create multiple resources dynamically without writing duplicate code. Instead of defining the same resource multiple times, we use looping mechanisms like count, for_each, and for expressions.
+Loop = Repeat same logic multiple times 
+
+Why do we use Loops?
+1. Avoid duplicate code 
+2. Follow DRY principle (dont repeat yourself)
+3. Create multiple resources dynamically
+4. Easy maintenance
+5. Useful in reusable modules
+
+
+Terraform mainly provides: 1. count 2. for_each 3. for expression 4. dynamic block
+
+
+1) count ⭐⭐⭐   mainly used to iterate list
+count is used when we need to create multiple copies of the same resource based on a number.
+syntax: count = number 
+
+1)count.index --> Index starts from: 0
+Ex:
+resource "aws_instance" "web" {
+count = 3
+ami = "ami-12345"
+instance_type = "t3.micro"
+
+tags = {
+ Name = "web-${count.index}"
+}
+}
+Output: create 3 instances with below names
+web-0
+web-1
+web-2
+
+2)Count with Variables --> count = var.instance_count         #define instance_count = 5 in variables.tf 
+3)Count with Condition --> count = var.environment == "prod" ? 1 : 0     # define environment = "prod" in variables file
+
+Terraform interpolation --> we are mixing text with variable 
+name = var.instance_names[count.index].devopswitharun.online - -> u will get issue so for that
+name = "${var.instance_names[count.index]}.devopswitharun.online --> in {} will take as variable and this as text 
+
+2) for_each ⭐⭐⭐⭐⭐     mainly used to iterate map 
+Definition: for_each creates multiple resources from a map or set of values. It is preferred when every resource needs a unique configuration.
+
+Create multiple EC2 servers: in variables.tf file 
+
+variable "instances" {
+type = map(string)
+default = {
+web = "t3.micro"
+catalogue = "t3.small"
+mongodb = "t3.medium"
+}
+}
+
+Resource:: main.tf 
+resource "aws_instance" "server" {
+for_each = var.instances
+ami = "ami-123"
+instance_type = each.value
+tags = {
+Name = each.key
+}
+}
+
+it takes key name in key section and value present in variables file in value section 
+output: flowa like :
+
+Terraform loops:
+
+First:
+each.key   = web
+each.value = t3.micro
+Creates: web EC2
+Second:
+each.key = catalogue
+each.value=t3.small
+Creates: catalogue EC2
+
+etc 
+
+
+imp: but we can iterate both list and map by using count and for_each with any data
+count wil give special variable called count.index and 
+for_each wil give special variable called give each 
+
+3) for Expression
+Definition: for expression is used to transform or filter values from collections like lists and maps. Similar to Java streams.
+List:
+variable "servers" {
+default=[
+"web",
+"catalogue",
+"user"
+]
+}
+
+Convert uppercase:
+
+output "server_names" {
+value=[
+for server in var.servers : upper(server)
+]
+}
+
+Output:
+WEB
+CATALOGUE
+USER
+
+4) Dynamic Blocks ⭐⭐⭐     -> in github  terraform-concepts-wise/dynamic_blocks_loops_oncept
+Definition: Dynamic blocks are used to generate repeated nested configuration blocks inside a resource.
+
+Without dynamic:
+resource "aws_security_group" "sg_group" {
+  name   = "sg"
+  description = "Allowing inbound andoutobund ports"
+  #if i want to create multiple ports enable i have to repeat same code for multiple times for 80,22,443,
+#   ingress {
+#     description     = "Allowing all inbound port 0"
+#     from_port       = 0
+#     to_port         = 0
+#     protocol        = "tcp"
+#     cidr_blocks     = ["0.0.0.0/0"]
+#   }
+
+#   ingress {
+#     description     = "Allowing all inbound port 22"
+#     from_port       = 22
+#     to_port         = 22
+#     protocol        = "tcp"
+#     cidr_blocks     = ["0.0.0.0/0"]
+#   }
+
+#   ingress {
+#     description     = "Allowing all inbound port 443"
+#     from_port       = 443
+#     to_port         = 443
+#     protocol        = "tcp"
+#     cidr_blocks     = ["0.0.0.0/0"]
+#   }
+
+Duplicate ❌ --> lets say i want to enable 20 ports i cant write same code for 20 times just changing port number 
+if a particular block is repeating multiple times inside the resource block/configuration file u can use to fetch that value from vars and same code for all ports  
+
+With dynamic:
+variables.tf
+variable "ingress_rules" {
+  default = [{
+    description     = "Allowing all inbound port 0"
+    from_port       = 0
+    to_port         = 0
+    protocol        = "tcp"
+    cidr_blocks     = ["0.0.0.0/0"]
+  },
+  {
+    description     = "Allowing all inbound port 22"
+    from_port       = 22
+    to_port         = 22
+    protocol        = "tcp"
+    cidr_blocks     = ["0.0.0.0/0"]
+  },
+  {
+    description     = "Allowing all inbound port 443"
+    from_port       = 443
+    to_port         = 443
+    protocol        = "tcp"
+    cidr_blocks     = ["0.0.0.0/0"]
+  },
+  {
+    description     = "Allowing all inbound port "
+    from_port       = 80
+    to_port         = 80
+    protocol        = "tcp"
+    cidr_blocks     = ["0.0.0.0/0"]
+  }]
+}
+
+main.tf
+  #instead of writing like this we can use dynamic block with single block and pass port numbers dynamically like loop
+  resource "aws_security_group" "sg_group" {
+  name   = "sg"
+  description = "Allowing inbound andoutobund ports"
+    dynamic "ingress" {
+      for_each = var.ingress_rules
+      content {
+        description = ingress.value["description"]
+        from_port = ingress.value["from_port"]
+        to_port = ingress.value["to_port"]
+        protocol = ingress.value["protocol"]
+        cidr_blocks = ingress.value["cidr_blocks"]
+      }
+    }
+	}
+	
+	
+	
+or simple example:
+variables.tf
+variables "ingress_rules" {
+default = [80,22,443]
+}
+
+or simple content: main.tf
+resource "aws_security_group" "sg_group" {
+  name   = "sg"
+  description = "Allowing inbound andoutobund ports"
+    dynamic "ingress" {
+      for_each = var.ingress_rules
+      content {
+        description = "allow"
+        from_port = ingress.value
+        to_port = ingress.value
+        protocol = "tcp"
+        cidr_blocks = ["0.0.0.0/0"]
+      }
+    }
+	}
+Creates:
+Port 80 rule
+Port 443 rule
+Port 8080 rule
+
+Interview Answer ⭐⭐⭐
+
+Terraform loops are used to avoid duplicate infrastructure code and dynamically create multiple resources. Terraform supports count, for_each, for expressions, and dynamic blocks. In our project we used count when creating identical resources and for_each when creating multiple resources with different configurations like EC2 instances, security groups, or Route53 records. This improved reusability and maintainability.
+
+ex: check this folder for ex --->   terraform/dynamic-block-loop-concept         terraform --> folder name 
+
+Functions:
+-------------
+Terraform functions are built-in reusable operations provided by Terraform that are used to transform, manipulate, and calculate values inside Terraform configuration files.
+Terraform provides ready-made functions, so we can't create/don't need to write custom logic.
+simple --> Functions = Take input → Process → Return output
+
+Why do we use Terraform Functions?
+
+Functions help with:
+1. String manipulation 2. List processing 3. Map handling 4. File reading 5. Encoding/Decoding 6. Mathematical calculations 7. Date/time operations 8. Dynamic infrastructure creation
+
+Syntax :  function_name(argument1, argument2)
+
+Ex function 
+Instead of hardcoding ---> Name = "ROBOSHOP-PROD"
+We can dynamically generate ---> Name = upper("${var.project}-${var.env}")
+upper --> it is a function converts smaller case charaters into Upper case 
+ex:
+upper("terraform") --> converts this text to --->  TERRAFORM
+
+Types:
+--------
+1)String Functions ⭐⭐⭐ --> Used to modify text values.
+-----------------------------------
+1)upper() ---> Converts string to uppercase.
+ex: 
+locals {
+  name = upper("roboshop")
+}
+o/p:  ROBOSHOP
+
+2)lower() ---> Convert to lowercase.    Ex: lower("DEVOPS") --> o/p: devops
+3)join()    ---> Combines list values into one string.
+Ex:  join("-", ["roboshop","prod"])          o/p : roboshop-prod 
+
+Real use:
+tags = {
+ Name = join("-", [var.project,var.environment])
+}
+Output: roboshop-dev
+4)split() ---> Convert string into list.
+Ex: split(",", "web,cart,user")
+
+Output:
+[
+"web",
+"cart",
+"user"
+]
+5)replace() ---> Replace string values.
+ex:
+replace(
+"roboshop-dev",
+"dev",
+"prod"
+)
+o/p:  roboshop-prod
+
+2)Numeric Functions
+---------------------------
+max() ---> Returns highest value
+Ex:   max(10,20,30)   --> Output: 30 
+
+min() ---> Returns lowest value
+ ---> Ex: min(10,20,30) ---> Output: 10
+ 
+3) Collection Functions ⭐⭐⭐ -->  used for list,map,set
+--------------------------------------------
+1)length() --> Find number of elements in a list or map or set 
+
+Ex: length(["web","cart","user"])         ---> o/p : 3            #basically this is list
+
+Real example: in main.tf
+resource "aws_instance" "server" {
+count = length(var.instances) 
+}
+in variables.tf
+variable "Roboshop_instance_names" {
+    type = list(string)
+    default = [ "MongoDB", "Redis", "RabbitMQ", "MYSQL", "Web", "Catalogue", "User", "Cart", "Shipping", "Payment", "Dispatch" ]
+}
+
+2)element() ---> Gets value from list.
+
+Example: element(["dev","prod"],0)
+Output: dev
+
+3)contains() ---> Checks value exists or not.
+
+Ex:
+contains(
+["dev","prod"],
+"prod"
+)
+Output: true
+
+
+4) Map Functions ⭐⭐⭐
+-----------------------------------
+1)keys() ---> Returns all keys.
+Example:
+servers = {
+ web="t3.micro"
+ db="t3.small"
+}
+
+ex: keys(var.servers)     --> o/p : [web, db]
+
+2)values() --> Returns values.
+
+ex: values(var.servers)        ---> Output: [t3.micro,t3.small]
+
+3)lookup() ⭐⭐⭐ ---> Used to get value from map.
+ex:
+variable "instance_type" {
+default = {
+dev="t3.micro"
+prod="t3.large"
+}
+}
+scenario 1
+use like ---> lookup(var.instance_type,"prod")    --> o/p: t3.large
+scenario 2 With default:
+
+lookup(
+var.instance_type,
+"test",
+"t3.small"
+)
+
+If test not found: Output: t3.small --> t3.small is default value if not found it will pick that 
+
+
+5) File Functions ⭐⭐⭐
+-------------------------------------
+file() ---> Reads file content.
+Ex:
+#!/bin/bash
+yum install nginx -y
+
+use like --> user_data=file("script.sh")
+
+Flow: Terraform ---> Reads script.sh ---> Passes to EC2 userdata
+
+
+templatefile() ⭐⭐⭐⭐⭐ --> Very useful in projects. Similar to Ansible templates.
+Example: file name : userdata.tpl
+#!/bin/bash
+echo ${app_name}
+terraform:
+user_data = templatefile(
+"userdata.tpl",
+{
+ app_name="catalogue"
+}
+) 
+o/p: echo catalogue
+
+6) Encoding Functions
+-----------------------------
+1)jsonencode() ---> Convert Terraform value into JSON.
+
+Terraform:
+jsonencode({
+name="roboshop"
+env="prod"
+})
+
+output;
+{
+"name":"roboshop",
+"env":"prod"
+}
+
+Used mostly for:
+
+IAM policies
+
+resource "aws_iam_policy" "ec2_policy" {
+  name = "ec2-policy"
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Effect = "Allow"
+        Action = "ec2:*"
+        Resource = "*"
+      }
+    ]
+  })
+}
+ECS task definitions
+container_definitions = jsonencode([
+  {
+    name  = "catalogue"
+    image = "catalogue:v1"
+  }
+])
+3. SSM Parameter Store
+resource "aws_ssm_parameter" "config" {
+  name  = "/roboshop/config"
+  type  = "String"
+  value = jsonencode({
+    env = "prod"
+    app = "catalogue"
+  })
+}
+2. AWS Secrets Manager
+resource "aws_secretsmanager_secret_version" "db" {
+  secret_id = aws_secretsmanager_secret.db.id
+  secret_string = jsonencode({
+    username = "admin"
+    password = "RoboShop@123"
+  })
+
+}
+o/p : {
+  "username":"admin",
+  "password":"RoboShop@123"
+}
+
+2)base64encode()
+Example: base64encode("Arun")        ---> Output: QXJ1bg==
+
+
+7) Date/Time Functions
+timestamp() ---> Returns current timestamp.
+ex:
+timestamp() ---> Output: 2026-06-23T10:30:00Z
+
+
+
+Practical RoboShop Example
+
+Variables.tf:
+
+project="roboshop"
+environment="dev"
+
+Code.tf:
+
+tags = {
+Name = upper(
+join("-",[
+var.project,
+var.environment
+])
+)
+
+}
+
+Flow:
+join() ---> roboshop-dev
+
+upper() ---> ROBOSHOP-DEV
+
+Final tag: Name = ROBOSHOP-DEV
+
+
+
+
+Interview Answer ⭐⭐⭐
+
+Terraform functions are built-in methods used to manipulate and transform values inside Terraform configurations. We use functions for string operations, list and map handling, file processing, encoding, and dynamic configuration generation. In our project we used functions like lookup for environment-based values, length with count, file/templatefile for user data scripts, and jsonencode for IAM policies.
+
+
+
+locals file: (i.e., locals.tf)
+------------
+Terraform locals are used to define internal reusable named/variable values inside Terraform configuration files that can be referenced multiple times within the same module.
+
+locals = Store calculated/reusable values inside Terraform code
+
+
+syntax:
+--------
+locals {
+  name = value
+}
+
+Variables vs local ✅
+variables can be overriden at terminal/from some other but locals cant  Because local is internal.
+
+Think like:
+Variables  → Inputs coming from outside
+Locals     → Values calculated/created inside Terraform
+
+
+
+Example 1: Without Locals ❌  
+
+Imagine every AWS resource needs same tags.	
+
+EC2:
+resource "aws_instance" "web" {
+ tags = {
+  Project = "roboshop"
+  Environment = "prod"
+  Owner = "devops"
+ }
+}
+
+S3:
+
+resource "aws_s3_bucket" "bucket" {
+ tags = {
+  Project = "roboshop"
+  Environment = "prod"
+  Owner = "devops"
+ }
+}
+
+Same tags repeated everywhere ❌ and Maintenance problem.
+
+
+
+With Locals ✅
+
+locals.tf
+----------
+locals {
+ common_tags = {
+   Project = "roboshop"
+   Environment = "prod"
+   Owner = "devops"
+ }
+}
+
+Use anywhere:
+EC2:
+resource "aws_instance" "web" {
+ tags = local.common_tags
+}
+
+S3:
+resource "aws_s3_bucket" "bucket" {
+ tags = local.common_tags
+}
+
+1)locals with expression
+locals {
+ name = "${var.project}-${var.environment}-${var.component}"
+}
+
+2)Locals with Functions
+locals {
+ bucket_name = lower("${var.project}-${var.environment}-bucket")
+}
+
+Access like below:
+tags = {
+ Name = local.instance_name
+}
+
+
+Multiple Local blocks can be allowed in single local.tf 
+ex:
+locals {
+ project = "roboshop"
+ env = "prod"
+}
+
+locals {
+ full_name="${local.project}-${local.env}"
+}
+
+Interview Answer ⭐⭐⭐
+Terraform locals are used to define reusable internal values within a module. They help avoid duplicate code and store calculated values like naming conventions, common tags, and expressions. Unlike variables, locals cannot be overridden from outside; they are mainly used for simplifying Terraform configurations and improving maintainability. In our project we used locals for standard resource naming and common AWS tags across resources.
+
+They allow you to assign a name to an expression/function/condition, so you can use that variable name multiple times within same module instead of repeating same expression/condition/function multiple times
+
+we can keep the expression/functions/conditions in local blocks and get the calculated  value and store it to the variabe and we can use that variable anywhere with in same module level
+
+
+scenario :  wrongly defined 
+locals {
+instance_type = var.Roboshop_instance_names[count.index] == "mongodb" || var.Roboshop_instance_names[count.index] == "shipping" || var.Roboshop_instance_names[count.index] == "mysql" ? "t3.small" : t3.micro 
+} 
+in local block i have this why count.index not work here and in main.tf i have accessed tha as local.instance_type
+
+error reason:
+count.index exists only inside a resource/module block where count is declared.
+
+locals block does not have count.
+
+So Terraform doesn't know:
+count.index = ?
+
+The count.index value exists only inside resources, modules, or blocks where count is defined.
+
+Correct defining
+resource "aws_instance" "roboshop" {
+ count = length(var.Roboshop_instance_names)
+ ami = "ami-123"
+ instance_type = local.instance_type
+ tags = {
+   Name = var.Roboshop_instance_names[count.index]
+ }
+
+}
+
+count.index --> works because we defined count = .....   inside block here terraform creates/or loop will run here 
+
+
+
+This is more production style.
+locals.tf
+-----------
+locals {
+  name = "${var.project}-${var.env}"
+}
+
+locals {
+ instance_types = {
+   mongodb = "t3.small"
+   mysql = "t3.small"
+   shipping = "t3.small"
+ }
+
+}
+main.tf(by using look function)
+---------
+resource "aws_instance" "ec2-conditions" {
+    
+     count = length(var.Roboshop_instance_names)
+    ami = var.ami_id
+    # instance_type = "t3.micro"
+     instance_type = lookup(
+    local.instance_types,
+    var.Roboshop_instance_names[count.index],
+    "t3.micro"                 #  a default this is a default value
+ )
+    tags = {
+        name = local.name
+    }
+}
+variables.tf
+=========
+variable "ami_id" {
+    type = string
+    default = "ami-0220d79f3f480ecf5
+}
+variable "project" {
+  default = "roboshop"  
+}
+variable "env" {
+  default = "dev"  
+}
+variable "Roboshop_instance_names" {
+  default = ["mongodb", "mysql", "shipping"]
+}
+mongodb,mysql,shipping it will take t3.small other than that any instance we get it wil take t3.micro mentioned in main.tf if key not found in map it will take default value
+
+
+
+Data Sources :
+------------------
+Data is changing dynamically in aws/others 
+ex: lets say we have an ami and when evere there is patches or updates of that ami released at that time ami-id changed everytime pathc released so when we use hardcoded mi-id in variable.tf or main.tf /other files if patch is released id will be change at that time u code will fail so now 
+
+Data sources is useful to query the data/information dynamically from the providers/external resources as well as existing resources information using that information
+u can create another resources using terraform
+
+Def: 
+Terraform data sources are used to fetch/read information from existing infrastructure(if someone created manually or created by other terraform modules) or external resources that are not created by the current Terraform configuration.
+
+Resource ---> Creates infrastructure
+Data Source ---> Reads existing infrastructure information and we can give it as input to other variable
+
+Why do we use Data Sources?
+
+Imagine some resources are already created: 
+Existing AWS Account , VPC already created , AMI already available , Security Group already created , Subnets already created, 
+now You don't want Terraform to create again ❌ ,You only want to get details and use them in ur modules ✅
+
+syntax:
+---------
+data "aws_ami" "linux" {
+	   filters
+}
+
+and 
+
+Access :  data.aws_ami.linux.<variable name u want to get ex : id >
+
+flow:Terraform --> Search existing AMI --> Get AMI ID --> Use it
+
+Ex: Fetch Latest AMI ⭐⭐⭐
+
+Problem: AMI IDs keep changing when patch or updates released of that particular ami 
+
+Today: ami-11111
+after patch update it may change to
+Tomorrow: ami-22222          ----------->  Hardcoding AMI is not good.
+
+data.tf:
+---------
+data "aws_ami" "amazon_linux" {
+ most_recent = true
+ owners = ["amazon"]
+ filter {
+  name = "name"
+  values = ["amzn2-ami-hvm-*"]             * ---> after - any data fetch dynamically ex: amzn2-ami-hvm-18122026-1.1 but next patch amzn2-ami-hvm-11012027-1.1 so 																					* fetch anything 
+ }
+}
+
+ec2.tf:
+--------
+resource "aws_instance" "web" {
+ ami = data.aws_ami.amazon_linux.id
+ instance_type="t3.micro"
+}
+
+
+flow:
+terraform apply ---> Data source searches AWS ---> Find latest AMI ---> Returns AMI ID ---> EC2 created using that AMI (use that ami to create another resource)
+
+
+
+Data Source Execution Flow ----> When you run: terraform plan
+
+Terraform : 1. Reads data block ---> 2. Calls AWS Provider/other resource ---> 3. AWS API search ---> 4. Gets existing information ---> 5. Uses values in resources/modules
+
+
+Does Data Source store in state?
+Yes. Terraform stores data source information also in terraform.tfstate file
+But:
+Terraform only tracks it and Terraform does NOT manage lifecycle(Meaning: Terraform cannot: create,update,delete that VPC.)
+stores in the form of below
+Data Source
+------------
+mode = data  (from data source)
+
+ "mode": "data",
+      "type": "aws_route53_zone",
+      "name": "zone_id",
+
+Managed Resource
+----------------
+mode = managed  (creates resources by terraform)  in tfstate file
+ "mode": "managed",
+      "type": "aws_instance",
+      "name": "ec2",
+
+Interview Answer ⭐⭐⭐
+
+Terraform data sources are used to fetch information about existing resources that are created outside the current Terraform configuration. Data sources allow us to reference existing infrastructure like AMIs, VPCs, subnets, security groups, and Route53 zones without hardcoding values. In our project, we used data sources to fetch existing AWS resource details dynamically and pass those values to Terraform modules.
+
+
+
+
+Terraform State (.tfstate file)
+-------------------------------------
+Terraform State is a file that stores information about all the infrastructure resources created and managed by Terraform. 
+Terraform reads this file during every plan and apply operation to identify the existing infrastructure state, allowing it to determine whether resources need to be created, updated, or destroyed.
+
+The Terraform state file, typically named terraform.tfstate , is a JSON file that stores the current state of your infrastructure.
+
+terraform.tfstate --> Terraform state file is Terraform's last known/recorded state.  (last when u run apply cmd)
+Actual cloud may change(manually some body changes and no idea reg that infra in state file when u run again it will compare all and decide to create/update/delete ).
+
+when run apply command:   
+Terraform uses the state file to understand ---> What resources exist , what resources i need to create/update/destroy 
+
+Ex: we have created ec2 with terraform code and it will store like 
+terraform.tfstate
+{
+ "aws_instance.web": {
+ "id":"i-123456789",
+ "instance_type":"t3.micro"
+ }
+}
+
+
+Why Terraform Needs State ---> Terraform works with two states 
+1)Desired State  --> What you write in Terraform code (.tf files )     --> that means what resource u want to create/update/delete
+ex: main.tf 
+instance_type="t3.micro"  -->  You are telling Terraform: "I want EC2 with t3.micro"
+ex: 
+resource "aws_instance" "web" {
+ ami = "ami-123"
+ instance_type = "t3.micro"
+}
+
+2) Current State ---> Means: What currently exists in cloud and state file
+Ex:
+AWS currently:
+EC2
+instance_type=t3.micro
+
+terraform.tfstate:
+instance_type=t3.micro
+
+when u run plan/apply
+Terraform compares:  Desired State (terraform code i.e., .tf files) VS Current State (terraform.tfstate + already existing infra in cloud)  ----> based on that it will decide whether its needs to be create/update/destroy resources
+
+If both same: No changes --> Infrastructure is up-to-date
+
+If different: Example: Change code:
+
+Before:
+instance_type="t3.micro"
+
+After:
+instance_type="t3.small"
+
+Terraform checks:
+Code(.tf files we updated to):
+t3.small
+
+State:(currently existing resource in aws )
+t3.micro
+
+Difference found ---> 
+Plan: update instance
+Apply:  Modify EC2 in aws and then Update info related to that in state file
+
+
+
+Example: Someone manually deletes EC2 in AWS console
+
+State file still says:
+EC2 exists
+i-12345
+
+Terraform refreshes: terraform plan ---> Terraform checks AWS API: "EC2 missing" Then creates again.
+
+
+
+State Management Flow --> When running
+
+terraform init --> Downloads providers , Initializes backend , Configures state location
+terraform plan
+Flow: Read terraform code + Read terraform.tfstate + Refresh actual AWS cloud infra state ---> Compare ---> Show actions what need to be done 
+whether  --->  + create or ~ update or  - destroy
+
+terraform apply --> Creates/updates/deletes resources ---> after that it Updates info in terraform.tfstate
+
+
+Local State:
+By default: Laptop ---> project/terraform.tfstate
+
+Problems:
+1. Collaboration issue
+when both are trying to run the code 
+
+Developer 1:  Laptop A
+terraform.tfstate
+
+Developer 2: Laptop B
+terraform.tfstate
+
+Both have different state files.
+
+Problems: when they run it may create Duplicate resources and Wrong update and State conflicts
+
+2. Security issue ---> State can contain sensitive data.
+
+Example: DB password , Secrets , Private IPs ---->  Should not keep locally.
+
+3. Data loss ---> If laptop crashes: terraform.tfstate deleted --> Terraform loses tracking and Infrastructure exists but Terraform doesn't know.
+
+
+
+Remote State
+------------------
+Terraform remote state stores the terraform.tfstate file in a shared remote backend(ex : AWS S3 storage etc ) instead of the local machine.
+
+Common AWS backend: S3 (storage) + DynamoDB(locking system)
+Example: 
+Architecture:
+
+Developer 1
+       \
+        \
+         S3 Bucket
+        /
+       /
+Developer 2
+
+
+DynamoDB
+   |
+State locking
+
+imp : while developer running file will be locked in remote and developer cant run at the same time once developer 1 completes then Dev 2 can run
+
+Configure Remote Backend:
+------------------------------------
+1)Create S3 bucket called      --> terraform-state-arun (bucket name it should be unique) and this bucket Stores terraform.tfstate file
+2)DynamoDB Table                 --> terraform-lock-table (table name) ----> Partition key: LockID --> Used for locking. --> create 
+3) Now in provider.tf 
+ place this code inside resource block of provider 
+ 
+ backend "s3" {
+ bucket = "terraform-state-arun"
+ key = "roboshop/dev/terraform.tfstate
+ region = "us-east-1"
+ dynamodb_table = "terraform-lock-table"
+ }
+ 
+ Run: terraform init -reconfigure ---> Terraform reconfigures remote backend.
+ 
+ 
+ What happens during apply with remote state?
+ 
+ Developer  1 runs:  terraform apply
+ Flow:
+Terraform --> Check DynamoDB lock aquires it --> Lock state --> Download tfstate from S3 --> Compare(desired state and current state(aws infra existing + tfstate file) --> decides to Create/update/delete AWS resources --> Upload updated state to S3 --> Remove lock 
+--> until developer1 completes then only developer 2 cant run
+
+
+State Locking (DynamoDB)
+-----------------
+Problem without locking:
+Developer A: creating EC2
+
+Same time 
+Developer B: trying to create RDS
+
+Both update state together at same time. State file may be corruption possible.
+
+With DynamoDB:
+
+Developer A: terraform apply 
+Lock acquired
+
+Developer B:   terraform apply
+Error: state locked --> After Developer A finishes: Lock released then only Developer 2 can run
+
+S3 --> store the terraform.tfstate file 
+DynamoDB Lock ---> Locks terraform.tfstate during execution(apply cmd ).
+
+EX:
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"             #--> aws provider version not terraform version
+    }
+  }
+
+  backend "s3" {
+    bucket = "remote-state-arun"  #bucket name from aws created on cloud
+    key    = "remote-state-file"  #our wish key name
+    region = "us-east-1"
+    dynamodb_table = "remote-state-arun-lock" 
+  }
+}
+
+# Configure the AWS Provider
+provider "aws" {
+  region = "us-east-1"
+  #we can give here secret and access keys like but not safe when u push to github it is visible so we are using aws cli
+#   access_key = "my-access-key"
+#   secret_key = "my-secret-key"
+}
+
+#lets say 2 developers working on same do if developer 1 runs then developer 2 cant run it is in lock state once developer1 completes the proceess and lock will be released then developer 2 can run for that we are using dynamodb locking it is not for security type 
+
+
+Force Unlock
+----------------- 
+when we run apply dynamodb will lock the state file to not open/modify but some cases terraform  Apply failed. Lock remains.
+
+To Unlock :
+--------------
+terraform force-unlock <LOCK_ID>
+
+Example: terraform force-unlock abc123
+
+
+Remote State Interview Answer ⭐⭐⭐
+
+Terraform state file maintains mapping between Terraform configuration (.tf files) and real infrastructure existing in cloud. By default state is stored locally as terraform.tfstate. For team environments we configure remote backend like AWS S3 to store state centrally. DynamoDB is used for state locking to avoid multiple users modifying the same state at the same time.
+Whenever terraform plan or apply runs, Terraform compares desired configuration with current state and performs required changes.
+
+Most important Files:
+----------------------------
+1)terraform.tfstate.backup        --> Don't commit to Git there may be sensitive info present 
+terraform.tfstate.backup is an automatically created backup copy of the previous Terraform state file before Terraform updates the current terraform.tfstate file.
+
+Now:
+
+terraform.tfstate: latest infra information
+
+terraform.tfstate.backup ---> previous infra information
+
+lets say u ran terraform apply with some new resource code and those are existing in aws and now i have written another new resource block so when i need to run apply again at that time 
+terraform.tfstate               ---> stores the  latest info i have written another resource block latest infra info 
+terraform.tfstate.backup ---> previous infra information means  before writtening another resource block 
+
+
+Can Terraform use backup automatically? -----> No ❌ Backup is only for recovery.
+
+Example:
+state corrupted --> remove that file --> rm terraform.tfstate
+You can manually restore --> cp terraform.tfstate.backup terraform.tfstate so u will get state file with latest infra info 
+
+
+
+2) .terraform Folder
+
+.terraform folder is a local working directory created when u run terraform init cmd. It stores downloaded providers, modules, and backend configuration information(S3+DynamoDB info ) required to run Terraform.
+
+Should .terraform folder go to Git --> No ❌
+Add:
+.gitignore
+.terraform/   --> add this in this file so when u run it will avoid to upload into git 
+
+Reason: Large size , Machine specific , Can recreate anytime using terraform init
+
+
+
+3).terraform.lock.hcl (Dependency Lock File)
+-----------------------------------------------------------
+.terraform.lock.hcl is a Terraform dependency lock file created during terraform init. It stores the exact provider versions and checksum information that Terraform selected, so every developer and CI/CD pipeline uses the same provider version.
+
+
+Why provider is needed ---> Terraform itself cannot directly talk to AWS when u write terraform code to create ec2 instance it understands that we need to create ec2 But it doesn't know AWS API.For that it needsAWS Provider Plugin
+flow:
+Terraform code --> AWS Provider --> AWS API --> EC2 created
+
+Step 1: We write provider requirement
+terraform {
+ required_providers {
+  aws = {
+   source = "hashicorp/aws"
+   version = "~> 5.0"
+  }
+ }
+}
+
+Meaning: Terraform language, Download AWS provider , Version should be 5.x
+
+Step 2: Run terraform init first time  --> terraform init
+
+Terraform goes to:  Terraform Registry ---> Find hashicorp/aws provider ---> available versions (5.31.0,5.40.0,5.50.0) --->Terraform selects one version.(Selected:AWS Provider 5.31.0)
+
+Step 3: Terraform creates .terraform.lock.hcl --> Automatically created in folder where u run terraform init
+Inside:
+provider "registry.terraform.io/hashicorp/aws" {
+ version = "5.31.0"
+ hashes = [
+ "h1:abcdef123"
+ ]
+}
+
+It stores two things:
+1) Provider version               --->Example:  AWS provider = 5.31.0
+2) Hash/checksum                ---> Example:   h1:abcdef123
+
+What is checksum/hash? Security purpose.
+Terraform verifies:
+
+Downloaded provider vs lock file hash  
+---> Same → use provider and 
+---> if Different → reject   ------> To make sure plugin is not modified/corrupted.
+
+rejected error msg like below 
+ Error: Failed to query available provider packages
+│
+│ Could not retrieve the list of available versions for provider hashicorp/aws: locked provider registry.terraform.io/hashicorp/aws 5.100.0 does not match
+│ configured version constraint ~> 6.0; must use terraform init -upgrade to allow selection of new versions
+│
+│ To see which modules are currently depending on hashicorp/aws and what versions are specified, run the following command:
+│     terraform providers
+
+
+Next time terraform init ---> You already have ---->     .terraform.lock.hcl with AWS provider = 5.31.0 version
+
+Again run:  terraform init
+
+Terraform checks:    Is lock file present? ---> YES ---> Use same provider version ---> Download 5.31.0 only --> Even if new version exists.
+
+Example: Today:   AWS Provider latest = 5.80.0
+
+Your lock file : 5.31.0 
+Terraform downloads: 5.31.0   --->  because locked.
+
+
+Without lock file ❌ : Team Example (Main Reason)
+
+Developer Arun on Monday --->  terraform init  --->  AWS provider downloaded ---> 5.31.0
+
+Developer Ravi: After 3 months  --->terraform init ---> Latest provider: 5.80.0  --> Downloads: 5.80.0
+
+Now:
+Arun laptop ---> AWS Provider 5.31
+
+Ravi laptop --> AWS Provider 5.80
+
+Problems: New provider may remove features/add new features ,Different behavior  , Bugs , Deployment failures
+
+
+With .terraform.lock.hcl ✅
+
+Arun:  terraform init ---> for AWS provider 5.31 ----> it Creates lock file
+
+now he Push to  :  GitHub ---> .terraform.lock.hcl
+
+Ravi: git clone project in feature ---> terraform init
+
+Terraform sees: lock file exists on provider = 5.31
+
+Downloads: AWS provider 5.31
+
+Now:
+Arun --->AWS provider 5.31
+Ravi  ---> AWS provider 5.31
+
+
+Jenkins --->AWS provider 5.31 ---> Same behavior everywhere.
+
+
+How to upgrade provider then? ---> terraform init -upgrade
+terraform init -reconfigure         
+
+Example:
+Current version in lock file : 5.31
+Need to upgrade to version : 5.80
+
+Run: terraform init -upgrade
+
+Terraform: Checks latest allowed version ---> Downloads new provider ---> Updates .terraform.lock.hcl
+
+Before: version="5.31.0"
+After: version="5.80.0"
+
+Then commit updated lock file to github.
+
+
+Difference: .terraform.lock.hcl vs .terraform folder
+.terraform.lock.hcl  ----> Stores Which provider version should be used ---> AWS provider 5.31
+.terraform folder     ----> Stores actual downloaded provider files            ---> providers/aws-provider.exe
+
+.terraform.lock.hcl ---> Tells version 5.31 ---> terraform init downloads it ---> .terraform/providers/aws-provider.exe(Actual provider software)
+
+Now Scenario:
+.terraform.lock.hcl in this file we have 5.31 version and if deleted this file and in provider.tf has newer version 5.80 if u run terraform init after delete it will download newer version 
+
+Interview Answer (4+ years) 
+.terraform.lock.hcl is Terraform's dependency lock file created during terraform init. It records the exact provider versions and checksums selected by Terraform. We commit this file to Git so all developers and CI/CD pipelines use the same provider versions, avoiding version conflicts and unexpected behavior. When we want to upgrade providers, we run terraform init -upgrade and commit the updated lock file.
+
+
+
+Important:
+--------------
+Before we use to do S3 and dynamoDB locking like below 
+Ex:
+terraform {
+  backend "s3" {
+    bucket         = "remote-state-arun"
+    key            = "remote-state-file"
+    region         = "us-east-1"
+    dynamodb_table = "remote-state-arun-lock"
+  }
+}
+above approach still works in current Terraform releases, but terraform recommends to migrate to use_lockfile option 
+But newer terraform version DynamoDB is not required we have an option use_lockfile which works same as DynamoDB working 
+
+terraform {
+  required_version = ">= 1.11"
+
+  backend "s3" {
+    bucket       = "remote-state-arun"
+    key          = "remote-state-file"
+    region       = "us-east-1"
+    use_lockfile = true                  #new feature 
+  }
+}
+No DynamoDB table is required. Terraform creates and manages a lock file (for example, terraform.tfstate.tflock) in the S3 bucket to prevent concurrent operations.
+
+
+What actually happens ---> Suppose Developer-1 runs:
+
+terraform apply
+Terraform does:
+
+In S3 bucket
+----------------
+Both files will be created
+terraform.tfstate
+terraform.tfstate.tflock   ← Lock file created
+
+Now Developer-2 runs:
+
+terraform apply
+Terraform checks:
+
+Is lock file present ---> YES ----> Error: State is locked
+
+Developer-2 must wait until Developer-1 finishes.
+
+When Developer-1 completes:
+
+terraform.tfstate.tflock ----> Deleted automatically ----> Now Developer-2 can run Terraform.
+
+
+What should you say in interviews?
+
+If your project actually used DynamoDB:
+
+In our project, we stored the Terraform remote state in an S3 bucket and used a DynamoDB table for state locking. The lock prevented multiple users or CI/CD pipelines from modifying the same state file simultaneously. Although newer Terraform versions support native S3 locking using use_lockfile, our project used the DynamoDB-based locking mechanism because that was the standard approach at the time.
+
+If you're learning the latest Terraform:
+
+In newer Terraform versions, native S3 state locking using use_lockfile = true is the recommended approach. It removes the need for a separate DynamoDB table while still preventing concurrent updates to the state file.
+
+&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+
+How to create multiple environments
+there is multiple ways:
+1)using tfvars file
+2)workspace
+3)by creating diff repos
+
+
+Why do we need multiple environments ---> A company usually has environments like
+Developer(DEV) -----> QA / TEST(UAT) -----> PRE-PROD -----> PRODUCTION
+
+Each environment should have: Separate infrastructure,Separate state,Separate variables,Separate databases,Separate Route53 records,Separate VPCs (often)
+But the Terraform code should be reused as much as possible.
+
+Method 1: Using tfvars (Recommended) : ex: terraform-multi-env/using-tfvars in github
+------------------------------------------------------
+
+terraform-project/
+
+main.tf
+variables.tf
+provider.tf
+
+dev-backend/
+    backend.tf
+    dev.tfvars
+
+prod-backend/
+    backend.tf
+    prod.tfvars
+	
+Scenario:
+-------------
+we are deploying application to 2 environments that is dev and prod env so we have to create 
+mongodb-dev, redis-dev,mysql-dev ec2 instances in both envs etc.... and it should reflect route53 records with mongodb-dev.devopswitharun.online etc for both envs
+same code but diff environments 
+its better to create diff buckets for 2 env to store state file because we do more testiing in dev to not disturb buckets it better to keep seperate 
+
+Now in Aws 
+S3 --> create 2 buckets --> create bucket --> give name (daws76s-state-dev) --> create and the create new bucketwith (daws76s-state-prod) name
+DynamoDB --> create table with name (daws76s-state-dev) and partition kay (LockID) --> create table ---> create 2nd table with (daws76s-state-prod ) and partition kay (LockID)--> create table
+
+startswith function
+  records = [startswith(each.key, "web") ? each.value.public_ip : each.value.private_ip]  
+--> if ec2 instance name starts with web then get the publicip whether it is dev or prod doesnt matter  web-dev or web-prod both will satisfy because it starts with web name 
+  
+  
+To Run : 
+terraform init -backend-config=dev-backend/backend.tf  --> here im loading dev env backend file 
+terraform plan -var-file=dev-backend/dev.tfvars 
+		-var-file=dev-backend/dev.tfvars  --> if not given it will load default variables
+terraform apply -var-file=dev-backend/dev.tfvars 
+
+but now i want to do it with prod 
+terraform init -reconfigure -backend-config=prod-backend/backend.tf	 
+--> we already configured dev so thats y to reconfigure to prod Without it Terraform continues using DEV backend
+terraform plan -var-file=prod-backend/prod.tfvars 
+		-var-file=prod-backend/prod.tfvars  --> if not given it will load default variables
+terraform apply -var-file=prod-backend/prod.tfvars 
+terraform destroy -var-file=prod-backend/prod.tfvars 
+
+terraform init or plan or apply without mentioning env specific backend file and variables file it takes default variable values those are from variables.tf if u comment there it will propmt for value so u can understand thar we didnt mentioned var file while running cmd 
+
+
+2)workspace --> is used to manage multiple env's with single configuration/code and only some backends supports this and s3 is on among them 
+-----------------
+ex: terraform-multi-env/using-workspace in github
+
+
+Commands:
+---------------
+1)terraform workspace delete <name of the workspace>  --> delete a workspace
+2)terraform workspace new <name of the workspace>      --> create a new workspace
+3)terraform workspace select <name of the workspace>   --> switch to a particular workspace
+4)terraform workspace show  --> show the name of the current workspace  ur are working
+5)terraform workspace list  --> gives list of workspaces available by default terraform creates default workspace
+
+
+terraform workspace new dev --> it will create workspace called dev and switch to dev workspace
+when u run this cmd after giving bucket name in provider file it will create env:/ folder inside it will create a folder (create that folder name with workspace name we give at the time of create workspace) and inside this folder it will create remote-state-file 
+
+in provider.tf --> change key name to new name and go to already created bucket and mentioned bucket name it will create 
+
+terraform workspace give special variable
+terraform.workspace --> if u are in dev workspace it will take that value as workspace name and if u are in prod workspace that value will be prod 
+
+lookup function
+		  instance_type = lookup(var.instance_type, terraform.workspace) --> we can pass key and get the value by using this function
+so here lets say we are in dev env -->  terraform.workspace takes value as dev --> it will create ec2 instance with t3.micro		 
+so here lets say we are in prod env -->  terraform.workspace takes value as prod 	--> it will create ec2 instance with t3.small
+same with other env also 
+
+Ex:1
+in variables.tf 
+
+variable "instance_type" {
+   default = {
+    dev = "t3.micro"
+    prod= "t3.small"
+
+   } 
+}
+
+main.tf 
+ec2 code 
+resource "aws_instance" "First ec2 instance" {
+  ami           = "ami-0220d79f3f480ecf5"
+  instance_type = lookup(var.instance_type, terraform.workspace)
+
+  tags = {
+    Name = "multi-env"
+  }
+}
+
+provider.tf
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 6.0"             #--> aws provider version not terraform version
+    }
+  }
+   backend "s3" {
+    bucket         = ""   #create s3 bucket in aws and paste that name here 
+    key            = ""
+    region         = "us-east-1"
+    dynamodb_table = ""    #create dynamoDB table in aws and copy that name here 
+  }
+}
+
+provider "aws" {
+  region = "us-east-1"
+}
+
+terraform init 
+terraform workspace list  --> u will get default
+terraform workspace new dev 
+
+with in the bucket it will create a folders with workspace name created and maintain state file inside that 
+
+terraform workspace new prod --> now it will create a prod folder inside bucket and create a state file there
+
+terraform plan and apply 
+
+3)Create diff repos for diff env 
+---------------------------------------
+
+
+
+Each Approach
+1)tfvars
+pros:
+same code for all environments no duplicate code 
+cons
+same code for multiple environments u need to be careful, because wtever changees u do that will apply to prod 
+2)workspace
+pros:
+same code 
+cons:
+same code for multiple environments u need to be careful, because wtever changees u do that will apply to prod 
+terraform is maintaining same bucket for both env that may cause errors possibility and difficult to maintain variables 
+3)diff repos for diff env's3
+pros:
+since everything diff u no need to worry 
+cons:
+code duplication and u need to maintain 2 repos 
+
+Interview Answer
+There are three common ways to manage multiple environments in Terraform. The most common approach is using separate .tfvars files along with separate remote backends for each environment, such as Dev, QA, and Production. This allows us to reuse the same Terraform code while supplying different variable values and maintaining separate state files. Terraform Workspaces provide separate state files within the same backend and are suitable for simpler use cases, but they become difficult to manage when many environment-specific variables exist. Some organizations use separate repositories for each environment when complete isolation is required, but this leads to code duplication. In most enterprise projects, we use reusable modules with environment-specific .tfvars files and separate remote state backends because this approach is scalable, maintainable, and safer.
+
+
+
+Interview Point
+if u delete/modify etcc dev folder workspace in remote u will get this type of error
+If an interviewer asks about this error:
+
+state data in S3 does not have the expected content. 
+The checksum calculated for the state stored in S3 does not match the checksum stored in DynamoDB. 
+Bucket: remote-state-arun 
+Key: env:/dev/remote-state-file 
+Calculated checksum: Stored checksum: 7f1f2a59a965134b220d8aa3eca82380 
+This may be caused by unusually long delays in S3 processing a previous state update. 
+Please wait for a minute or two and try again. 
+If this problem persists, and neither S3 nor DynamoDB are experiencing an outage, you may need to manually verify the remote state and remove the Digest value stored in the DynamoDB table
+
+
+"The checksum calculated for the state stored in S3 does not match the checksum stored in DynamoDB."
+
+You can answer:
+
+This means the Terraform remote state stored in S3 and the checksum stored in the DynamoDB lock table are inconsistent. It can happen if the state file was manually modified, deleted, or a previous Terraform operation was interrupted. Terraform stops execution to prevent state corruption. The resolution is to verify the state file, remove the stale lock or digest if appropriate, and reinitialize the backend.
+
+
+
+
+
+
+Provisioners:
+-----------------
+Terraform provisioners are used to execute scripts or commands on a local machine or a remote machine after infrastructure creation or before destruction
+
+Why do we need Provisioners?
+1)Suppose Terraform code creates an EC2 instance.
+2)After creation you want to configure like: Install nginx,Create users,Copy files,Execute shell scripts,Register server,Update inventory using provisioners we can do
+
+Terraform's main job is: Infrastructure Provisioning
+NOT Configuration management 
+Configuration management is usually done by: Ansible ,Chef,Puppet
+Provisioners are mainly for small bootstrap tasks
+
+
+Real Flow
+------------
+Without provisioners
+terraform apply ---> EC2 Created ---> Done
+
+With provisioners 
+terraform apply ---> EC2 Created ---> SSH Login ---> Run Commands ---> Exit
+
+
+Types of Provisioners
+1. local-exec
+2. remote-exec
+3. file
+
+
+1)local-exec 
+----------------
+The local-exec provisioner  Runs commands/scripts On the local machine where Terraform is running after a resource is created or destroyed.
+It is commonly used to integrate Terraform with external scripts, configuration management tools, notification systems, or CI/CD workflows.
+ 
+flow: Laptop ---> terraform apply ---> Run local command
+Example:
+resource "aws_instance" "web" {
+  ami = "ami-123"
+  instance_type = "t3.micro"
+   vpc_security_group_ids = [aws_security_group.allow_all.id]
+  
+  provisioner "local-exec" {
+    command = "echo EC2 Created"
+  }
+  
+# ec2 will be created above now after creating save ip into file 
+
+	provisioner "local-exec" {
+		command = "echo ${self.public_ip} > inventory"
+	}
+	provisioner "local-exec" {
+		command = "ansible-playbook -i inventory nginx.yml"
+}
+}
+
+
+
+Flow: Terraform ---> Creates EC2 ---> Runs Ansible ---> Ansible configures server
+
+Imp:
+local-exec can be used with EC2,S3,Route53,Sg,IAM role etc....
+
+Scenario:
+-------------
+i have run terraform apply with some provisioner block 	
+in resource block i have 
+resource "aws_instance" "ec2" {
+provisioner "local-exec" {
+      command = "echo [web] > inventory.ini "
+    }
+    provisioner "local-exec" {
+    command = "echo ${self.public_ip} >> inventory.ini"
+    }
+}	
+i did ---> terraform apply   --> ec2 created with above provisioner ---> but still i didnt destroy withput destroy
+i have added other provisioner block 
+
+provisioner "local-exec" {
+    command = "echo [web:vars] >> inventory.ini"
+    }
+    provisioner "local-exec" {
+    command = "echo ansible_user=ec2-user >> inventory.ini"
+    }
+withput destroy
+now i ran terraform apply --> terminal shows no changes so provisioner block are executed at the time of first apply of that resource block 
+with destroy and again apply
+now 4 block executed 
+
+imp : ******     ----> so provisioner block are executed at the time of first terraform apply of that resource block 
+
+Ex scenarios where local-exec used real time:
+-----------------------------------------------------------
+Real-world Uses (4+ Years)
+1. Trigger Ansible ⭐⭐⭐⭐⭐  This is probably the most common use.
+Ex:
+resource "null_resource" "configure" {
+  depends_on = [aws_instance.web]
+  provisioner "local-exec" {
+    command = "ansible-playbook -i inventory.ini main.yml"
+  }
+}
+
+local-exec does not install software.It simply executes whatever command you provide on the local machine.
+is conceptually correct, but it assumes Ansible is already installed on the machine where Terraform is running.
+
+
+If the execution host does not have Ansible installed or the executable is not available in the system PATH, the command fails with 'ansible-playbook is not recognized'.
+In production, the execution host—such as a Jenkins agent, GitHub Actions runner, or Ansible controller—already has Terraform, Ansible, AWS CLI, and other required tools installed before Terraform is executed."
+
+
+
+Real Company Scenario ⭐⭐⭐⭐
+
+Suppose you're using Jenkins.
+
+GitHub
+   │
+   ▼
+Jenkins Agent
+   │
+   ├── Terraform Installed ✅
+   ├── AWS CLI Installed ✅
+   ├── Git Installed ✅
+   ├── Ansible Installed ✅
+   │
+   ▼
+terraform apply
+   │
+   ▼
+local-exec
+   │
+   ▼
+ansible-playbook -i inventory.ini main.yml      --> no recognized error because ansible already installed by jenkins agent
+
+Notice something important:
+
+Jenkins already has Ansible installed.
+
+Terraform is not installing it.
+
+
+2. Generate Dynamic Inventory ⭐⭐⭐⭐
+	provisioner "local-exec" {
+	  command = "echo ${self.public_ip} >> inventory.ini"
+	}
+
+Inventory becomes
+[web]
+54.89.xx.xx
+Then Ansible uses it.
+
+3. Run Shell Script ⭐⭐⭐⭐    runs Any custom automation scripts
+	provisioner "local-exec" {
+	  command = "./deploy.sh"
+	}
+
+4. Notify Slack / Teams ⭐⭐⭐⭐
+	provisioner "local-exec" {
+	  command = "curl -X POST https://hooks.slack.com/... "
+	}
+	
+5. Trigger Jenkins Job ⭐⭐⭐
+	provisioner "local-exec" {
+	  command = "curl http://jenkins/job/deploy/build"
+	}
+	
+6. Update DNS using Script ⭐⭐⭐
+
+Instead of Terraform Route53.
+
+provisioner "local-exec" {
+  command = "./update-dns.sh ${self.public_ip}"
+}
+
+7. Send Email ⭐⭐
+provisioner "local-exec" {
+  command = "./sendmail.sh"
+}
+
+9. Generate Configuration Files ⭐⭐⭐
+provisioner "local-exec" {
+  command = "python generate_inventory.py"
+}
+
+9. Trigger API ⭐⭐⭐⭐
+	provisioner "local-exec" {
+	  command = "curl https://company-api/deployment"
+	}
+	
+
+
+	
+	
+A strong answer is:
+
+We used Terraform to provision the infrastructure, and after the resources were created, we generated an inventory file dynamically using a local-exec provisioner. Then we invoked ansible-playbook from the Terraform execution host. The execution host already had Ansible installed (for example, a Jenkins agent or an Ansible controller). The playbook connected to the EC2 instances over SSH and performed software installation and configuration. We did not use Terraform to install Ansible itself.
+
+
+Interview Answer (4+ Years)
+
+The local-exec provisioner executes commands on the machine where Terraform is running after a resource is created or destroyed. It is primarily used to integrate Terraform with external tools rather than configure remote infrastructure. In our environment, we used local-exec to generate dynamic inventory files, invoke Ansible playbooks after EC2 provisioning, trigger deployment scripts, call REST APIs, and send deployment notifications. Since it runs on the Terraform execution host, the required tools such as Ansible, AWS CLI, Git, or custom scripts must already be installed on that machine.
+
+does not check terraform state lock 
+terraform apply -lock=false
+
+Interview Answer (4+ Years)
+
+Terraform acquires a state lock before performing any operation that modifies infrastructure. When using an S3 backend with DynamoDB locking (or S3 native locking with newer versions), it prevents multiple users or pipelines from updating the same state file simultaneously. If a previous operation is interrupted, a stale lock may remain. In that case, we verify that no Terraform operation is still running and then use terraform force-unlock <LOCK_ID> or remove the stale lock entry before retrying.
+
+
+2) remote-exec
+--------------------
+To Run/execute commands on the remote machine/server by logging into resource (ex: EC2) using SSH after resource is created
+
+Flow ----> terraform apply ---> Create EC2 ---> login using into ec2 using SSH (i.e., connection block)---> Execute Linux Commands on remote server
+
+Example:
+resource "aws_instance" "web" {
+	ami="ami-123"
+	instance_type="t3.micro"
+	vpc_security_group_ids = [aws_security_group.allow_all.id]
+
+	connection {                                #by using this bloc it will connect to remote server 
+		type="ssh"
+		user="ec2-user"
+		private_key=file("mykey.pem")  or password = "DevOps321
+		host=self.public_ip                     #self means current resource ec2 ip in which block we returned provisioner
+	}
+
+	provisioner "remote-exec" {
+		inline=[
+		"sudo yum install nginx -y",
+		"sudo systemctl enable nginx",
+		"sudo systemctl start nginx"
+		]
+	}
+}
+
+Flow : terraform apply ---> Create EC2 ---> connect using SSH info(i.e.,using connection block details) ---> yum install nginx ---> systemctl start nginx
+
+Without connection block --------> Terraform doesn't know: Which server? and Which user? and Which SSH key?
+
+Imp:
+remote-exec used only with EC2 instances because it needs a machine to connect so s3,route53 etc..we dont need connection feature
+
+interview answer:
+
+"Terraform first provisions an EC2 instance to act as the Ansible controller. Then a remote-exec provisioner uses SSH to log in to that EC2 and installs Ansible using the operating system's package manager (for example, dnf on Amazon Linux 2023 or apt on Ubuntu). After Ansible is installed, Terraform or the CI/CD pipeline can invoke ansible-playbook to configure the target servers."
+
+
+
+
+3) file Provisioner ----> Copies files From local machine To remote server.
+Example
+In Local i have below file 
+index.html
+now i want to Copy that file to remote server
+EC2 --> /var/www/html/index.html
+Example:
+provisioner "file" {
+source="index.html"
+destination="/tmp/index.html"
+}
+Flow ----> Laptop ---> Copy file ---> EC2 remote server
+
+
+inline vs script
+-------------------
+inline: to run Small commands
+
+inline=[
+"mkdir /app",
+"touch test.txt"
+]
+
+script : Execute shell script
+
+script="install.sh"
+
+Terraform uploads this file to ec2 remote server ---> install.sh
+it Runs like : bash install.sh
+
+destroy Provisioner :  Runs before destroying resource.
+--------------------------
+
+Example
+provisioner "local-exec" {
+when = destroy
+command="echo deleting"
+}
+
+Flow : terraform destroy ---> echo deleting ---> Delete EC2
+
+
+Failure Behaviour 
+-----------------------
+By default If provisioner fails
+Terraform ---> Resource ---> Provisioner fails ---> Terraform marks resource failed 
+You can ignore that using
+
+on_failure="continue"
+
+Instead of fail --> Terraform continues the execution instead of exiting from running pgm 
+
+
+self keyword 
+-----------------
+Inside provisioner Terraform provides self keyword
+
+Example
+
+self.public_ip  ---> means Current resource public IP.
+
+Instead of writing ---> aws_instance.web.public_ip
+
+Use  ---> self.public_ip
+
+
+
+Why companies avoid Provisioners?
+
+HashiCorp itself recommends avoiding heavy use of provisioners.
+
+Reason:
+
+Terraform is an Infrastructure as Code Tool NOT an Configuration Management Tool and Provisioners are not idempotent like Ansible and Terraform cannot track what happened inside provisioners.
+
+Example : yum install nginx ----> runs every time with provisioners
+
+Instead companies do: 
+Using Terraform --> Create infra --> using Ansible --> Configuration for application deployment 
+OR
+Terraform --->User Data ---> Bootstrapping ---> Ansible
+
+User Data vs Provisioners
+
+Very common interview question.
+
+User Data													Provisioners
+--------------                                             ---------------------
+Runs when EC2 boots					Runs after Terraform creates resource
+Executed by EC2							Executed by Terraform
+Better for bootstrap					Better for small post-create tasks
+Preferred										Not preferred for large configuration
+
+Interview Answer (4+ years)
+
+Terraform provisioners are used to execute scripts or commands after infrastructure is created or before it is destroyed. There are three main provisioners: local-exec, which runs commands on the local machine; remote-exec, which connects to the remote server using SSH or WinRM and executes commands; and the file provisioner, which copies files from the local machine to the remote server. In enterprise environments, provisioners are used only for small bootstrap tasks because HashiCorp recommends using configuration management tools like Ansible for software installation and server configuration.
+
+Interview Answer (4+ years)
+
+Provisioners are not limited to EC2 instances. They can be attached to many Terraform resources. 
+However, remote-exec and file provisioners require a machine that Terraform can connect to over SSH(Linux OS) or WinRM(Windows OS), so they are typically used with EC2 instances or virtual machines. 
+local-exec can be used with almost any resource to execute commands on the machine running Terraform, such as triggering Ansible, updating files, or sending notifications. In enterprise projects, provisioners are used sparingly, with Ansible, cloud-init, or user data preferred for server configuration.
+
+
+
+
+Real-world practice
+Terraform
+      │
+      ▼
+Create Infrastructure (EC2, VPC, SG)
+      │
+      ▼
+(Optional) Small bootstrap using provisioners
+      │
+      ▼
+Ansible / User Data / Cloud-Init
+      │
+      ▼
+Install packages, configure applications, deploy code
+
+
+Very Common Usage: null_resource
+-----------------------------------------------
+What is null_resource?
+
+null_resource is a special Terraform resource that does not create any infrastructure. Its only purpose is to execute actions like: Running Ansible,Running shell scripts,Calling APIs,Executing local commands
+null_resource
+------------------
+Creates Nothing
+Only executes commands
+
+Many organizations use a null_resource with a local-exec provisioner to trigger an Ansible playbook after infrastructure creation.
+Example:
+
+resource "null_resource" "ansible" {
+  provisioner "local-exec" {
+    command = "ansible-playbook web.yml"
+  }
+}
+
+Flow:
+Terraform --> Infrastructure Created --> null_resource --> Runs Ansible
+
+This is more common than attaching a local-exec provisioner directly to every EC2 resource.
+ 
+ nterview Answer (4+ Years)
+
+null_resource is a special Terraform resource that does not create any infrastructure. It is mainly used to execute provisioners such as local-exec or remote-exec. In projects, we often use a null_resource with a local-exec provisioner to trigger an Ansible playbook after Terraform has created the infrastructure. We typically use depends_on to ensure all required resources, such as EC2 instances and Route53 records, are created before Ansible starts configuring the servers.
+
+Complete Example:
+-------------------------
+Scenario : Suppose your RoboShop project has only one Web EC2 instance.
+
+When you run: terraform apply
+You want Terraform to:  
+1)Create an EC2 instance.
+2)Create a Route53 record (web.devopswitharun.online).
+After both are created, automatically run an Ansible playbook to install Nginx and deploy the application.
+
+# 1. Create EC2
+resource "aws_instance" "web" {
+
+  ami           = "ami-0220d79f3f480ecf5"
+  instance_type = "t3.micro"
+
+  tags = {
+    Name = "web"
+  }
+}
+
+# 2. Create Route53 Record
+resource "aws_route53_record" "web" {
+
+  zone_id = "Z02149386QBAC23T25TA"
+  name    = "web.devopswitharun.online"
+  type    = "A"
+  ttl     = 1
+
+  records = [aws_instance.web.public_ip]
+}
+
+# 3. Wait for EC2 to become ready
+resource "time_sleep" "wait_for_ec2" {
+
+  depends_on = [
+    aws_instance.web
+  ]
+
+  create_duration = "60s"
+}
+
+# 4. Run Ansible
+resource "null_resource" "configure_server" {
+
+  depends_on = [
+    time_sleep.wait_for_ec2,
+    aws_route53_record.web
+  ]
+  provisioner "local-exec" {
+    command = "ansible-playbook -i inventory.ini web.yml"
+  }
+}
+
+
+flow --> 
+What happens internally?
+Step 1 Run : terraform apply ----> Terraform starts.
+Step 2 Ec2 will be created but The EC2 is still: Booting Linux,Starting SSH service,Initializing cloud-init and It is not ready for SSH to connect .
+Step 3 Terraform creates Route53. and DNS is ready 
+Step 4 Terraform reaches
+resource "time_sleep" "wait_for_ec2"
+depends_on = [
+  aws_instance.web
+]
+Since we mentioned depends_on Terraform waits until EC2 is created.
+Then it sleeps:
+create_duration = "60s"
+
+Meaning: Terraform ---> Sleep for 60 seconds ---> Do nothing
+
+During these 60 seconds: EC2 boots,SSH starts,Cloud-init finishes,System becomes ready
+
+Step 5: After 60 seconds Terraform executes
+
+resource "null_resource" "configure_server"
+because
+depends_on = [
+time_sleep.wait_for_ec2,
+aws_route53_record.web
+]
+Checks Both are complete.
+
+Step 6: Ansible starts with cmd execution
+  command = "ansible-playbook -i inventory.ini web.yml"
+Inventory:
+[web]
+web.devopswitharun.online
+
+DNS resolves ---> 54.86.xx.xx ---> SSH ---> ec2-user@54.86.xx.xx
+
+Then Install nginx ---> Copy configuration ---> Deploy application ---> Restart nginx
+
+Application is ready.
+
+
+Why do we use time_sleep?
+
+Without it: terraform creates a ec2 resource immediately ansible command run but ec2 still in booting and SSH not ready so it fails 
+Without it: Terraform ---> Create EC2 ---> Wait 60 seconds ---> SSH Ready ---> Run Ansible ---> Success
+
+Is time_sleep always used in companies?
+In enterprise projects, teams usually prefer:
+Cloud-init/User Data for initial bootstrapping.
+CI/CD pipelines (Jenkins, GitHub Actions, Azure DevOps) that wait until the instance is healthy before triggering Ansible.
+Ansible retry mechanisms (wait_for_connection, retries, delays) instead of a fixed sleep.
+For example, in Ansible:Ansible retry mechanisms (wait_for_connection
+- name: Wait for SSH
+  wait_for_connection:
+    timeout: 300
+This is generally better than sleeping for a fixed 60 seconds because the playbook proceeds as soon as the server is actually ready.
+
+Interview Answer (4+ Years)
+We can use the time_sleep resource when there is a dependency on infrastructure becoming fully ready before executing the next step. For example, after Terraform creates an EC2 instance, the operating system and SSH service may still be initializing. If Ansible runs immediately, SSH connections can fail. By introducing a time_sleep resource with depends_on, Terraform waits for a specified duration before executing a null_resource with a local-exec provisioner. In enterprise environments, however, fixed sleeps are usually replaced with health checks or Ansible's wait_for_connection for a more reliable solution.
+
+
+
+notes :
+--------
+provisioners are useful to integrate terraform with configuration mgmt (ex: ansible,chef,puppet)
+
+server creation          --> terraform responsibility
+server configuration --> ansible responsibility
+
+Ansible configuration can only do when after creation  of server with terraform so inside server we can do configuration with ansible(using playbooks)
+
+when u intergrate terraform with ansible u can get end to end automation
+u can integrate this two tools using provisioners
+
+we can also  create server with ansible but it does not have state file feature terraform has it 
+use of state --> lets say we have created ec2 in aws aws and it is recorded in state file so if u run again apply command terraform compares the desired state and tfstafe file content + aws console check existing or not if existing it wont create no changes if resource not present it will create 
+without state 
+lets say we have created ec2 in aws and state file is not there terraform doesnt know info what is present in aws and what to create/udate/delete so if u run again apply command it will create ec2 even it already present
+
+local exec only run once while resource creation  if u want to run again u need to destroy resources and do apply again
+we can also use provisioners for triggering mails and others system and alerts
+
+creation time --> this local-exec will run at the time of servver creation
+destroy time --> it will run at the time of destroying the resource like below 
+ex:
+	when : destroy  		---> only run this provision at the time of destroy time
+	on-failure: continue ---> continue means next provision also run even one provision fails
+	on-failure: fail	         ---> it will not execute another provisioners once one provison failed	
+	
+ex: 
+insdie resource block
+  provisioner "local-exec" {
+    command = "echo ip address is ${self.private_ip} > inventory"  --> ip address will be save to inventory so ansible can pict that and configure server
+  }
+remote-exce --> it will run inside the server u created 
+to run inside server 
+1)u should connect to server 
+2)then u can run anything inside the server
+
+we can write multiple provisioners it will execute one by one  
+
+
+
+
+
+
+
+
+
+
+
+
+*****************************************************************************************************************************************************************
+
+
+
+Modules:
+------------
+A Terraform module is a reusable collection of Terraform configuration files that are grouped together to create and manage a specific set of infrastructure resources.
+
+Module = Reusable Terraform Code
+Instead of writing the same EC2, VPC, Security Group, or RDS code repeatedly for dev, test, stage, and prod, we write the infrastructure logic once inside a module and call that module multiple times with different input values.
+
+Types of Modules
+-----------------------
+There are mainly three ways you will encounter modules.
+
+Module Type	Example
+Local Module/customised module  ---> 	source = "./modules/ec2"
+Git Module/open source module	   ---> source = "git::https://..."
+Terraform Registry Module	           ---> source = "terraform-aws-modules/vpc/aws"
+
+Example:
+-----------
+Why do we need modules?
+
+Suppose your company has three applications ------------> Catalogue,Cart,Shipping
+
+Each application requires same code --------------> EC2,Security Group,IAM Role,CloudWatch configuration,Tags
+
+
+Without modules, you may duplicate the same Terraform code witing same code in diff folders 
+
+catalogue/  ---> ec2.tf,sg.tf,iam.tf
+cart/   ---> ec2.tf,sg.tf,iam.tf
+shipping/ ---> ec2.tf,sg.tf,iam.tf
+
+With modules:
+
+modules/
+    application/
+        main.tf
+        variables.tf
+        outputs.tf
+		
+		
+In companies, a common architecture is:
+-----------------------------------------------------
+Central Infrastructure Modules Repository
+
+modules/
+├── vpc
+├── ec2
+├── eks
+├── rds
+├── security-group
+└── iam
+
+              │
+             ▼
+
+Application Infrastructure Repositories
+
+roboshop-dev
+roboshop-stage
+roboshop-prod
+
+Interview answer for 4+ years experience
+
+Terraform modules are reusable collections of Terraform configurations used to standardize and avoid duplication of infrastructure code. In our projects, we created reusable modules for common infrastructure components such as VPCs, EC2 instances, security groups, IAM roles, and other AWS resources. The root module passed environment-specific inputs to child modules through variables, and child modules exposed required resource information through outputs. We maintained shared modules in version-controlled repositories and pinned module versions so changes could be tested in lower environments before being promoted to production. This improved code reuse, consistency, maintainability, and standardization across environments.
+
+
+our project structure is 
+
+terraform-infra/
+│
+├── modules/
+│   ├── vpc/
+│   │     ├── main.tf
+│   │     ├── variables.tf
+│   │     └── outputs.tf
+│   │
+│   ├── ec2/
+│   │     ├── main.tf
+│   │     ├── variables.tf
+│   │     └── outputs.tf
+│   │
+│   └── route53/
+│         ├── main.tf
+│         ├── variables.tf
+│         └── outputs.tf
+│
+├── environments/
+│   ├── dev/
+│   │     ├── backend.tf
+│   │     ├── terraform.tfvars
+│   │     └── main.tf
+│   │
+│   ├── qa/
+│   │     ├── backend.tf
+│   │     ├── terraform.tfvars
+│   │     └── main.tf
+│   │
+│   ├── preprod/
+│   │     ├── backend.tf
+│   │     ├── terraform.tfvars
+│   │     └── main.tf
+│   │
+│   └── prod/
+│         ├── backend.tf
+│         ├── terraform.tfvars
+│         └── main.tf
+│
+└── providers.tf
+
+Environment Flow
+Suppose you're deploying DEV ===> terraform apply -----> environment/dev/main.tf ---> Calls VPC Module ---> Calls EC2 Module ---> Calls Route53 Module
+Same happens for QA, PREPROD and PROD. Only the variable values change.	
+
+
+VPC (Virtual Private Cloud):
+-----------------------------------
+Amazon VPC (Virtual Private Cloud) is a logically isolated virtual network in AWS where we launch and manage resources such as EC2 instances, load balancers, RDS databases, and EKS clusters.
+
+Each VPC has its own:
+
+IP address range(CIDR range)
+Subnets
+Route tables
+Security Groups
+Network ACLs
+Internet Gateways
+NAT Gateways
+Endpoints
+DNS configuration
+
+Think of a VPC as your private network boundary inside AWS.
+
+
+
+Why do we need a VPC?
+
+Suppose we deploy RoboShop.
+
+We have:
+
+Load Balancer
+Web Servers
+Application Servers
+MongoDB
+MySQL
+Redis
+
+We should not expose everything directly to the internet.
+now users through Internet access request flows through ---> interner gateway --> application load balancer --> public subnet (We deploy web component in this subnet)---> private subnet (We deploy application related components like catalogue,cart,user etc here ) ---> database subnet (we deploy db related components here)
+
+
+
+
+
+Interview Answer for 4+ Years Experience
+
+A VPC is a logically isolated virtual network in AWS where we deploy and control cloud resources. In our environments, we designed custom VPCs with non-overlapping CIDR ranges and multiple Availability Zones for high availability. We created public subnets for internet-facing load balancers and NAT Gateways, private application subnets for EC2 or EKS workloads, and isolated database subnets for RDS. Internet Gateways provided direct internet connectivity for public resources, while NAT Gateways provided controlled outbound IPv4 internet access for private workloads. We managed routing using separate public and private route tables, enforced resource-level security through stateful Security Groups and subnet-level controls through NACLs where required, and used VPC endpoints to privately access AWS services and reduce NAT traffic. For connectivity across multiple VPCs and on-premises environments, we used VPC Peering, Transit Gateway, Site-to-Site VPN, or Direct Connect depending on the scale and requirements. We also enabled VPC Flow Logs and used Reachability Analyzer for monitoring and troubleshooting network connectivity. The complete VPC infrastructure was provisioned through reusable Terraform modules with environment-specific CIDRs and separate state management.
+
+CIDR(Classless Inter-Domain Routing) Block
+--------------------
+to specify an IP address range. or 
+Is used to define IP address range for cloud network(vpc) using Classless Inter-Domain Routing notation.When you create a VPC, you must specify an IP address range for the VPC in the form of a CIDR block.
+In AWS, allowed IPv4 range sizes are between a /16 (65,536 addresses) and /28 (16 addresses) --> in between u can give any number like /24 etc
+
+IPV4 is 32 bits 
+
+A number between 0 and 32 that indicates how many bits of the IP address are used for the network portion. The remaining bits are used for the host portion.
+Example:
+
+10.0.0.0/16 --> 65,536 addresses we can allocate and 
+10.0.0.  --> network portion
+0            --> host portion
+
+10.0.0.0/16 provides a range of 10.0.0.0 to 10.255.255.255(65,356 IPs) -->  means 10^16 = 65,356 
+
+10.0.1.0/24  --> in 32 bits we gave 24 and now we have 8  --> 2 ^ 8 = 256 IPv4 addresses
+AWS reserves five IPv4 addresses in each subnet, so 251 are available for resources in a /24.
+
+AWS provides a set of IP address ranges designated for private use, which are specified by RFC 1918 and are not routable over the internet. These CIDR ranges are:
+
+10.0.0.0/8 (10.0.0.0 - 10.255.255.255)
+172.16.0.0/12 (172.16.0.0 - 172.31.255.255)
+192.168.0.0/16 (192.168.0.0 - 192.168.255.255)
+
+
+Subnet:subnetwork
+----------
+A subnet is a smaller IP range created inside a VPC.
+A subnet belongs to exactly one Availability Zone. for diff availability zones we need to create public and private subnets and  A VPC belongs to all Availability Zones in an AWS Region.
+We create subnets to organize and isolate resources, place resources across Availability Zones, and control routing.
+
+VPC
+├── Public Subnet
+│   ├── ALB
+│   ├── NAT Gateway
+│   └── Bastion Host
+│
+├── Private Application Subnet
+│   ├── EC2
+│   └── EKS Nodes
+│
+└── Private Database Subnet
+    └── RDS
+
+
+2. What makes a subnet public or private?
+
+The subnet's route table determines whether the subnet is public or private.The name does not matter.
+
+You can name a subnet: public-subnet or any name 
+
+but if its route table does not have a route to an Internet Gateway, it is not actually a public subnet.
+
+Public subnet --->A subnet is considered as public when its associated route table contains a route to an Internet Gateway. 
+Ex:
+Public Route Table
+Destination       Target
+10.0.0.0/16       local
+0.0.0.0/0         Internet Gateway
+
+Private subnet ---> A private subnet does not have a direct route to an Internet Gateway.
+
+Private Route Table
+Destination       Target
+10.0.0.0/16       local
+
+Here there is no: 0.0.0.0/0 → Internet Gateway  --> Therefore, resources cannot directly communicate with the internet through an IGW.
+
+But private servers sometimes need internet access
+Ex
+Suppose your application EC2 is in a private subnet and needs:
+
+yum install nginx or dnf update ---> The server needs outbound internet connectivity.
+
+The private route table becomes:
+
+Destination       Target
+10.0.0.0/16       local
+0.0.0.0/0         NAT Gateway
+
+The subnet is still private.
+
+Why? Because it does not have a direct route to the Internet Gateway.
+
+The route is:
+
+Private Subnet → NAT Gateway → IGW
+
+Public Subnet										                                           																 Private Subnet
+Direct default route to IGW	                                             														No direct default route to IGW
+Can host directly internet-facing resources	       																	Used for internal resources
+Resource needs public IP/EIP for direct IPv4 internet connectivity									Resources normally use private IPs
+ALB, NAT Gateway, bastion host																								App EC2, EKS nodes, RDS
+0.0.0.0/0 → IGW																															0.0.0.0/0 → NAT GW or no internet route
+ 
+
+Interview answer
+A subnet is a range of IP addresses within a VPC, and each subnet belongs to a single Availability Zone. We use subnets to logically organize resources and control network routing. A public subnet is one whose route table has a direct route to an Internet Gateway, typically 0.0.0.0/0 → IGW. Resources such as internet-facing load balancers and NAT Gateways are placed there. A private subnet does not have a direct route to the Internet Gateway. Application servers and databases are typically placed in private subnets. If private resources require outbound internet access, we configure a route through a NAT Gateway located in a public subnet.
+
+The route table association decides the subnet public or private a public IP determines whether a particular resource can directly use the IGW for IPv4 internet connectivity.
+
+
+Internet Gateway
+-----------------------
+An Internet Gateway enables internet communication between resources in a VPC and the public internet. An Internet Gateway is attached to the VPC.
+Internet ------> Internet Gateway ------> VPC
+
+By default, resources inside VPC do not have direct internet connectivity.
+
+Compare this with a NAT Gateway:
+Internet Gateway → Attached to VPC
+NAT Gateway        → Created inside a subnet
+
+One Internet Gateway attached to the VPC and can have diff Availability Zones to one internet gateway
+
+| Internet Gateway                                                           | NAT Gateway                                                                            |
+| -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
+| Attached to VPC                                                            | Created inside a subnet                                                                |
+| Used for direct internet connectivity                                      | Used primarily for outbound connectivity from private subnets                          |
+| Public subnet route points to IGW                                          | Private subnet route points to NAT GW                                                  |
+| Internet clients can reach properly configured public resources through it | Internet clients cannot initiate arbitrary connections to private instances through it |
+| AWS-managed and horizontally scaled                                        | AWS-managed and scalable                                                               |
+| No hourly IGW charge                                                       | Hourly + data processing charges                                                       |
+| One IGW attached to a VPC at a time                                        | Multiple NAT Gateways can exist in a VPC                                               |
+
+
+Interview answer for your experience
+
+An Internet Gateway is an AWS-managed, horizontally scaled and highly available VPC component that enables communication between resources in a VPC and the public internet. We attach the Internet Gateway to the VPC and configure a default route, such as 0.0.0.0/0 → IGW, in the route tables associated with public subnets. Creating an Internet Gateway alone does not provide internet connectivity; the resource also requires appropriate public IP addressing, routing, Security Group rules, and Network ACL rules. In our architecture, internet-facing load balancers and NAT Gateways were placed in public subnets that had direct routes to the IGW, while application and database workloads remained in private subnets without direct Internet Gateway routes.
+
+NAT Gateway(Network Address Translation.)
+-------------------
+A NAT Gateway allows resources in private subnets to initiate outbound IPv4 connections while preventing unsolicited inbound internet connections through the NAT Gateway.
+or
+NAT Gateway provides or to enable outbound internet connectivity for private resources ex : ec2 (to download packages) without making those resources directly reachable from the internet. NAT Gateway must be created in a public subnet.
+
+Private EC2 (ex Needs Internet to download packages)  ---> NAT Gateway(created in public subnet) ---> Internet Gateway  ---> Internet
+
+
+
+How does NAT Gateway work?
+
+Suppose: Private EC2: 10.0.2.10
+The EC2 wants to access:  example.com
+
+Interview answer for your experience
+A NAT Gateway is used to provide outbound IPv4 internet connectivity to resources in private subnets without exposing those resources directly to inbound internet connections. We deploy public NAT Gateways in public subnets, associate Elastic IP addresses with them, and configure private subnet route tables with a default route 0.0.0.0/0 → NAT Gateway. The public subnet containing the NAT Gateway has a default route to the Internet Gateway. In production environments, we generally deploy a NAT Gateway per Availability Zone and route each private subnet to the NAT Gateway in the same AZ for better availability and to avoid cross-AZ dependencies. We also use VPC endpoints for services such as S3 and DynamoDB where appropriate to reduce NAT Gateway traffic and cost.
+
+
+process : from vpc to private subnet(inside that ec2):
+In our VPC, we have public subnets and private subnets. The Internet Gateway (IGW) is attached to the VPC, and the public subnet's route table has a route 0.0.0.0/0 → IGW, so resources in the public subnet can communicate with the internet when they have the required public IP and security rules. In the private subnet, we have EC2 instances without public IPs, so they cannot directly access the internet through the IGW. If the private EC2 needs to download packages like Nginx using yum install nginx, we create a NAT Gateway in the public subnet and assign an Elastic IP to it. Then, in the private subnet's route table, we add the route 0.0.0.0/0 → NAT Gateway. Now, when the private EC2 tries to download Nginx, the traffic goes from EC2 → Private Subnet Route Table → NAT Gateway in Public Subnet → Internet Gateway → Internet → Nginx Repository. The response comes back through Internet → IGW → NAT Gateway → Private EC2. In this way, the private EC2 can access the internet for downloading packages and updates, but the internet cannot directly initiate connections to the private EC2 through the NAT Gateway.
+
+
+Security Groups
+
+A Security Group is a stateful virtual firewall attached to supported resources/network interfaces, such as EC2 instances, load balancers, and RDS databases.
+
+Elastic IP
+
+An Elastic IP is a static public IPv4 address allocated to your AWS account in a Region. Normal public IPv4 addresses may change after an EC2 stop/start. An EIP remains allocated until released.
+
+
+Network ACLs
+
+Network ACLs operate at the subnet boundary.
+
+ENI — Elastic Network Interface
+VPC DNS
+VPC Endpoints
+VPC Flow Logs
+DHCP Option Sets
+
+
+
+
+VPC Peering
+----------------
+VPC Peering is a private network connection between two VPCs that allows resources in those VPCs to communicate using private IP addresses.
+CIDRs must not overlap Should be diff cidr ip address for both vpc's and by default they cannot communicate automatically
+
+Requestor VPC and Acceptor VPC 
+when Requestor vpc initialises the peering connection to Acceptor vpc.Then the owner of the accepter VPC accepts the request.
+
+Creating and accepting the peering connection alone does not make the VPC resources communicate. You must configure routes and security rules.
+
+Example:
+Application  VPC (where we hava catalogue,cart application running)
+10.0.0.0/16        ------------->  Requestor VPC
+
+Database  VPC   --------------> Acceptor VPC 
+10.1.0.0/16
+The application needs to connect to the database.
+instead of sending traffic through  
+Application EC2 ---> NAT Gateway / IGW --->. Public Internet ---> Database
+we establish VPC Peering:
+Now resources can communicate using private IP addresses by adding Database  VPC cidr ip in all/requires subnets route table in routes section in Application VPC  and same vide versa take Application VPC cidr ip and add it in Database  VPC's subnet's route table in routes section  
+
+Another Ex:
+--------------
+I have VPC-A,VPC-B,VPC-C now i have established peering connection bw
+VPC-A  ----peering--- VPC-B
+VPC-B  ---peering---- VPC-C
+
+so here VPC- A cannot communicate VPC-C , to connect u need to establish connection
+VPC Peering does not support transitive routing.
+you can end up with many peering connections and route-table entries.
+
+At larger scale, companies commonly use AWS Transit Gateway instead.
+
+We can establish connection 
+Same Region and Cross-Region Peering
+Same Region Peering
+
+us-east-1 VPC
+       ↕
+us-east-1 VPC
+
+Inter-Region Peering
+
+us-east-1 VPC
+       ↕
+ap-south-1 VPC
+
+Same account and diff-account peering. VPC Peering can connect:
+
+Same AWS Account
+
+Account-A VPC-1 ↔ Account-A VPC-2
+
+Different AWS Accounts
+
+Account-A VPC ↔ Account-B VPC
+
+Interview answer for your experience
+
+VPC Peering is a private network connection between two VPCs that allows resources to communicate using private IP addresses without requiring an Internet Gateway, NAT Gateway, VPN, or public IP addresses. In our environment, we used VPC Peering for private connectivity between VPCs such as application and shared-services networks. After creating and accepting the peering connection, we configured routes in the relevant route tables on both sides and allowed only required traffic through Security Groups and NACLs. We ensured that the VPC CIDR ranges did not overlap because overlapping CIDRs cannot be peered. One important limitation is that VPC Peering is non-transitive and does not support edge-to-edge routing through a peer's NAT Gateway, Internet Gateway, or VPN connection. For environments with a small number of VPCs, peering is simple and cost-effective, while for larger hub-and-spoke networks with many VPCs and on-premises connectivity, we generally use Transit Gateway for centralized connectivity and routing.
+
+
+Transit Gateway
+
+
+
+create
+vpc,subnets(public and private),route table(public and private route tables),internet gateway(create and attach to our vpc)
+associate now 
+
+regions and availability zones 
+
+
+Example:
+-----------
+1.create vpc 
+2.create internet_gateway
+3.i will fetch availability_zones from aws using data source and i will get first 2 means 1a and 1b(high availability zone) and create subnets 2 public, 2 private subnets and 2 database subnets
+4.
+
+
+
+
+
+
+
+
+	
+
+
+
+
+
+
+  
+I have created a roboshop-terraform-folder
+created 01-vpc folder 
+created 02-sg folder..to create sg i need vpc id ..so these are in diff folders we can't get directly if we ryt both sg and vpc resource in same folder we can get directly
+once folder  is crossed that is diff proj we cant access for that we use ssm parameter store we an store that vpc id(basically store main variables) in the ssm parameter store and get/access to sg folder ..it is central configuration store and another point we can get the default vpc id but vpc we are creating through code that we cant access  we need to store vpc_id explicitly in central location
+and we need to write/display that through outputs then only below code will work if we dont put vpc is in outputs we cant get 
+
+create a terraform resource code and vpc id should be displayed through outputs then only we can get if we dont put in outputs even resource also coud not be stored value 
+even through data source also we cannot get vpc_id which is created by us 
+
+resource "aws_ssm_parameter" "vpc_id" {
+  name  = "/${var.Project_Name}/${var.Environment}/vpc_id"
+  type  = "String"
+  value = module.vpc.vpc_id
+}
+
+output "vpc_id" {                                --> write it in main code where we wrote resources folder not test module outputs file 
+  value = module.vpc-test.vpc_id
+}
+
+and the to access that in sg
+
+data "aws_ssm_parameter" "vpc_id" {
+  name = "/${var.Project_Name}/${var.Environment}/vpc_id"
+}
+in maintf 
+vpc_id = data.aws_ssm_parameter.vpc_id.value 
+
+ex: scenario
+
+resource "aws_security_group" "roboshop-sg" {
+  name        = "mongodb sg" 
+  description = var.sg_description
+  tags = {
+  name = "mongodb"
+  }
+  }
+  with above resource block we created resource assume now i will change it to
+  resource "aws_security_group" "roboshop-sg" {
+  name        = local.resource_name
+  description = var.sg_description
+   tags = {
+  name = "mongodb"
+  }
+  }
+ 
+  name        = local.resource_name  ---> if i want to change ithis name terraform will delete this existing resource and create new resource but if i want to update tags name it will just update the existing
+  
+  
+Sg:
+mongodb sg should only accept from catalogue and user 
+catalogue ip 
+port: 27017
+catalogue ip address is not same every time it will changes for static ip we can use elastic ip but it is costly so that sg giving one option
+im creating mongodb sg and catalogue sg 
+
+module "mongodb" {
+}
+
+module "catalogue" {
+
+}
+
+it will create two sg's so now open mongodb db sg and edit inbound rules and add rule ---> select custom tcp --> port number --> custom --> select catalogue sg 
+so u can select sg in another sg ---> so ee sg ki aa instance connect ayi vundo aa instance nundi anni requests accept chesthundi irrespectice of its ip address
+
+
+
+so now in 04 module we created ec2 which has attached to mongodb sg and rules so it will not give public ip that is the disadvantage
+now we have two options
+1)create one ec2 in public subnet then login to that ec2 instance from there connect to mongodb 
+2)vpn install and u can connect to private servers  (in companies we use we instyall vpn and connect to servers)
+
+
+
+
+@2nd way  this is 
+
+Session-33 | DevOps with AWS - 76S
+In terraform vpn concept
+
+1) https://github.com/angristan/openvpn-install
+2) go to usage 
+3)create an ec2 called open vpn -- devops-practice ami --> t2.micro --> proceed without key pair --> sg create it in default vpc and subnet allow all --> create 
+4)copy public ip and open it in mobaxterm and login to ec2 
+5) run all the usage commands in that ec2 
+change to root user 
+curl -O https://raw.githubusercontent.com/angristan/openvpn-install/master/openvpn-install.sh
+chmod +x openvpn-install.sh
+./openvpn-install.sh interactive
+
+give public ip of openvpn-install
+ipv6 support : n
+default port : 1
+protocol : TCP select 2
+dns resolver : select 11 
+enable compression : n
+encryption setting : n
+it will isntall open vpn 
+
+client name: any name ex : arun kumar
+password less client 
+
+give :   ls -l   --> u can see arun.ovpn file 
+
+
+now in browser search for open vpn  connect --> download it  from here   https://openvpn.net/connect-docs/connect-for-windows.html
+and install
+search in lapto for openvpn u will find an app 
+
+now in openvpn ec2 open 
+cat arun.ovpn file --> copy that file and paste it in notepad and saveit as arun.ovpn (so this is my authentication file )
+now open that app --> click on + symbol --> upload file and select that ovpn file --> connect
+
+in google what is my ip search for now u should get our openvpn public ip as my laptop ip	
+
+now check all peering and 
+another imp thing :
+
+in roboshop-dev-mongodb sg we need to give openvpn instance (attached ssg group )
+manually add 
+click on roboshop-dev-mongodb --> edit inbound rules --> ssh --> 22 --> select sg which is associated with openvpn ec2 instance(i.e., allow all sg)
+
+now open openvpn app and upload a file and click on connectt 
+if u get error like retry perform below steps in openvpn ec2 instance 
+
+#sudo systemctl enable --now openvpn-server@server
+sudo systemctl status openvpn-server@server --no-pager -l
+sudo ss -lntp | grep 1194
+Test-NetConnection <EC2-PUBLIC-IP> -Port 1194 -- in power shell
+
+sudo journalctl -u openvpn-server@server -n 100 --no-pager
+sudo journalctl -u openvpn-server@server -f
+sudo grep -Rni "md5" /etc/openvpn
+sudo grep -Ev '^[[:space:]]*(#|;|$)' /etc/openvpn/server/server.conf
+sudo systemctl show openvpn-server@server -p ExecStart --no-pager
+sudo systemctl daemon-reload
+sudo systemctl restart openvpn-server@server
+
+openssl list -providers
+openssl list -digest-algorithms | grep -i md5
+
+main commands
+
+
+fips-mode-setup --check
+cat /proc/sys/crypto/fips_enabled
+update-crypto-policies --show
+
+sudo systemctl restart openvpn-server@server
+
+
+
+So now copy created mongodb private ip check whether ur able to connect or not 
+
+
+# 1. Disable FIPS
+sudo fips-mode-setup --disable
+
+# Reboot is required after disabling FIPS
+sudo reboot
+
+
+
+sudo update-crypto-policies --set DEFAULT
+sudo reboot
+
+After reconnecting, verify:
+
+sudo fips-mode-setup --check
+cat /proc/sys/crypto/fips_enabled
+update-crypto-policies --show
+
+
+sudo fips-mode-setup --disable
+sudo reboot
+update-crypto-policies --show
+
+
+
+So now copy created mongodb private ip check whether ur able to connect or not 
+if u get error check this --> click on roboshop-dev-mongodb sg--> edit inbound rules --> ssh --> 22 -->custom --> select sg which is associated with openvpn ec2 instance(i.e., allow all sg)
+
+
+In ec2 instance we have an option called user data ---> means after creating ec2 it will run innside ec2 what ever we mention
+
+
+
+
+if we use like this after executing tha script logs will be stored in cloud-init or cloud-init.log or cloud-init-output.log in /var/log/ folder
+  user_data = file("ec2-provision-ansible-playbooks.sh")
+if user_data filed to execute commands mentioned or after modify any resource or data in infra or in sh file we cant run that file again because it will run at the time of ec2 creation so that is disadvantage we address that with provisioner concept 
+
+
+creating load balancer 2 nginx servers and security groups
+if we have multiple worker notes of same category ex catalogue 2 instances we have so we cannot configure 2 ip's in same dns i.e., catalogue.devopswitharun.online so definitely load balancer infront
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Load balancer:
+------------------
+
+A Load Balancer (LB) is a service that sits between the client and your servers. It receives incoming requests and distributes them across multiple backend servers eqully.
+
+
+ex: users (from internet ) accessing  ----> server        --> here request directly goes to server
+
+but in LB 
+
+users (from internet ) accessing  ---->    load balancer ---> server1 or 2 or 3
+request reaches to the load balancer and then load balancer decides the request goes to which server it decides based on health and based on any request serving by instances etcc...
+
+The client talks only to the load balancer. The load balancer decides which server should handle each request.
+
+Why do we need a Load Balancer?
+
+Imagine you have only one server ------------------->  10000 users ---- accessing --->Web Server
+Problems:
+Server becomes overloaded.
+If the server crashes, the application goes down.
+Scaling requires manually replacing the server.
+
+With a load balancer:
+
+10000 users
+      |
+      |
+ Load Balancer
+  /    |     \
+Web1 Web2 Web3
+
+Benefits: Better performance, High availability,Fault tolerance,Easy scaling
+
+imp : if any server failes it will not redirect any request to that ec2 ...it will manage all requests with remaining servers
+
+flow :
+Client ------> DNS -----> Load Balancer -------> Target Group ----> EC2 Instances
+
+steps :
+ user entered www.amazon.com  --> request goes to dns ALB DNS Name -->it resolves it to ip address (we will add load balancer dns name in route53 records)--->  Load Balancer (Receives every request.and it decides where it should be routed which server) --> Target Group (Contains backend server (ec2's ),frontend servers, databased servers)--> rules (where we configure path where it has to redirect )
+
+
+The LB never sends traffic directly to EC2s.It always forwards traffic to the Target Group. iN target groups we will add instances based on category like frontend,backend or database etc
+
+Types of Load Balancers (AWS)
+-----------------------------------------
+1. Application Load Balancer (ALB)
+Layer 7
+
+Works with: HTTP,HTTPS
+Can route based on: URL,Path,Host,Headers
+
+2. Network Load Balancer (NLB)
+
+Layer 4
+
+Works on: TCP,UDP,TLS
+Used when: Very high performance,Millions of requests,Gaming,Streaming
+
+3. Gateway Load Balancer ---> Used for: Firewalls,IDS,IPS,Network appliances
+
+4. Classic Load Balancer -----> Old generation. Mostly replaced by ALB and NLB.
+
+
+Layer 4 vs Layer 7 diff
+
+Layer 4
+
+Looks only at
+
+IP
+
+Port
+
+Cannot inspect HTTP URLs.
+
+Layer 7
+
+Looks inside HTTP.
+
+Example: GET /cart , GET /user , GET /payment ---> Can route based on paths.
+
+Why ALB for microservices?
+
+Because it supports path-based routing. i.e., Layer 7
+
+Health Checks : The LB continuously checks: Is server alive? we can configure when to check health while creating Load balancer
+
+Target Group : contains Ec2 instances for that particular group
+
+Listener : A Listener listens on a port.
+
+The load balancer uses a cookie to keep sending the same client to the same backend for a configurable duration.
+
+
+
+Load Balancing Algorithms:
+Round Robin – Requests are distributed one by one across servers.
+Least Outstanding Requests – Sends new requests to the server handling the fewest active requests.(serving less requests based on the load it will send more request to server which is dealing with less servers)
+Weighted Routing – Servers with higher weights receive more traffic.
+IP Hash (common in some load balancers like NGINX/HAProxy) – Same client IP tends to reach the same backend.
+
+AWS ALB primarily uses algorithms such as round robin and least outstanding requests depending on the target type and protocol.
+
+Round Robin Algorithm :
+lets say i have 3 servers and 5 requests so --> 1st request to server 1 , 2nd request to server 2, 3rd request to server 3, 4th request to server 1, 5th request to server 2 if one server fails it will manage with 2 servers only
+
+This alogorham we can select --> go to target group --> in attributes -- edit --. u can select Round Robin or Least Outstanding Requests
+stickiness  ---> --> go to target group --> in attributes -- edit    --> we can make all requests roted to one server it will 1 day or in hrs only 
+The load balancer uses a cookie to keep sending the same client to the same backend for a configurable duration.
+
+How Application Load Balancers work
+Clients make requests to your application.
+The listeners in your load balancer receive requests matching the protocol and port that you configure.
+The receiving listener evaluates the incoming request against the rules you specify, and if applicable, routes the request to the appropriate target group. You can use an HTTPS listener to offload the work of TLS encryption and decryption to your load balancer.
+Healthy targets in one or more target groups receive traffic based on the load balancing algorithm, and the routing rules you specify in the listener.
+
+
+Common 4+ Years Interview Questions
+
+Q: Why use an ALB instead of exposing EC2 instances directly?
+A: It provides a single entry point, distributes traffic, performs health checks, supports SSL termination, and integrates with Auto Scaling.
+
+Q: What is the difference between a Target Group and a Load Balancer?
+A: The Load Balancer accepts client traffic. A Target Group is the collection of backend targets (EC2, IPs, Lambda) that receive forwarded requests.
+
+Q: How do health checks work?
+A: The load balancer periodically calls a configured endpoint (for example, /health). If an instance fails consecutive checks, it is marked unhealthy and stops receiving traffic.
+
+Q: Where do you attach the SSL certificate?
+A: On the ALB listener (typically port 443) using AWS Certificate Manager.
+
+Q: How does Auto Scaling work with ALB?
+A: New instances automatically register with the target group and start serving traffic only after passing health checks. Instances being terminated are deregistered gracefully.
+
+
+
+create 2 ec2 instances and paste the below data inn user_data box while creation
+yum install nginx -y
+mkdir -p /usr/share/nginx/html/ui
+echo "<h1> Hi this is from ui <h1>" >  /usr/share/nginx/html/ui/index.html
+systemctl restart nginx
+
+ and 2 sg groups
+ 1 for nginx load balancer            ---> should accept traffic from internet
+ inbound rule --> http -- 80 -- 0.0.0.0/0 --> create sg
+  1 for nginx ec2 instances        ---> should accept traffic from load balancer
+ inbound rule --> http -- 80 -- select nginx load balancer sg id  --> create sg
+ 
+ create load balancer and add ec2 instances in target groups based on server type(frontend or backend or database)and rules in it (we mention routhing path ex: /ui/*, /backend/*, )
+ health checks -->
+1) is instances up and running
+2) is instance busy serving other requests
+
+etc....
+
+
+
+
+SSM [arameter store ---> all resources refer this for the configuration and secrets
+so in my sql we have a passwords and all so while configuring the server it needs passwords so ansible has to fetch that because we are using ansible pull so it needs a roles or users for that ansible needs a boto3 and boto core python modules to connect and pull the data without this ansible will not work 
+ansible ---conncet ---> aws ssm parameter store
+if u use this u can implement vault
+
+
+
+In Interview 
+
+We used Ansible vault for storing password and certificates etc with this we faced some problems while maintaining 
+so we migrated to ssm parameter store because our all infra existing over there so we implemented  like ansible can get data//passwords etc from ssm parameter store 
+
+we used in mysql role in ansible folder 
+"{{ lookup('aws_ssm', '/roboshop/' ~ env ~ '/mysql_root_password', region='us-east-1', decrypt=True) }}"
+and we stored a variable like /roboshop/dev/mysql_root_password with the value RoboShop@1  we created manually that in SSM Parameter store
+
+
+
+
+Roboshop-Project Implementation
+---------------------------------------------
+roboshop-ansible-with-roles-for-terraform-infra-usage  -- getting ansible from here to configure ec2's like frontend backend and databases
+terraform-roboshop-infra-dev       --- this is for env specific development speciallly dev env deployment                      
+
+
+terraform-roboshop-infra-dev  ---> repo 
+01-vpc folder          ---> setup for vpc      
+02-sg                        ---> created sg for all ec2 and rulesconnections for all this sg
+03-vpn                     ---> vpn setup                            ---> in companies we use cisco mostly  in learning openvpn we are using
+
+Databases tier complete:  we dont have autoscaling for databases and databases configured via ansible and we used ansible-pull mechanism and we will not have public ip for all private and databases subnets ec2 so if vpn confugured we can use private ip via superputty
+--------------------------------
+04-databases         ---> setup of all databases ec2  ---> mongodb,redis,mysql and rabbitmq
+
+
+app tier and web tier:
+----------------------------
+1)if traffic increases auto scaling will create/increase instance
+	approach 
+				1.when new instance is created , use user_data or provision via ansible to configure the server ---> takes 5 mins 
+				2.when u are deploying , and website is running                      --> less downtime compare to 1 approach
+								a.first we create 1 new instance 
+								b.provision the instance using ansible 
+								c.stop the instance 
+								4.take ami 
+								5.update auto scaling using new ami 
+										
+											when u do above approach slowly old instances replaced by new instances 
+											in future if traffic increases , autoscaling uses ami to add the instances 
+											
+for app tier and web tier we use 2nd approach 
+
+
+
+
+
+Default ports of db's
+--------------------------
+mongodb      - 27017
+redis              - 6379
+mysql            - 3306
+rabbitmq      - 5672
+
+
+
+client (gives requirements to ) ---> business analyst (he will have technical and other knowledge) --> team manager (get the requirements) --> diff team leads like (ui,backend etc) --> team members (multiple members)
+
+HR -- responsibility -- hr should continuously check if the resources are good
+if work overloaded -- he has take anothrer resource
+if work less - he has to remove some one from the team based on skill set he has to do 
+
+here in our project app load balancer(team manager) do if requests are overloaded to 1 resource it will send to traffic to another resource
+web load balancer is business analyst 
+
+
+05-app-alb
+in load balancer there will be 
+host path
+devopswitharun.online/roboshop   --- redirects to roboshop proj
+devopswitharun.online/amazon   --- redirects to amazon proj
+
+redirects to diff projects
+
+context path 
+
+roboshop.devopswitharun.online          		 -- redirects to roboshop proj
+amazon.devopswitharun.online         			 -- redirects to amazon proj
+
+
+1.create 1 instance
+2.provision with ansible/shell
+ 3.stop the instance
+ 4.take AMI
+ 5.delete the instance
+ 6.we have created AMI now, create launch template with AMI
+     ---> if  u give launch template to AMI it will do autoscaling and can create the instances
+	 
+local or git
+terraform-roboshop-infra-dev/06-catalogue folder main.tf for the above process
+
+launch template:
+---------------------
+"An AWS Launch Template is a reusable blueprint that stores the complete configuration required to launch an EC2 instance. 
+Instead of specifying the AMI, instance type, security groups, IAM role, storage, user data, and other settings every time we create an instance, we define them once in a Launch Template. 
+AWS services like Auto Scaling Groups use this template to launch identical EC2 instances automatically whenever required."
+
+or
+"A Launch Template is a reusable EC2 configuration blueprint that stores all the parameters required to launch an EC2 instance. It ensures every instance is created with the same configuration and is commonly used by Auto Scaling Groups to automatically launch consistent, production-ready servers."
+
+What information does a Launch Template store?
+It stores almost everything needed to launch an EC2 instance.
+AMI ID,Instance Type,Security Groups,IAM Instance Profile,Key Pair,User Data Script,Root Volume Size,EBS Configuration,Monitoring,Tags,Metadata Options,Network Interfaces,Shutdown Behavior
+
+What does it do?
+
+It does not create EC2 instances. Instead, it tells AWS: "Whenever you need a new EC2, create it exactly like this. AWS then follows the Launch Template and creates identical EC2 instances.
+
+Think of it as the complete EC2 configuration.
+
+
+Relationship with Auto Scaling :
+Launch Template ----> Stores EC2 Configuration ----> Auto Scaling Group fetches it ----> Launches EC2 Instances
+
+The Launch Template defines how to create an EC2. The Auto Scaling Group decides when to create or terminate EC2 instances(ex : we are doing based on CPU utilization).
+
+
+
+once we deployed catalogue but in a week we want to new code push so we have  a versions in launch templates 
+
+autoscaling -- creates instances and it has a feature that it can place ec2 instances in particular target group also 
+
+autoscaling policy imp 
+
+What is an Auto Scaling Policy?
+
+An Auto Scaling Policy is a set of rules that tells the Auto Scaling Group when to add or remove EC2 instances.
+
+Think of it like a manager.
+
+Launch Template → tells AWS how to create an EC2.
+Auto Scaling Group (ASG) → manages EC2 instances.
+Scaling Policy → tells the ASG when to scale.
+
+Example:
+Suppose your Catalogue service has:
+resource "aws_autoscaling_policy" "cpu_target_tracking" {
+}
+Desired = 2
+Min = 2
+Max = 6
+
+		ALB
+           |
+ -------------------
+ |                 |
+EC2-1           EC2-2
+
+Suddenly Black Friday sale starts. Users increase. CPU reaches 80%. CloudWatch alarm is triggered.
+Scaling Policy says: If CPU > 70% ---> Increase by 1 instance
+
+ASG launches:
+
+          ALB
+            |
+ --------------------------
+ |          |            |
+EC2-1     EC2-2      EC2-3
+
+Traffic is distributed. Later traffic reduces.
+
+CPU becomes -- 15%
+
+Policy says -- CPU < 20% -- Terminate 1 EC2 
+
+Now
+
+          ALB
+            |
+ -------------------
+ |                 |
+EC2-1          EC2-2
+
+This is called
+
+Scale Out --- Adding EC2s
+
+Scale In ---Removing EC2s
+
+Types of Scaling Policies
+--------------------------------
+1. Target Tracking Scaling (Most Common)
+Example
+
+Maintain CPU around 50%
+
+Suppose
+
+Current
+
+CPU = 80%
+
+AWS automatically launches EC2s until CPU comes back near 50%.
+
+target_tracking_configuration {
+  predefined_metric_specification {
+    predefined_metric_type = "ASGAverageCPUUtilization"
+  }
+
+  target_value = 50
+}
+
+AWS automatically maintains a target metric such as CPU utilization without manually defining separate scale-out and scale-in rules.
+
+2. Step Scaling
+
+Here we define multiple thresholds.
+
+Example
+
+CPU > 60%
+Add 1 EC2
+
+CPU > 80%
+Add 2 EC2
+
+CPU > 90%
+Add 3 EC2
+
+Scale depends on severity.
+
+3. Simple Scaling
+
+Old approach.
+
+Example
+
+CPU > 70%
+
+↓
+
+Launch one EC2
+
+↓
+
+Wait 5 minutes
+
+↓
+
+Check again
+
+Very basic.
+
+Mostly replaced by Target Tracking.
+
+4. Scheduled Scaling
+
+Useful when traffic is predictable.
+
+Example
+
+Every day
+
+Morning 9 AM
+
+Increase servers
+
+Desired = 8
+
+Night
+
+11 PM
+
+Reduce
+
+Desired = 2
+
+No CloudWatch needed.
+
+
+
+Now let's discuss Instance Refresh
+---------------------------------------------
+
+Problem
+-----------
+Suppose you have ------> Launch Template v1 & AMI = RedHat9 & Application Version = v1
+
+Running ---> EC2-1,EC2-2,EC2-3  ----------------> Everything works.
+
+Tomorrow
+Developer releases --->   Version 2. ----> You update Launch Template. ---->  Launch Template v2
+
+Question:
+Will existing EC2 update automatically?   Answer ---> No
+
+Only new EC2s use the new Launch Template. 
+Existing EC2s still run ---> Version 1
+
+How do we update them? -----> Instance Refresh.
+
+Instance Refresh:
+---------------------
+Instance Refresh is an Auto Scaling feature that gradually replaces existing/old EC2 instances with new EC2 instances created from the latest Launch Template.
+
+Suppose ----> Launch Template v2
+contains --------> New AMI and bootstrap.sh and Application Version ------->  Instance Refresh creates new EC2s using v2.
+
+To update them we have diff startegies:
+
+RollingUpdate :  Rolling Update is the default strategy used by Instance Refresh. Instead of replacing everything together Aws Replaces one/few old instance with new instance 
+-------------------
+lets say assume we have currently running 4 instances if deployment 4 new instances has to be deployed and 4 old instances should be deleted
+
+so now RollingUpdate
+
+1 new instance up ayithee 1 old instance anedi down avuthadi and it check health if health is ok then goes to 2nd instance 
+2nd new instance up ayithee 2 old instance anedi down avuthadi
+
+  instance_refresh {
+    strategy = "Rolling"
+    preferences {
+      min_healthy_percentage = 50
+    }
+    triggers = ["launch_template"]
+    #launch template epudaithe update avuthundo apudu autoscaling anedi instances refresh avuthai like old instances down ayi new instances u avuthai 
+  }
+  
+  
+How does AWS know how many to replace?    --------> Aws Replaces one/few old instance with new instance 
+
+Using : Minimum Healthy Percentage.
+
+Example
+----------
+Desired = 4
+Minimum Healthy = 75%
+
+AWS keeps 75% healthy. Meaning
+
+4 × 75% = 3 
+At least 3 servers must always remain/run. Only 1 can be replaced.
+
+If Minimum Healthy = 50% ------> Then 2 ec2 instances --> can be replaced.
+  
+What happens internally?
+
+Suppose
+Desired = 4 --->AWS ---> Launches ---> New EC2 ---> Waits ---> Health Check ---> Registers them  in ---> Target Group ---> Drains --> Old Connections ---> Terminates ---> Old EC2 ---> Repeat
+
+Can we rollback? -------> Yes. If refresh fails AWS can rollback to previous Launch Template.
+
+Are there other deployment strategies besides Rolling Update?
+
+1. Blue-Green Deployment
+2. Canary Deployment
+3. All-at-Once (Recreate)
+4. Rolling Update      ---> in terraform roboshop we used this 
+
+Which strategy is used by Auto Scaling Instance Refresh?
+Rolling Update. Instance Refresh is designed to replace instances gradually while maintaining service availability.
+
+
+
+
+
+deregistration_delay = 60 
+ means lets say 
+traffic is reduced so now intsnces has to terminated except desired capacity but meantime that instance is serving the requests we cannot terminate instantly so it should serve remaining requests then it has to be terminated for that we give deregistion_delay 
+
+| Concept                | Purpose                                                                      |
+| ---------------------- | ---------------------------------------------------------------------------- |
+| **Launch Template**    | Defines how to launch an EC2 (AMI, instance type, IAM role, user data, etc.) |
+| **Auto Scaling Group** | Manages the number and health of EC2 instances                               |
+| **Scaling Policy**     | Decides when to scale in or scale out based on metrics or schedules          |
+| **Target Tracking**    | Keeps a metric (like CPU) around a target value automatically                |
+| **Step Scaling**       | Scales by different amounts based on metric thresholds                       |
+| **Scheduled Scaling**  | Scales at predefined times                                                   |
+| **Instance Refresh**   | Replaces existing EC2s with ones based on the latest Launch Template         |
+| **Rolling Update**     | Replaces instances gradually to avoid downtime                               |
+| **Blue-Green**         | Runs two environments and switches traffic between them                      |
+| **Canary**             | Sends a small percentage of traffic to the new version before full rollout   |
+
+
+
+
+WEb-ALB:
+------------
+
+create web-alb, and SG and listner at 443 at https
+
+web-alb  --> web-dev.devopswitharun.online 
+
+if we are giving 443 we must add certificate - in AWS we have ACM -- amazon certificate manager 
+so before creating load balancer we need to create certificate 
+
+ACM (AWS Certificate Manager)
+------------------------------------------
+AWS Certificate Manager (ACM) is a managed AWS service that provisions, stores, renews, and manages SSL/TLS certificates. These certificates are used to enable HTTPS communication between clients and AWS services such as Application Load Balancers, CloudFront, and API Gateway.
+
+
+Example With out Certificate
+Suppose your website is:   http://www.roboshop.com
+
+A user enters:
+Username : arun
+Password : Password123
+
+Without HTTPS:
+
+Browser
+   |
+   |  Username
+   |  Password
+   |
+Internet
+   |
+   |
+Web Server
+
+Everything travels as plain text.Anyone in between can read it.
+
+Example:
+Attacker
+↓
+Username = arun
+Password = Password123
+
+This is not secure. And when u search in browser also it will show not secure ike that 
+
+Solution : Encrypt the communication. Use HTTPS instead of HTTP
+
+
+What is HTTPS : HTTPS means ------>  HTTP + SSL/TLS Encryption
+flow:
+Username --> Encrypted --> Internet --> Encrypted --> Web Server ---> Now nobody can understand the data.
+
+
+But how do we encrypt?
+We need SSL/TLS Certificate
+
+Example : www.roboshop.com ------> gets a certificate for this domain. That certificate proves Yes I am the real roboshop.com and is used during the TLS handshake to establish an encrypted connection.
+
+ACM --creates---> Certificate --attachd to --------> Application Load Balancer
+
+Port 443 is the standard port reserved for HTTPS. The port itself does not perform encryption. The application (using TLS) does.
+
+
+
+Why is the certificate attached to 443?
+
+When browser connects ----> https://roboshop.com ----> Browser immediately says ---> Show me your certificate ---> ALB replies --> Here is my certificate ---> Browser verifies --> Trusted CA?,Correct domain?,Not expired? -----> If all checks pass, TLS handshake completes. Only then Encrypted communication starts. Without certificate Browser cannot establish HTTPS.
+
+flow :
+Browser ---> HTTPS --->443 ---> ALB ---> Certificate from ACM ---> TLS Handshake ---> Encrypted Connection Established ---> Forward request ---> Catalogue ---> User ---> Redis ---> MongoDB
+
+The certificate is attached to the ALB
+
+Why? Because ALB terminates SSL. This is called SSL Termination
+
+In Your Roboshop Project
+Users ---> Route53 ---> web.arundevops.online ---> ALB ---> HTTPS ---> 443 Listener ---> Certificate (ACM) ---> Target Group ---> Web EC2
+
+Certificate Validation:
+---------------------------
+ When creating ACM certificat ---> AWS asks ---> How do I know you own this domain ---> Usually DNS Validation.
+
+so we create CNAME record in Route53
+Example
+ACM ---> Create CNAME ---> Route53 ---> Verified ---> Certificate Issued
+
+Production Architecture
+Internet ---> Route53 ---> Application Load Balancer ---> HTTPS Listener ---> 443 ---> ACM Certificate ---> SSL Termination ---> Target Group ---> Web EC2 ---> Nginx ---> Application
+
+
+What happens when a user opens? 
+
+https://web.arundevops.online
+DNS resolves the domain to the ALB via Route53.
+Browser connects to the ALB on port 443.
+ALB presents the ACM certificate.
+Browser validates the certificate.
+TLS handshake completes and an encrypted session is established.
+ALB decrypts the request (SSL termination).
+ALB forwards the request to the target group (often over HTTP inside the VPC, or HTTPS if configured).
+The application processes the request and the response is returned through the same secure connection.
+
+
+
+
+
+
+in 09-web-alb folder data.tf 
+data "aws_ssm_parameter" "private_subnet_id" {
+  name = "/${var.Project_Name}/${var.Environment}/private_subnet_id"
+}
+
+we are keepting web component in private subnet instead of public..we can keepp it in public also. And even if u keep web in private subnet it can work because our lweb load balancer is in public subnet it can communicate publiic to private subnet 
+
+
+in ansible folder web component we need to remove :8080 in templates folder file because those components are accepting from app alb so not required port number 
+and we need to update variabes-dev.tf to  because we have given domain name like this in app alb folder only for below components databases are same 
+CATALOGUE_HOST: catalogue.app-alb-dev.devopswitharun.online
+USER_HOST: user.app-alb-dev.devopswitharun.online
+CART_HOST: cart.app-alb-dev.devopswitharun.online
+SHIPPING_HOST: shiping.app-alb-dev.devopswitharun.online
+PAYMENT_HOST: payment.app-alb-dev.devopswitharun.online
+DISPATCH_HOST: dispatch.app-alb-dev.devopswitharun.online
+
+
+Request flow:
+---------------
+
+app_alb_web
+source: web_sg_id
+ingress rule: 80
+
+web-dev
+
+
+when u do below url 
+ https://web-dev.daws76s.online
+
+1.web ALB (roboshop-dev-web-alb-1134442274.us-east-1.elb.amazonaws.com.) this is dns name resolved 
+2.443 listener will invoke
+3.traffic reaches web and give us the website
+4. rules will evaluate and traffic will be redirected to web tg
+
+from that again
+https://web-dev.daws76s.online/api/catalogue/categories
+
+1.web ALB (roboshop-dev-web-alb-1134442274.us-east-1.elb.amazonaws.com.) this is dns name resolved 
+2.443 listener will invoke
+3.traffic reaches web and give us the website
+4. rules will evaluate and traffic will be redirected to web tg
+5. api/catalogue/* --> catalogue.app-dev.daws76s.online (in ansible templates roboshop.j2 file )
+
+http://catalogue.app-dev.daws76s.online
+
+1. APP ALB
+2.80 listener will invoke
+3.rules will evaluate and traffic will be redirected to catalogue tg
+4. it will connect to and fetch products
+
+
+
+
+Cloud Front :
+---------------
+
+Amazon CloudFront is AWS's Content Delivery Network (CDN). It caches and delivers  web content globally from edge locations close to users, reducing latency, improving application performance, decreasing load on origin servers, and enhancing security.
+
+Why was CloudFront introduced?
+Example
+Let's imagine your Roboshop application is hosted in:     AWS Region --- US-East-1 (Virginia)
+
+Suppose you're sitting in Hyderabad.
+When you open:  https://www.roboshop.com
+
+The request travels:
+Hyderabad ---> Indian ISP ---> International Internet ---> USA ---> Virginia ---> ALB ---> Web Server
+
+Distance: Nearly 13,000 KM This takes time.
+
+Example: Images, CSS, JavaScript, Videos, Fonts, ---> Every request travels to the USA. Result: Slow Website
+
+Solution : Instead of sending every request to Virginia, AWS says "I have servers across the world." These servers are called Edge Locations 
+Ex: Hyd,mumbai delhi 
+Instead of users reaching Virginia, they reach the nearest AWS Edge Location. an the request will be delivered from the edge location
+
+What is an Edge Location -----> An Edge Location is a small AWS data center whose job is to cache content.
+
+When users request the data at first time the request goes to Virginia(origin server). The response is stored in Mumbai ,hyd ro dahi edge location server if some user request the same data the request get the content from that edge local and deliver request not goes to virginia(origin server) i.e., cached copy of data 
+
+lets say if 10000 user accessing the videos or images the load on server will be high now with cloud front based on their location content will be delivered from edge location server 
+
+If requested data not present in cached copy(in edge location servers) the server sends the request to the origin server --> alb --> ec2 and the request returned to edge location from origin server so data will be cached and the response to user at first time 
+
+What is Origin?
+
+Origin means "The original source of content."
+
+Examples : S3 Bucket, Application Load Balancer, EC2 ,API Gateway ,Nginx Server
+
+In your project ---> Origin is Application Load Balancer
+
+Request Flow
+
+Suppose
+
+https://shop.roboshop.com/logo.png
+
+User requests ---> CloudFront ---> Checks cache --> If found  Returns immediately ---> If not ---> Origin (ALB) ---> Web EC2 ---> Image ---> Stored in Cache ---> Returned
+
+What can CloudFront cache?
+static content --> images,css,javascript files, videos , Downloads, pdfs etc 
+it can store even dynamic content also --?> ex  Product Details and API Responses by Using Cache Policies.
+
+What is TTL?
+TTL --> Time To Live.
+
+TTL = 1 hr means  after that Cache expires in that case if user request the request goes to origin server 
+
+
+Cache Invalidation : Suppose You changed some thing in logo.png or images that we stored in cloud front But CloudFront still has old logo. if i want to delete/remove old cache from all edge locations/servers so cloud front can get new data from origin server and cached it at the time of new deployment and when user access the data at first time it will get from origin server and cached it in edge location servers
+
+Solution
+Invalidate cache.
+
+Example :  /logo.png ---> CloudFront removes cached copy. 
+Next request ---> Origin ---> New logo
+
+Https also works and we can attatch ACM certificate to Cloud front 
+
+Security : CloudFront supports AWS WAF
+
+Geo Restriction:
+Suppose You only want Indian users. CloudFront can block USA, Germany, China Only India allowed.
+
+Compression: 
+CloudFront automatically compresses HTML CSS JavaScript using Gzip or Brotli reducing bandwidth usage and improving page load times.
+
+
+Real Roboshop Architecture:
+Users --> Route53 --> CloudFront --> Application Load Balancer --> Target Group ---> Web EC2 --> Catalogue --> MongoDB
+
+Static files: logo.png, CSS, JS served from CloudFront.
+
+Dynamic requests: /api/products and /login forwarded to ALB.
+
+Interview Questions
+What is CloudFront?
+
+CloudFront is AWS's Content Delivery Network that caches and serves content from edge locations closest to users, reducing latency and improving performance.
+
+What is an Origin?
+
+Origin is the backend source from which CloudFront retrieves content. It can be an S3 bucket, ALB, EC2 instance, API Gateway, or another HTTP server.
+
+What is a Cache Hit?
+
+The requested object is already stored in the edge location, so CloudFront serves it without contacting the origin.
+
+What is a Cache Miss?
+
+The object isn't available in the edge cache, so CloudFront fetches it from the origin, returns it to the user, and stores it for future requests.
+
+Why use CloudFront with ALB?
+
+CloudFront reduces requests reaching the ALB by caching static content, improves global performance through edge locations, provides HTTPS termination, integrates with AWS WAF, and helps protect the origin from excessive traffic.
+
+What is TTL?
+
+TTL (Time To Live) determines how long CloudFront keeps an object in its cache before requesting a fresh copy from the origin.
+
+Can CloudFront cache dynamic content?
+
+Yes. By configuring cache behaviors, cache policies, headers, cookies, and query strings appropriately, CloudFront can cache certain dynamic responses when it makes sense.
+
+
+
+
+Production Architecture (Typical)
+--------------------------------------------
+                   Internet
+                       │
+                       ▼
+                 Amazon Route53
+                       │
+                       ▼
+                 Amazon CloudFront
+            (Global Edge Locations)
+                       │
+          ┌────────────┴────────────┐
+          │                         │
+     Cache Hit                 Cache Miss
+          │                         │
+          ▼                         ▼
+      Response                 Application
+                               Load Balancer
+                                      │
+                               Target Group
+                                      │
+                          Auto Scaling Group
+                           │              │
+                        EC2-1          EC2-2
+                                      │
+                          Catalogue / User APIs
+                                      │
+                           MongoDB / Redis / MySQL
+						   
+						   
+CloudFront improves performance by serving content from edge locations close to users, while an Application Load Balancer distributes incoming traffic across healthy backend instances. In many production architectures, CloudFront sits in front of the ALB, providing caching, HTTPS, and security before requests reach the application.
+
+
+terraform apply -target="null_resource.mongodb"
+
+ex: lets say we have a mongodb and for configuration we have null resource so it was saying completed but our output says not provisioned properly so 
+terraform taint -target="null_resource.mongodb"
+terraform taint -target="null_resource.redis"
+terraform taint -target="null_resource.mysql"
+
+and run terraform apply -auto-approve ---> above all will run again and provision to ec2 
+
+i got error in this resource from terraform-roboshop-app-module used in 11-user folder as module do we tainted it will runn theat particular resource again below u can check syntax
+terraform taint -target="module.user.aws_lb_listener_rule.component_listner_rule"
+
+
+
+
+
+
+Cloudfront
+-------------
+useful to cache static content
+dynamic content should not be cachced
+
+https://web-dev.daws76s.online/media/graph.png
+https://web-dev.daws76s.online/media/instana_icon_square.png
+https://web-dev.daws76s.online/images/STAN-1.jpg
+https://web-dev.daws76s.online/media/instana_icon_square.png
+
+/images/* --> then apply cache policy
+/media/* --> then apply cache policy
+default --> get the content from web-dev.daws76s.online
+
+deployment
+------------
+changed some content
+
+remove cache from all edge locations
+cloudfront will get latest again and cache it
+
+https://web-cdn.daws76s.online
+
+1. get the cdn url from route53
+2. behaviours will be evaluated
+
+https://web-cdn.daws76s.online/api/catalogue/categories --> web-alb
+
+web-dev.daws76s.online/api/catalogue/categories
+
+listeners and rules in web alb
+
+443, web-dev --> web
+/api/catalogue/* --> catalogue.app-dev.daws76s.online --> APP ALB
+
+80 catalogue. --> catalogue component
+
+/categories --> connect to mongodb and fetch the categories
+
+
+SG
+----
+VPC based service, where resource is created inside VPC
+non VPC service, resources are created outside VPC
+
+1. CDN --> WEB ALB
+web alb should accept traffic on 443 from internet.
+2. Web ALB --> WEB
+WEB should accept traffic on 80 from web-alb
+3. web-alb --> app-alb
+app-alb should accept traffic on 80 from web and vpn
+4. app-alb --> catalogue
+catalogue should accept traffic on 8080 from app-alb
+5. app-alb --> cart
+cart should accept traffic on 8080 from app-alb
+cart --> catalogue through app-alb
+app-alb should accept traffic on 80 from cart
+all components are accepting traffic on port no 80 from app-alb
+6. mongodb should accept traffic on 27017 from catalogue
+
+
+vpc, sg, vpn, databases, web-alb, app-alb --> 
+
+project infra --> we need project infra to create applications
+through SSM parameter store
+
+catalogue
+--------------
+CICD
+
+CI
+----
+clone
+build
+scan the code
+	static scanning --> sonarqube
+	sast --> fortify, coding is based on security standards
+	dast --> web inspect, app will be tested with all vulnerabilities
+	open source scan --> nexus IQ, blackduck scan thrird party libraries
+	image scanning --> ECR scanning,  scanning docker images
+create artifact, generally zip file
+store the zip file --> nexus, jfrog, s3
+unit testing --> junit
+
+CD
+----
+application infra --> developers or devops engineers
+-----------------
+create instance
+deploy the latest version
+stop the instance
+take ami
+refresh autoscaling
+do the functional testing --> selenium
+

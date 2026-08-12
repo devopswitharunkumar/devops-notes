@@ -1,0 +1,26 @@
+AWS services:
+------------
+Ec2,Route53,MONGODB,REDIS(cache server),RABBITMQ(messaging queue database)
+AMI
+Security groups
+key pairs
+NAT(Network Address Translation)
+DNS, hosted zone,name servers,route53 records
+VPN
+IAM - Identity Access Management
+Authentication(username/password or token) and Authorization(permission based on roles like example in proj lead have some role and developer will have some different roles ---permission(like view,update,delete etc) will be tagged to based on roles)
+
+in ansible like ansible vault  we use below 
+SSM parameter store
+
+terraform
+------------
+S3
+DynamoDB
+
+
+Load balancer - ALB -- we have diff things 
+ACM
+
+Docker
+ECR

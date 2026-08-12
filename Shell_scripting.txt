@@ -1,0 +1,1027 @@
+Projectconfigguration:
+---------------------
+create a server in cloud platform
+install pgrming languages like java,nodejs,python called packages
+download code/appln
+create directories and users
+install dependencies and .service files 
+start server 
+
+if developer push new features code of an applicatio
+development/release
+--------------------
+developer will push new code to the repo and tell the location
+stop the serverremove old code and language packages and backup old codedownload new code developer pushed 
+start the server
+
+manual process;
+downtime,time consuming,manual mistakes,trouble shooting,who did mistakes and repeated work
+
+
+
+Shell_Scripting:
+----------------
+Shell scripting is writing a sequence of Linux commands in a file to automate tasks. and powerful way to automate tasks
+or 
+A shell script is essentially a text file containing a series of commands that the shell can interpret and execute with extension .sh
+
+shell -> The shell is a command-line interpreter that acts as a bridge between the user and the kernel. It receives commands from the terminal, interprets them and translates them into instructions that the operating system can execute.	
+
+
+“Shell scripting is the process of automating Linux command execution by writing commands inside executable script files, commonly using Bash shell. It is widely used in DevOps for automation tasks such as deployments, monitoring, backups, service management, and infrastructure administration.”
+
+advantages
+Automate Repetitive Tasks
+
+| Benefit        | Explanation                |
+| -------------- | -------------------------- |
+| Automation     | Reduces manual work        |
+| Fast execution | Commands run automatically |
+| Reusability    | Reuse scripts              |
+| Consistency    | Avoid human mistakes       |
+
+
+
+#!/bin/bash --> called shebang line means execute script using bash shell
+
+to check the syntax of our shelll script , we need to give the location of bash(/bin/bash)
+shebang is the first ine in shell script that we used to give the location of the bash 
+shell script == bash script
+except first line if u get #!/bin/bash in diff line where ever u get it is a commentn 
+
+
+| Variable | Meaning                 |
+| -------- | ----------------------- |
+| `$0`     | Script name             |
+| `$1`     | First argument          |
+| `$#`     | Number of arguments     |
+| `$?`     | Previous command status |
+| `$$`     | Current process ID      |
+
+To run shell script file --> sh <script file name>.sh
+
+
+
+
+02-variables.sh
+---------------
+
+#!/bin/bash
+
+PERSON1=Ramesh  
+PERSON2=Suresh
+
+echo "$PERSON1 : Hello $PERSON2, Good Morning"
+echo "$PERSON2 : Hi $PERSON1, Good Morning"
+echo "$PERSON1 : How are you $PERSON2 ?"
+echo "$PERSON2 : I am fine $PERSON1, How are you ?"
+echo "$PERSON1 : I am also fine $PERSON2, Thanks for asking"
+echo "$PERSON2 : thanks $PERSON1, Will meet again Bye Bye"
+
+if single word value like below  we can use no quotes, or double quotes or single quotes.
+PERSON1=Ramesh  
+PERSON2=Suresh
+or
+PERSON1="Ramesh  "
+PERSON2="Suresh"
+or
+PERSON1='Ramesh  '
+PERSON2='Suresh'
+
+But if value contains space then we must use double quotes 
+ex : correct way to assign value with space is using double quotes or single quotes.
+PERSON1="Ramesh kumar"
+PERSON2="Suresh kumar"
+or
+PERSON1='Ramesh kumar'
+PERSON2='Suresh kumar'
+wrong way to assign value with space is using no quotes
+PERSON1=Ramesh Kumar 
+PERSON2=Suresh kumar   --> here kumar treated as command because bo quotes
+
+
+
+Example With Variable Expansion
+Double Quotes
+NAME="Arun"
+echo "Hello $NAME"   --> Output: Hello Arun
+
+Single Quotes
+echo 'Hello $NAME'
+Output: Hello $NAME ---> Because:❌ variable expansion disabled.
+
+Special Characters Example
+Double Quotes
+echo "Today is $(date)"   ---> Output: Today is Wed May...
+Single Quotes 
+echo 'Today is $(date)'   ---> Output: Today is $(date)
+
+#space related example:
+# FOR DOUBLE QUOTES AND SINGLE QUOTES
+# CORRECT WAY 
+# PERSON1="Ramesh KUMAR"  
+# PERSON2="Suresh KUMAR"
+# WRONG WAY  --> NO SPACE BEFORE AND AFTER '='
+# PERSON1 = "Ramesh KUMAR"  
+# PERSON2 = "Suresh KUMAR"
+# NO QUOTES CORERECT WAY
+# PERSON1=Ramesh
+# PERSON2=Suresh
+# NO QUOTES WRONG WAY
+# PERSON1 = Ramesh
+# PERSON2 = Suresh
+
+03-variables.sh
+how do u run a commands in shell script and take output
+$(<command>) --> $(date)
+
+ex #!/bin/bash
+DATE=$(date)   
+
+echo "Todays date is ${DATE}"  #--> use only double quotes no single quotes   ${DATE} or $DATE $(DATE)
+
+#DATE = $(date)    --> WRONG
+#DATE = "$(date)"    --> WRONG BUT DATE="$(date)"
+
+Arguments:
+----------
+now here
+PERSON1=Ramesh  
+PERSON2=Suresh 
+or 
+DATE=$(date)  --> there may be chance to enter space after = and before = in that case we will get error
+
+now we can do that using arguments
+in shell cmd line --> sh 03-variables.sh ramesh suresh etc.. no of arguments we can pass 
+PERSON1=$1
+PERSON2=$2
+When u run the file sh 04-variables.sh Arun Kumar
+
+password is visible:
+---------------------
+echo "enter ur username :"
+read -s USERNAME
+echo "pls enter ur password:"
+read -s PASSWORD
+
+in terminal if we enter username and password that cannot be seen/visible on terminal with "-s option : Silent mode or hidden input"
+read PASSWORD    -> displayed on screen what u entered
+read -s PASSWORD -> not displayed on screen what u entered
+
+"read -s is used for silent input in shell scripting. It disables terminal echo, so the characters typed by the user are not displayed on the screen. It is commonly used for reading passwords and other sensitive information securely."
+
+
+Data Types:
+----------
+Shell scripting does NOT support strict data types like Java, Python, or C.In Bash, everything is treated as a ✅ String by default
+Ex: 
+NAME="Arun"
+AGE=25
+SALARY=50000  Internally Bash treats all of them as String
+
+1)String
+NAME="Arun"
+echo $NAME  --> output : Arun
+
+2)Integer / Numeric Values
+AGE=25      --> bash treated as string, but arithmetic operations convert it automatically.
+echo $((AGE+5))        output : 25
+
+in this integer case : when u give numbers 100 200 it will give total count 
+but if u give sh <filename> hfhfh 100 --> o/p :100 and hfhfh considered as 0 
+but if u give sh <filename> hfhfh hdhdj --> o/p :0 and hfhfh and Vhdhdj both considered as 0 
+
+3)Arrays
+FRUITS=("Apple" "Mango" "Banana")
+echo ${FRUITS[0]}     --> Apple
+echo ${FRUITS[1]}     --> Mango
+echo ${FRUITS[2]}     --> Banana
+to get all -> echo ${FRUITS[@]} o/p : Apple Mango Banana
+
+Integer Declaration : declare -i AGE=25 --> Now Bash treats it as integer for calculations.
+declare -p NAME --> output : declare -- NAME="Arun"
+
+
+
+Conditions:
+----------
+in java 
+if(age > 18){
+   // execute
+}
+
+but in shell script
+if [ $number -gt 18 ]      --> space after open brace [ and space before close brace ] must if u dont give error
+then
+	 echo "Given number $number is greater than 100"
+else
+	 echo "Given number $number is less than 100"
+fi
+
+09-install-mysql.sh
+------------------
+to check root user or not if u do id u will get 0 
+#id  / id -u   --> if ur root user ur id will be always 0
+
+for normal user u will get 1000 if u do id
+shell script wont stop execution if interpreter found error at some line it continues the execution and show error for other commands as well
+
+To check the previous commnd is success or not we have
+$? --> stores the previous command status 0 - success and other than 0 - failed 
+if success we can contine the script if fail we can exit by usinf exit 1
+
+
+steps:
+-----
+1)check root user ot not 
+2)if root user 
+		proceed 
+	if not 
+		stop and say need root access
+3)now install mysql
+4)check installed properly or not
+5)if success
+		good
+	if not	
+		show the exact error
+		
+#!/bin//bash
+
+ID=$(id -u)
+
+if [ $ID -ne 0 ]
+then
+    echo "ERROR :: please run with root user or sudo"
+    exit 1
+else
+    echo "You are a root user, please proceed"
+fi
+
+yum install mysql -y
+
+if [ $? -ne 0 ]
+then
+    echo "ERROR :: Installing MYSQL is failed"
+    exit 1
+else
+    echo "Installing MYSQL is successful"
+fi
+
+yum install git -y
+
+if [ $? -ne 0]
+then
+    echo "ERROR :: Installing GIT is failed"
+    exit 1
+else
+    echo "Installing GIT is successful"
+fi
+		
+Functions: if there is a repeated task are there we can write function and use the function name 
+----------
+#!/bin//bash
+
+ID=$(id -u)
+
+VALIDATE(){                                      this is the function syntax	see functions code and this compare
+    if [ $1 -ne 0 ]
+    then
+        echo "ERROR ::  $2 is failed"
+        exit 1
+    else
+        echo " $2 is successful"
+    fi
+}
+
+if [ $ID -ne 0 ]
+then
+    echo "ERROR :: please run with root user or sudo"
+    exit 1
+else
+    echo "You are a root user, please proceed"
+fi
+
+yum install mysql -y
+
+VALIDATE $? "Installing MYSQL"
+
+yum install git -y
+
+VALIDATE $? "Installing GIT"
+
+
+
+output redirections:
+-------------------
+in shell script by default logs will not be recoded/stored when u run the command whether it is success or failure 
+
+1 -- success log will be stored 
+2 -- failure log will be stored 
+& -- both success and failure logs will be reditrected to a log file
+
+
+
+yum install mysql 1> temp.log -->  only stored success message if installation failed log not recoreded 
+yum install mysql 2> temp.log -->  only stored failed message if installation success log not recoreded
+
+and another scenario two commands success output
+yum install mysql 1> temp.log
+yum install git 1> temp.log          --> only git logs will be there because when u run two commands > because of this ysmbol mysql messages overwritten by git
+to skip this we have to give >> append 
+yum install mysql 1>> temp.log
+yum install git 1>> temp.log      --> now both sucees message will be ther 
+
+$0  --> u will get script name 
+$?  --> u will get exit status of a command
+$1  --> first argument
+$2  --> second argument 
+$@  --> all arguments u will get 
+$#  --> if u want to check how many arguments u have passed
+
+log file name --> <scriptname>-date.log
+
+
+EX :
+
+#!/bin/bash
+
+NUMBER1=$1
+NUMBER2=$2
+
+echo "Total amount is  $(($NUMBER1 + $NUMBER2))" 
+
+echo "All args passed : $@"
+echo "no of args passed : $#"
+echo "script name : $0"
+echo "exit status : $?"
+
+
+
+To redirect output of all commands in a file to the log file:
+------------------------------------------------------------
+Timestamp=$(date +%F-%H-%M-%S)
+LOG_FILE="/tmp/$0-$Timestamp.log"
+add like below then the terminal op will be stored to a file with log file name above mentionec
+yum install git -y &>> $LOG_FILE  
+
+
+
+to add colors:  11-redirectcmdsoutputtonewfile.sh
+-------------
+RED -- \e[31m
+GREEN -- \e[32m
+YELLOW -- \e[33m
+NORMAL -- \e[0m
+
+
+echo -e "Hi this is Arun, \e[31m From Capgemini"
+Ex:
+
+R="\e[31m"
+G="\e[32m"
+Y="\e[33m"
+Y="\e[0m"
+
+
+validate(){
+    if [ $1 -ne 0 ]
+    then
+        echo -e "$R Error :: $2 is failed $N"
+        exit 1
+    else
+        echo -e "$G $2 is successful $N"
+    fi
+}
+
+Loops:
+------
+#!/bin/bash
+
+for i in {1..100}
+do
+    echo "Current Number is : $i"
+done
+
+package install
+
+
+for package in $@
+do
+    yum list installed $package &>> $LOG_FILE
+    if [ $? -ne 0 ]
+    then 
+        yum install $package -y &>> $LOG_FILE
+        validate $? "Installing $package"
+    else 
+        echo -e "$Y $package is already installed So SKIPPED $N"
+    fi
+done
+
+
+
+
+
+
+
+
+Roboshop Project:
+-----------------
+
+Mongodb instance:
+-----------------
+sed editor:(stream line editor) : it wont open file in terminal like vim it will change the content in background
+----------
+insert after/before line/content
+Ex : sed -e '1 a I am learning devops' <filename> --> it will insert/add this line after 1st line in a file
+1 a --> after/append first line
+2 a --> after 2nd line
+1 i --> before first line
+options:
+-e temporary change not permanant .. if u want permanent use -i 
+
+file content before above cmd execution
+I an arun
+I am learning terraform
+I am learning git 
+
+file content after above cmd execution
+I an arun
+I am learning devops
+I am learning terraform
+I am learning git 
+
+insert/change/modify word in a line:
+sed -i 's/<word-to-find>/<word-to-replace>/' <filename> --> by default first occurence in the every line
+sed -i 's/<word-to-find>/<word-to-replace>/g' <filename> --> replace every where
+
+
+delete lines
+
+sed -e '1d' <filename>
+
+sed -e '/learning/ d' <filename>   --> learning word in particular line that line will be deleted
+
+
+
+idempotency:
+============
+Idempotent : Running the same automation script multiple times will not break the system or create duplicate resources
+
+catalogue instance:
+-------------------
+mkdir /app --> if already folder present while running scrit it will give error and exit the script so u can use -p = parent directories
+mkdir -p /app      ---> if folder already exists it will not skip and continue the script& no error and if not present it will create folder
+mkdir -p /app/backend/logs --> create logs folder in parent directories
+
+unzip -o <path to store> <url>  --> it will not throw error if files already present it will just owerwrite them without p if files present it will throw error while running script 
+-o ==> overwrite existing files without asking
+
+useradd roboshop --> if u run second time u will give error in scripting so u can use below solution:
+
+id roboshop
+if [ $? -ne 0 ]
+then 
+    useradd roboshop &>> $LOG_FILE
+    validate $? "Creating new user"
+else
+    echo -e "$Y ERROR :: User already exists .. Skipping $N"
+fi
+
+
+set -e option: means Exit the script immediately if any command returns a non-zero (failure) exit status.
+-------------
+if we mention in catalogue file at first line
+id roboshop --> it will create a robooshop user first time(so exit status 0 success) if i run it in 2nd time it will give error and script will fail because exit status is 1 user already exist so immediately exit after that commands will not be executed 
+
+set -x : Print each command before execution (debug mode).
+
+log related:
+------------
+
+now we are giving &>> $LOG_FILE every where in a script file insted u can give like below
+command1 &>> $LOG_FILE
+command2 &>> $LOG_FILE
+command3 &>> $LOG_FILE
+exec &>> $LOG_FILE 
+-------------------
+ALL success and failures output msgs will be stored/sent to a log file ...dont give every where in file one line is enough 
+or 
+This redirects the output of the entire script to the log file.
+or 
+it redirects the standard output and standard error of the entire shell script to a log file.
+
+
+
+
+delete old log files:
+--------------------
+
+find . -type f -mtime +14 -name "*.log" -exec rm -rf {} \; --> delete old log files more than 14 days
+or 
+by using while loop
+find . -type f -mtime +14 -name "*.log"
+
+find .   (. --> current directory) --> Search from current directory
+-type f --> Find only files
+-mtime +14 --> Find files modified more than 14 days ago
+-name "*.log"Find only files ending with .log
+
+
+-exec rm -rf {} \; ---> This executes delete command on every matching file.
+
+Breaking it:
+
+-exec --> Run a command on find results.
+
+rm -rf --> Delete file.
+
+{} --> Placeholder for each matched file.
+
+Example:
+
+find gets:
+
+/app/error.log
+/app/debug.log
+
+Internally:
+rm -rf /app/error.log
+rm -rf /app/debug.log
+
+\; --> Means: End of exec command
+
+--->  if i want to create files with old date we can create using -d option means timestamp
+touch -d 20230513 cart.log   --> file will be create @time of 13 date 05 month and 2023 year 
+
+
+while loop:Execute a block of commands repeatedly as long as the given condition is true.
+
+ex :
+Condition TRUE  → keep running
+Condition FALSE → stop loop
+
+syntax:
+while [ condition ]
+do
+    commands
+done
+
+ex:
+File="/etc/passwd"
+
+if [ ! d $Source_dir ]
+then
+    echo "ERROR :: Source directory does not exist"
+fi
+
+while IFS=":" read -r username password user_id
+do
+    echo "username":$username
+    echo "password":$password
+    echo "user_id":$user_id
+done < $File
+
+< --> for file 
+<<< --> command output
+
+
+
+
+disk usage:
+-----------
+df -hT
+
+in aws suppose i want to create an disk/volume we have one condition
+we have to create disk in same availability zone as ec2 instance availability zone
+after creating we have to explicity mout it 
+
+to check list of available disk 
+1)lsblk
+to get that disk into usage.we need to create file system first
+2)sudo file -s /dev/xvdf     --> we are creating this disk in devices folder in linux
+3)sudo mkfs -t xfs /dev/xvdf
+4)sudo mkdir /data --> creating data folder in root folder
+5)sudo mount /dev/xvdf /data --> we are mounting /dev/xvdf to /data
+
+df -hT | grep -v tmp
+
+to send email
+
+yum -y install postfix cyrus-sasl-plain mailx
+
+postfix --> to hit gmail api
+cyrus-sasl-plain  -> authentication
+mailx --> it is a comand to send a mail
+
+narupallearunkumarreddy@gmail.com
+ewzk bgch npxb qbvb
+
+[smtp.gmail.com]:587 narupallearunkumarreddy@gmail.com:ewzkbgchnpxbqbvb
+
+echo "This is a test mail & Date $(date)" | mail -s "message" arunkumarreddy261@gmail.com
+
+
+Hello Devops_Team
+ We have received a $ALERT_TYPE utilisation for the below disk's. Please check and take necessary action.
+ 
+ BODY
+ 
+Thannks & Regards 
+Monitoring Team 
+
+
+
+
+
+
+Crontab:
+-------
+Schedule commands or scripts to run automatically at a specific time or interval.
+or
+"Crontab is a Linux scheduler used to automate recurring tasks. Cron daemon runs in the background and executes commands or scripts based on the schedule configured in crontab. It is commonly used for backups, monitoring, log cleanup, and automation jobs.
+
+It is mainly used in DevOps for --> backups,log cleanup,monitoring scripts,reports,automation jobs
+
+Real Example
+
+You created a script: /app/disk-check.sh
+Instead of manually running:
+sh disk-check.sh
+every day, configure cron --> Run automatically every day at 2 AM/other times --> That is called a cron job.
+
+
+Cron has two parts/components:
+crond service
+crontab entries
+
+1)crond service --> Background daemon/service.
+
+Check 				---> systemctl status crond
+Start 				---> systemctl start crond
+Enable after reboot ---> systemctl enable crond
+
+2)crontab command
+Open user's cron jobs --> crontab -e    --> open a editor/file u can mention the scrips and timinig
+
+List cron jobs 			 --->crontab -l
+Remove all cron jobs 	 ---> crontab -r
+Edit another user's cron --->crontab -u username -e
+Example : crontab -u ec2-user -e
+
+Syntax:
+------
+MIN HOUR DAY MONTH WEEK
+or 
+* * * * * command/script
+| | | | |
+| | | | |
+| | | | +---- Day of week/Weekday (0-7)
+| | | +------ Month/Month (1-12)
+| | +-------- Day of month/Day (1-31)
+| +---------- Hour/Hour (0-23)
++------------ /Minute (0-59)
+
+Ex:1
+create a old log files using touch command 
+touch -d 20230918 cart.log  --> like this u can mention time stamp at that date file will be created
+
+now in terminal 
+$crontab -e --> it will open a file and edit that
+* * * * * sh home/centos/roboshop-shellscript/15-delete-old-logs.sh
+
+* * * * * --> every minute it will run a job and all the files will be deleted in that directory 
+15-delete-old-logs.sh --> delete old log files script 
+
+Examples:
+* * * * * /app/test.sh --> Run Every Minute
+0 2 * * * /backup.sh   --> Run Every Day 2 AM
+*/5 * * * * /health.sh --> Every 5 Minutes
+0 * * * * /script.sh   --> Every Hour
+0 10 * * 0 /backup.sh  --> Every Sunday
+0 0 1 * * /report.sh   --> First Day of Every 
+
+0 9 * * 1-5 /script.sh --> Monday to Friday
+0 8,18 * * * /script.sh --> Multiple Times
+
+Cron Special Strings
+Instead of numbers:
+Keyword	Meaning
+@reboot	After system restart
+@hourly	Every hour
+@daily	Once a day
+@weekly	Once a week
+@monthly	Once a month
+
+Run script after reboot:@reboot /app/start.sh
+
+Cron Logs
+
+Check cron execution:
+
+CentOS/RHEL: tail -f /var/log/cron
+Ubuntu:grep CRON /var/log/syslog
+
+reditrect cron output
+* * * * * /app/script.sh >> /tmp/script.log 2>&1
+
+main config : /etc/crontab
+
+system jobs
+/etc/cron.d/
+/etc/cron.daily/
+/etc/cron.hourly/
+/etc/cron.weekly/
+
+
+Example DevOps Disk Monitoring Cron
+Script: /root/disk-alert.sh
+Run every 10 minutes ---> */10 * * * * /root/disk-alert.sh
+
+Flow ---> Every 10 minutes -> Check disk -> If usage > 90% -> Send alert
+
+Example: Log Cleanup --> Delete logs older than 30 days:
+Script: cleanup.sh
+Cron: 0 1 * * * /cleanup.sh ---> Runs: Every day 1 AM
+
+Troubleshooting Cron
+1. Check service 		--> systemctl status crond
+2. Check permission 	--> chmod +x script.sh
+3. Check logs 			--> tail -f /var/log/cron
+4. Use absolute path	--> /home/ec2-user/script.sh
+
+Instead of:
+
+script.sh
+
+
+Important commands to remember:
+
+crontab -e        # edit jobs
+
+crontab -l        # list jobs
+
+crontab -r        # remove jobs
+
+
+diff:
+----
+$1 $2 $3  → normal arguments (order matters)
+
+getopts  → named options (-u user -p pass)
+
+getopts/opt args:Read and handle command-line options/arguments passed to a shell script
+----------------
+mainly used when u want to pass options like 
+-h
+-u
+-p
+-f
+ex: ls -l -a
+
+Basic Syntax:
+-------------
+while getopts "options" variable
+do
+    case $variable in
+
+        option)
+            commands
+            ;;
+
+    esac
+
+done
+
+Examples:
+---------
+1) optarg and invalid case
+#!/bin/bash
+
+while getopts "u:p:" option
+do
+    case $option in
+
+        u)
+            USERNAME=$OPTARG
+            ;;
+
+        p)
+            PASSWORD=$OPTARG
+            ;;
+			
+		?)
+		 echo "Invalid option"
+		 exit 1
+		 ;;
+    esac
+done
+
+echo "Username: $USERNAME"
+echo "Password: $PASSWORD"
+
+run : sh login.sh -u arun -p 12345
+
+while getopts "u:p:" option --> u:p: means Because : after option means it expects an argument.
+means
+u option requires value
+p option requires value
+
+What is OPTARG --> OPTARG stores option value.
+Example: ./script.sh -u ramesh
+inside :  USERNAME=$OPTARG means OPTARG = ramesh	
+
+Example 2:
+---------
+Example 2: Options Without Values
+#!/bin/bash
+
+while getopts "hv" option
+do
+
+case $option in
+
+h)
+ echo "Help menu"
+ ;;
+
+v)
+ echo "Version 1.0"
+ ;;
+
+esac
+done
+
+Run ---> ./script.sh -h
+
+Output: Help menu
+Here: getopts "hv"  --> No colon.
+Meaning:
+-h no value required
+-v no value required
+
+
+Real DevOps Example
+===================
+$1 $2 $3  → normal arguments (order matters) ----> Instead of ---> ./deploy.sh dev frontend v1
+
+Use: getopts  → named options (-u user -p pass)
+ 
+run --->  sh ./deploy.sh -e dev -s frontend -v v1
+
+Script: deploy.sh
+
+while getopts "e:s:v:" option
+do
+case $option in
+
+e)
+ ENV=$OPTARG
+ ;;
+
+s)
+ SERVICE=$OPTARG
+ ;;
+
+v)
+ VERSION=$OPTARG
+ ;;
+
+esac
+done
+
+Output:
+
+ENV=dev
+SERVICE=frontend
+VERSION=v1
+
+
+
+
+
+if i want to run a script as a native linux command
+---------------------------------------------------
+every time im giving sh <filename>.sh --> i want to run this as a command like cat touch etcc
+in every OS there will be a path --> echo $PATH --> u will get path 
+if u install any software in that path automatically windows/linux system will pickup
+now i want to put that script in the path --> /usr/local/bin/ all commands present here
+ex:
+sudo cp 18-greeting-getopts-conncept.sh /usr/local/bin/greeting 
+then i need to give execute access
+sudo chmod +x /usr/local/bin/greeting 
+now anywhere/any directory in terminal u can run like a command
+
+run : sh $greeting -n siva -w good evening
+
+labauto --> this is also a shell script but it is like a command
+
+
+AWS Command line:
+----------------
+through command if u want to create ec2
+1st way:
+--------
+First Create user :
+------------
+IAM --> IAM Users --> Attach policies directly and select (Administrator access)--> next --> create user
+now select that user --> security-credentials --> create access key --> command-line-interface(CLI) --> next --> create access key and --> copy those values two 
+Access key ans security access key 
+
+now in terminal 
+aws configure --> it will ask for Access key ans security access key 
+
+when u runn this it will create .aws folder in home folder ls -la (.aws folder --> cat credentials u will get those access keys)
+
+$ aws ec2 run-instances --image-id <ami-id> --count 1 --instance-type t2.micro --key-name MyKeyPair --security-group-ids <sg-id> --. it will create instance 
+
+--> in the above method there is a issue like who ever has access to that ec2 they can go and watch those cred's in .aws folder
+--> in above adminstrator access anything can do in aws console
+
+2nd way :
+--------
+Create a role and attached permissions ans attach that role to ec2 instance
+AWS --> IAM --> Roles --> AWS service --> in service or use case box (EC2) --> next --> u can select policies for the ec2 (now we give AmazonEC2FullAccess) --> next -> u can give role name(EC2RoleForShellScript) --> create role
+
+AmazonEC2FullAccess 	--> means instance can create other instance
+AmazonRoute53FullAccess --> means instance can create route53 records only 
+
+--> select ec2 instance called shell --> Actions --> security --> Modify IAM role --> select EC2RoleForShellScript --> update IAM Role
+--> now shell ec2 instance can create multiple ec2 instances and route53 records
+
+run : $ aws ec2 run-instances --image-id <ami-id> --count 1 --instance-type t2.micro  --security-group-ids <sg-id> --. it will create instance 
+
+
+
+Create Ec2 and route53 All Roboshop instance throuh shell script 
+
+#!/bin/bash
+#Create roboshop Ec2 instance through Shell script
+AMI_ID=ami-0220d79f3f480ecf5
+SG_ID=sg-0356688fc6f675992
+
+INSTANCES=("mongodb" "redis" "mysql" "rabbitmq" "catalogue" "cart" "user" "shipping" "payment" "dispatch" "web")
+HOSTED_ZONE_ID=Z02149386QBAC23T25TA
+DOMAIN_NAME=devopswitharun.online
+
+VALIDATE(){
+if [ $i != "web" ]
+then 
+    echo 'Instances[0].PrivateIpAddress'
+else
+    echo 'Instances[0].PublicIpAddress'
+fi
+}
+
+for i in "${INSTANCES[@]}"
+do
+    echo "Instance is : $i"
+    if [ $i == "mongodb" ] || [ $i == "mysql" ] || [ $i == "shipping" ]
+then
+    INSTANCE_TYPE="t3.small"
+else
+    INSTANCE_TYPE="t3.micro"
+fi
+    IP_ADDRESS=$(aws ec2 run-instances --region us-east-1 --image-id $AMI_ID --instance-type $INSTANCE_TYPE --security-group-ids $SG_ID --tag-specifications "ResourceType=instance,Tags=[{Key=Name,Value=$i}]" --query "$(VALIDATE)" --output text)
+
+    echo "$i : $IP_ADDRESS"
+
+
+# Creates route 53 records based on env name
+
+    aws route53 change-resource-record-sets \
+    --hosted-zone-id $HOSTED_ZONE_ID \
+    --change-batch '
+    {
+        "Comment": "creating a route53 record"
+        ,"Changes": [{
+        "Action"              : "UPSERT"
+        ,"ResourceRecordSet"  : {
+            "Name"              : "'$i'.'$DOMAIN_NAME'"
+            ,"Type"             : "A"
+            ,"TTL"              : 1
+            ,"ResourceRecords"  : [{
+                "Value"         : "'$IP_ADDRESS'"
+            }]
+        }
+        }]
+    }
+    '
+
+done
+
+run : sh robooshop.sh
+
+"Action": "CREATE"
+Problem:
+
+If record does not exist → creates ✅
+If record already exists → fails ❌
+
+"Action": "UPSERT" 
+UPSERT ---> UPDATE + INSERT
+
+If record does not exist → creates ✅
+If record already exists → update with new ip address
+
+"Action": "DELETE" 
+Remove existing record
