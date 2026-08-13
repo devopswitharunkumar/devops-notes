@@ -326,10 +326,45 @@ aws eks update-kubeconfig --region <region> --name <cluster-name>
 Namespace:
 ----------------
 Namespace provide a way to divide cluster resources between multiple users or projects or teams and it helps in organizing and isolating resources with in the same cluster.
-Resources in one namespcae cannot access/communicate/visible to another namespace by default
 One cluster, multiple logically separated environments.
 
+1)Resources in one namespcae can access/communicate to another namespace by default using <service-name>.<namespace-name>.svc.cluster.local i.e., means we dont have any network policy applied 
+Ex: i have frontend service and dev namespace and i want to communicate by default to backend service and prod namespace it can communicate using 
+<service-name>.<namespace-name>.svc.cluster.local
 
+lets say i have only two namespaces and pods in that i want to block communication
+2)Now suppose you want to block traffic to the backend to frontend this services names..apply network policies 
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-backend-ingress
+  namespace: prod
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+  - Ingress
+
+#we are controlling incoming traffic to those Pods. it will not allow the incoming traffic from backend service prod namespace to dev namespace ..
+NetworkPolicy with no ingress allow rule → selected Pods' incoming traffic is denied.	
+
+lets say we dont know no of namespaces and pods present in the cluster i want to block communication from all namespaces and services and from prod to my frontend service and dev namespace i.e., You have many namespaces in the cluster, but you want your namespace to be completely isolated from other namespaces.
+You don't need to list every other namespace.
+Instead, you create a default-deny NetworkPolicy in your namespace.
+Ex: apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: my-app
+
+spec:
+  podSelector: {}			#Apply this policy to ALL Pods in my-app.
+  policyTypes:
+    - Ingress
+    - Egress
+it doesnt allow both incoming and outgoing traffic to our pods in production env we will write network policies to allow the required traffic 
+If I have many namespaces in a cluster and want to completely isolate my application's namespace, I don't need to create a deny rule for every other namespace. I apply a default-deny NetworkPolicy to my namespace using an empty podSelector and deny both ingress and egress. Then I create separate allow policies only for the traffic my application actually requires, such as DNS, database access, or specific application services. Everything not explicitly allowed remains blocked.
 
 Example:
 Without name suppose in single cluster if u have different teams like dev, test and prod teams if u dont orgainise it is all together resources are it is clumzy that we dont know which resource belongs to which team,project or env etc..
