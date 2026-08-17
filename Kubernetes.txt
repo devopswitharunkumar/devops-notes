@@ -2413,7 +2413,7 @@ In dynamic provisioning, the application creates a PVC referencing a StorageClas
 
 EFS:
 -----
-
+static provisioning
 EFS is shared file storage.
 Flow
 AWS EFS ---> PV ---> PVC ---> Pod ---> Container
@@ -2421,3 +2421,103 @@ AWS EFS ---> PV ---> PVC ---> Pod ---> Container
 1)create a EFS file sysytem in aws console 
 2)Edit the attched security group which is attached to EFS --> to accept nfs --> edit inbound rules --> NFS --> port 2049 --> add the security group which is attched to worker nodes 
 3)Download the EFS Drivers 
+4)Create PV and PVC and use that pvc in the pod 
+
+NFS port no ---> 2049
+
+For EFS static provisioning, we first create the EFS filesystem manually in AWS. Then we create a Kubernetes PersistentVolume using the AWS EFS CSI driver and specify the EFS filesystem ID. We create a PersistentVolumeClaim with ReadWriteMany access and bind it to the PV. Pods then mount the PVC and can share the same EFS filesystem across multiple nodes. This is useful when multiple Pods require shared persistent file storage.
+
+Dynamic Provisioning
+1) We need to create EFS in aws console even for dynamic 
+2) Write a StorageClass manifest file and give the above created EFS name in that yaml file it will create the access point in the EFS u can see that in aws console
+3)give ec2 efs full access role for the  attached to ec2 
+4) if ur un the storage class it will create the Access point in efs can see in aws console so like the u can create n no of access points for multiple projects.
+
+we can write one storageClass manifest file and multiple PVC definations so that it will create multiple acccess points for diff projects 
+one StorageClass can serve many PVCs
+
+
+EFS Static Provisioning — Yes
+                 EFS File System
+                       |
+          ┌────────────┼────────────┐
+          ↓            ↓            ↓
+        PV-1         PV-2         PV-3
+          ↓            ↓            ↓
+        PVC-1        PVC-2        PVC-3
+          ↓            ↓            ↓
+        Pod-1        Pod-2        Pod-3
+
+You can create multiple PVC/PV definitions
+One EFS filesystem → can support multiple PVs/PVCs and multiple Pods, depending on how you configure the EFS CSI driver/access paths.
+but in EBS 
+we cannot create ONE EBS volume for that ine volume we can't create/write 2 or more PV/PVC's definations
+1 EBS -- 1 PV - 1 PVC only ---> One EBS volume → normally one PV/PVC binding.
+
+EBS-1 → PV-1 → PVC-1  
+EBS-2 → PV-2 → PVC-2
+
+EBS vs EFS
+EBS(Elastic Block Store) = a hard disk for a server/application.
+EFS(Elastic File System) = a shared network filesystem that multiple servers/Pods can access.
+
+EBS:
+EBS is block storage. it is like hard disk we are attaching it to ec2 instance 
+
+When do we use EBS?
+Use EBS when your application needs:
+Persistent storage
+High-performance block storage
+Database storage
+One Pod/node needs read-write access to its own volume
+Data that should survive Pod replacement
+
+Flow: pod ---> PVC ---> PV ---> EBS
+
+Ex: MYSQL pod ---> EBS data 
+If the MySQL Pod is deleted and recreated on a suitable node, it can mount the same persistent EBS-backed volume.
+And where ever the node present we should create volume in same availability zone it is zone specific.. and most commonly it is used with RWO(ReadWriteOnce) access mode i.e., means one node/pod can access at a time
+
+Good for:
+Database, application-specific persistent data, block-storage workloads.
+Good when the data primarily belongs to one application/node and you don't need multiple nodes mounting the same filesystem simultaneously.
+
+EFS:
+EFS is file storage. It is like shared Network Folder(ex:google drive)
+Multiple Worker nodes can access the same filesystem at a time 
+Flow :
+Pod-1 ──┐
+Pod-2 ──┼──→ PVC → PV → EFS
+Pod-3 ──┘
+
+And if pod-1 uploads some thing now pod 2 & 3 can access that files also and commonly used with access mode ReadWriteMany (RWX)
+Good for:
+Good when multiple Pods/nodes need to access the same/shared files simultaneously.
+
+When do we use EFS?
+Use EFS when multiple Pods/servers need to access the same files simultaneously.
+
+| EBS                                | EFS                                      |
+| ---------------------------------- | ---------------------------------------- |
+| Block storage Like a hard disk     | File storage Like a shared network folder|
+| Usually used by one node at a time | Multiple nodes can access simultaneously |
+| Commonly RWO(ReadWriteOnce)        | Commonly RWX(ReadWriteMany)              |
+| AZ-Zone specific                   | Designed for shared access across AZs    |
+| Good for databases                 | Good for shared files                    |
+| High-performance block storage     | Shared filesystem                        |
+| Example: MySQL data                | Example: shared uploads                  |
+
+
+EX:
+Suppose i have 3 pods in my application 
+scenario 1: Database
+I have mysql and i want data to be persisted, so we use EBS because the database needs block storage and its own persistent volume.
+
+scenario 2: Shared files
+Your application allows users to upload: photos, files, documents and reports etc..and if u want to access them by all 3 pods we use EFS because EFS provides shared file access.
+
+Interview answer:
+EBS and EFS are both AWS persistent storage services, but they solve different problems. 
+EBS is block storage, similar to a persistent hard disk, and is commonly used for databases and applications that need high-performance persistent storage, typically with ReadWriteOnce access. 
+EFS is a shared file system that multiple EC2 instances or Kubernetes Pods can access simultaneously, typically using ReadWriteMany. 
+In Kubernetes, I would use EBS for application-specific or database storage, while I would use EFS when multiple Pods across different nodes need to share the same files
