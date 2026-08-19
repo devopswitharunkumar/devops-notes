@@ -2738,6 +2738,96 @@ For dev:
 helm upgrade --install payment ./payment -f values-dev.yaml
 etc..
 
+--install with upgrade :     we use mostly in CI/CD pipelines 
+-----------------------------
+command:  helm upgrade --install payment ./payment
+Meaning: If the release exists, upgrade it; if it doesn't exist, install it.
+
+
+Real project structure:    For a microservice:
+-----------------------------
+payment-chart/
+│
+├── Chart.yaml
+│
+├── values.yaml
+│
+├── values-dev.yaml
+├── values-sit.yaml
+├── values-prod.yaml
+│
+├── templates/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── configmap.yaml
+│   ├── secret.yaml
+│   ├── ingress.yaml
+│   └── hpa.yaml
+│
+└── charts/
+
+You can maintain one reusable chart and configure it for different environments.
+
+
+Helm vs Kubernetes YAML
+----------------------------------
+
+Kubernetes YAML :  deploment.yml,service.yaml,secret.yaml etc..... ---> You manually manage each manifest.
+Helm   : Helm generates the Kubernetes manifests dynamically.
+Chart
+ ├── templates
+ ├── values
+ └── Chart.yaml
+
+So Helm doesn't replace Kubernetes. Helm manages/packages Kubernetes resources.
+
+❌ Helm is not a container orchestrator.
+✅ Kubernetes = container orchestration platform.
+✅ Helm = Kubernetes package manager/template and release management tool.
+
+Helm doesn't create containers
+Helm ---> Kubernetes manifests ---> Kubernetes ---> Pods ---> Containers
+
+
+Interview : How have you used Helm?
+In our Kubernetes environment, we used Helm to package and manage the deployment of our microservices. Instead of maintaining separate Kubernetes manifests for each environment, we created reusable Helm charts containing templates for Deployments, Services, ConfigMaps, Secrets, Ingress and HPA. We kept environment-specific configurations such as replica counts, image tags, resource requests and limits in separate values files for DEV, SIT and PROD. During CI/CD, after building and pushing the Docker image to the container registry, we used Helm upgrade/install to deploy the required image version to the EKS cluster. We also used Helm history and rollback to manage release versions and quickly revert a problematic deployment.
+
+
+Memorize these 6 things:
+
+Chart → Package of Kubernetes resources
+Chart.yaml → Chart metadata/version
+values.yaml → Configurable values
+templates/ → Kubernetes YAML templates
+Release → Installed instance of a chart
+Helm → Installs, upgrades, manages and rolls back those releases
+
+Docker builds the image → Registry stores it → Helm packages/configures deployment → Kubernetes/EKS runs it.
+
+The Whole Concept
+                 HELM CHART
+                     |
+        +------------+------------+
+        |                        			 |
+   templates/                 values.yaml
+        |                         			 |
+        +------------+------------+
+                     ↓
+              Helm rendering
+                     ↓
+          Kubernetes YAML manifests
+                     ↓
+                  EKS
+                     |
+        +------------+------------+
+        |            |            |
+    Deployment    Service      ConfigMap
+        |
+       Pods
+        |
+    Containers
+
+
 
 
 
@@ -2899,3 +2989,21 @@ it will not delete the volumes but all remaining pods all are deleted except vol
 
 
 Create k8s-roboshop-databases ---> this we are doing for roboshop proj
+
+
+
+
+
+
+
+
+diff bw deployment vs statefulset
+Deployment is mainly for stateless applications; StatefulSet is for applications where each Pod needs its own identity and/or persistent storage.
+
+StatefulSet:
+---------------
+StatefulSet is a Kubernetes workload controller used to run stateful applications that need stable Pod identity, stable network identity, and persistent storage.
+
+Ex: Mysql, mongodb, postgraceSQL , Elasticsearch, Zookeeper, Kafka etc....
+
+
