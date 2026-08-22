@@ -3764,4 +3764,33 @@ Now if u delete app2 folder -->kubectl delete -f manifest.yaml ===> load balance
 	
 	
 ChatGpt Version:
----------------------
+-----------------------
+
+Horizontal Scaling → increase number of Pods
+Vertical Scaling   → increase CPU/memory of existing Pods
+
+Horizontal Scaling: Horizontal scaling means increasing or decreasing the number of servers.... in kubernetes we call them as pods .
+-------------------------
+The application gets more capacity by running more replicas.
+
+manually :  kubectl scale deployment payment --replicas=5
+
+
+Vertical Scaling : Vertical scaling means increasing or decreasing the CPU/memory resources allocated to an existing Pod/container.
+Example:
+Before:
+Pod
+CPU    → 500m
+Memory → 512Mi
+
+After Increase resources:
+After:
+Pod
+CPU    → 2 CPU
+Memory → 2Gi
+
+So instead of adding Pods, we make the existing resource more.
+
+
+
+HPA (Horizontal Pod Auto-scaler)
