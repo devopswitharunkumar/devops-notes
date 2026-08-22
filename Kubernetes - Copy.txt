@@ -1768,4 +1768,3543 @@ For example, when we released a new version of the Catalogue service, we updated
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+===========================================================================================================================================================
+
+
+
+
+
+
+	
+Controller and node architecture
+
+
+labels vs annotations vs ENV
+ConfigMap vs Secret
+statefull vs stateless 
+nodeselector 
+deamonset and hostpath --- together how they are using 
+EBS vs EFS 
+
+
+
+
+
+
+
+Kubernetes Introduction
+----------------------------------
+Kubernetes is a open source container orchestration platform used to automate the deployment , scaling , networking , and management of containerised applications.
+
+It groups machines into a cluster and runs containers efficiently across them 
+It hepls manage containers in prod environments 
+it monitors application health and restarts failed containers 
+it can scale application up or down based on need
+it supports delcarative management using YAML files
+ 
+Features of Kubernetes
+. Automates deployment and scaling and management
+. Scalability --> easily scale applications up or down based on demand 
+. Self-healing (restarts failed containers) - --> Automatically restarts , replaces , reschedules failed containers
+. Load balancing (distributes traffic across containers) and service discovery(automatically discovers and endpoints)
+. Rolling updates and rollback -- updates app without downtime and roll back if needed 
+. Storage orchestration
+. Secret and configuration management and high availability and reliability.
+. Efficient resource utilization and Runs on any environment (On-prem, Cloud, Hybrid)
+
+
+
+
+
+
+Docker and Kubernetes are not competitors.
+
+They solve different problems.
+Docker builds and runs containers. (Builder + Runner)
+Kubernetes manages thousands of containers. (Like Manager)
+
+Before Docker
+Earlier applications were deployed directly on Virtual Machines. (Like Java , NodeJS and python appln's). Everything was installed manually.
+Problems: difficult to scale , difficult to recover from failures , manual deployments , downtime , manual monitoring
+AWS solved some of these problems using : Auto Scaling Group , Launch Templates , Target Groups , Load Balancer but that was for VMs.
+
+Then Docker came : Docker solved a major problem instead of saying Install java, nodejs and python and configure.. we simply create and image and run container and Now application runs exactly the same everywhere.
+
+So Docker solved
+✅ Dependency issues
+✅ Environment issues
+✅ Packaging
+✅ Faster deployment
+
+But Docker has another problem
+Suppose
+
+Docker Host
+
+Container-1
+Container-2
+Container-3
+Container-4
+
+Everything is running on one server. Looks good. Now imagine... The server crashes.
+
+What happens  ---> All containers disappear. Application becomes unavailable. Even if volumes exist, the volumes are stored on the same machine. Server gone ---> Volume gone ---> Application unavailable. Docker cannot move containers automatically to another server.
+
+Problems with docker :
+Single Host Failure :  One Docker Host --> if host creashed ---> All containers stopped. Docker cannot automatically recreate containers on another machine. 
+Auto Scaling : Docker will not automatically create containers if traffic increases u should manually run so Not practical in production.
+Load Balancing : Suppose if u have 3 container.. How will requests be distributed ...Docker itself doesn't provide production-grade load balancing between multiple application containers.
+Self Healing : Suppose Container crashes. Docker stops it. Now what? Docker doesn't continuously monitor application health and replace failed containers across a cluster. Someone has to restart it (or configure simple restart policies on the same host). Production requires much more.
+Multi Host Management :  Suppose company has multiple hosts 
+Each host has 50 containers. Total 250 containers. Who will manage them? How do we know which host has free CPU? which host has free memory? where should a new container run? Docker doesn't provide cluster-wide scheduling.
+Rolling Updates : if Application currently running with v1 if i want v2 version to deploy Without orchestration You manually Stop Run Check Repeat Risk of downtime.
+High Availability : If one machine dies Application should still work. Docker alone cannot provide this across multiple machines.
+Configuration Management  :  Where should Database URL, Username ,Password ,API Keys be stored? Hardcoding is not good. Need centralized configuration.
+Service Discovery : Suppose Cart needs Catalogue. If Catalogue IP changes What happens? Applications shouldn't depend on IP addresses. Need service discovery.
+Desired State : Production says Always run 5 containers. One crashes. Docker won't ensure the desired number of running containers across the environment. Someone has to intervene.
+
+Problems with Docker Alone
+
+. Hard to manage multiple containers manually was very difficult and error prone 
+. No auto scaling and high risk of downtime and failures
+. No self-healing if container fails
+. No load balancing
+. No rolling updates and service discovery
+· Difficult to manage networking and storage
+
+
+So what do we need?  ---> Orchestration
+
+
+orchestration:
+Orchestration means automatically coordinating and managing the lifecycle of workloads according to a desired state.
+
+Container orchestration: 
+Container orchestration means automatically managing the deployment, scheduling, scaling, networking, health, recovery and lifecycle of containers across multiple machines in a cluster.
+
+Orchestration means Kubernetes automatically managing tasks such as deploying Pods, scheduling them on worker nodes, maintaining the required number of replicas, restarting or replacing failed Pods, scaling applications, providing service discovery and load balancing, and performing rolling updates and rollbacks. 
+
+What exactly does orchestration handle?
+The main responsibilities are deployment, scheduling, scaling, networking, health monitoring, self-healing, updates, rollback, and lifecycle management.
+
+
+Tasks of orchestration
+. Deploy: Create and deploy containers.
+. Schedule: Decide where containers will run.
+. Monitor: Check the health and status.
+. Scale: Increase or decrease the number of containers.
+. Heal: Restart, replace, and recover containers.
+. Network: Connect containers and expose services.
+. Update: Roll out updates and roll back if needed.
+
+
+
+
+
+In our project, we used Kubernetes as the container orchestration platform to manage our microservices running across multiple worker nodes. Docker was mainly used for building and packaging the application images, which we pushed to the container registry, while Kubernetes handled the deployment and containers through Pods. We used Deployments and ReplicaSets to maintain the desired number of replicas and provide self-healing, Services for service discovery and load balancing, ConfigMaps and Secrets for externalized configuration and sensitive data, and resource requests and limits to control CPU and memory usage. Kubernetes also helped us with scaling, rolling updates, high availability, and automatic recovery when Pods failed, so we didn't have to manually manage individual containers across the cluster.
+
+
+
+
+| Docker Problem       | Kubernetes Solution                            |
+| -------------------- | ---------------------------------------------- |
+| Single host          | Multi-node cluster                             |
+| Manual scaling       | Horizontal Pod Autoscaler / Replica management |
+| No load balancing    | Services                                       |
+| No self healing      | Automatically recreates Pods                   |
+| Manual deployment    | Deployments                                    |
+| Manual scheduling    | Scheduler                                      |
+| No service discovery | DNS + Services                                 |
+| Manual updates       | Rolling Updates                                |
+| Manual rollback      | Rollback                                       |
+| Secret management    | Secrets                                        |
+| Configuration        | ConfigMaps                                     |
+| High Availability    | Multi-node architecture                        |
+
+
+Why don't you use Docker alone in production?
+Docker is excellent for building and running containers, 
+but it is not designed to orchestrate containers across multiple servers. 
+In production we need high availability, automatic scaling, self-healing, rolling updates, service discovery, load balancing, and centralized management. Kubernetes provides these orchestration capabilities while Docker is primarily used to build container images.
+
+
+Docker can absolutely run containers. In fact, that's its primary job. However, Docker alone is not sufficient for managing large-scale production environments with hundreds or thousands of containers across multiple servers. That's where Kubernetes comes in.
+
+====================================================================================================================================================================
+
+Setup :
+--------
+Minikube ec2
+------------------
+Create a minikube cluster that is ec2 in aws ----> using module resource ---> check in terraform-aws-minikube folder
+log into that ec2 using superputty ---> When u install minikube cluster ---> u will get files like ----> kubeconfig and kubeconfig_ip
+
+kubeconfig ---> it containes authentication information to connect kubernetes cluster
+kubectl ---> command us to connect to kubernetes cluster 
+
+kubectl will check automatically a file in home folder of ------>  ./kube/config
+if u do ---> kubectl get nodes --> u will get error because authentication file is not there in above folder so we need to copy this kubeconfig file to ./kube/config this folder by renaming file with config 
+
+process: 1
+-----------
+in minikube ec2 --> open it in superputty --> do
+ls
+mkdir .kube
+cp kubeconfig .kube/config        --> copying kubeconfig file and renaming to config 
+if u do now ----------> kubectl get nodes   -- u will get nodes  that is will have ----> control-plane node by default 
+
+process: 2
+ 
+workstation ec2 
+---------------------
+copy public ip --> open it in superputty ---> docker already installed via docker install.sh file in terraform-aws-minikube folder
+check first : kubectl         ---> type it if error u need to install below commands to intsll kubectl 
+We need to install kubectl now
+
+curl -LO "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl"
+sudo install -o root -g root -m 0755 kubectl /usr/local/bin/kubectl
+
+#chmod +x kubectl
+
+#mv kubectl /usr/local/bin/kubectl
+
+process: 3
+now in workstation ---> u need to copy kubeconfig file info from minikube to workstation ec2 and store it in ---> create .kube folder inside that create --- config file paste that info -- it is used for authentication of kubectl
+now run ----> kubectl get nodes -- u will get node means u connected ro minikube 
+now we dont need clutser now we dont thouch 
+
+====================================================================================================================================================================
+
+MiniKube:
+-------------
+Minikube allows developers and DevOps engineers to run Kubernetes by creating single-node Kubernetes cluster locally without requiring cloud infrastructure like AWS EKS etc...
+
+Why was Minikube introduced?
+Without minikube we need aws EKS and and multiple cluster noes 
+
+How Minikube Works
+Laptop ---> Minikube ---> Single Node Kubernetes Cluster ---> Control Plane + Worker nodes ---> Pods ---> Containers
+Everything runs on one machine/EC2.
+
+Architecture
+Your Laptop ---> Minikube VM / Container ---> API Server , Scheduler , Controller Manager , etcd , Kubelet , Container Runtime , Pods ---> Everything runs inside Minikube.
+Both Control Plane and Worker Node are on the Same node So Minikube acts as a local testing environment.
+
+Why do we use Minikube?
+Suppose we create ---> Deployment , Service , ConfigMap , Ingress Before deploying to AWS EKS, we test everything locally. If everything works, we deploy to production 
+
+Common Commands
+
+minikube start
+minikube status
+minikube stop
+minikube delete
+minikube dashboard ---> open dashboard
+minikube ip ---> get cluster ip
+
+How does kubectl connect?
+
+When Minikube install and starts it automatically updates  ---> ~/.kube/config
+this config file we need to do ---------> below process in kubeconfig section 
+
+kubectl get nodes ---> actually connects to the Minikube cluster. You don't need to configure anything manually.
+
+What components does Minikube install?
+When u execute ----> minikube start
+It installs ---> API Server , Scheduler , Controller Manager , etcd , Kubelet , Container Runtime , CoreDNS
+Basically, a complete Kubernetes cluster.
+
+Minikube supports multiple drivers:  docker, containerd, virtualbox etc...
+
+Real-Time Example
+Suppose if we wrote ---> deployment.yaml , service.yaml and ingress.yaml etc..
+Before deploying to AWS, you test locally. 
+minikube start 
+kubectl apply -f deployment.yaml 
+kubectl get pods 
+kubectl get svc 
+------>  Everything works. Then Push to GitHub. CI/CD deploys to EKS
+
+Do you use Minikube in Production?
+No. Minikube is intended only for local development, testing, and learning. Production environments use managed Kubernetes services like AWS EKS or self-managed Kubernetes clusters.
+
+Minikube vs EKS
+
+| Minikube        | AWS EKS               |
+| --------------- | --------------------- |
+| Single Node     | Multi-node Cluster    |
+| Local Laptop    | AWS Cloud             |
+| Learning        | Production            |
+| Free            | Paid                  |
+| Testing         | High Availability     |
+| No Auto Scaling | Auto Scaling          |
+| No Multi-Node   | Multiple Worker Nodes |
+
+
+Real-Time Usage (5 Years)
+
+Suppose a developer creates a new microservice called Inventory. Instead of directly deploying to EKS,
+
+workflow is:
+
+Developer ---> Writes Dockerfile ---> Build Docker Image ---> Creates Deployment YAML ---> Starts Minikube ---> Deploys Application ---> Verifies Pods and Services ---> Commits Code ---> Jenkins Pipeline ---> Amazon ECR ---> Amazon EKS
+
+Why do we use Minikube?
+It allows developers and DevOps engineers to test Kubernetes manifests, deployments, services, and other resources locally before deploying them to production clusters.
+
+If your company already has EKS, why would anyone use Minikube?
+Minikube provides a fast, low-cost local environment where developers can validate Kubernetes manifests and application behavior without consuming shared cloud resources or waiting for a deployment pipeline. It speeds up development and catches configuration errors early before changes reach EKS.
+
+===========================================================
+
+
+kubeconfig 
+--------------
+kubeconfig is a configuration file that contains the information required to authenticate and connect to a Kubernetes cluster.
+or
+kubeconfig is a configuration file that stores the cluster endpoint, authentication details, user information, and contexts. kubectl uses this file to securely connect and authenticate to the Kubernetes cluster.
+
+It contains:
+Cluster details (API Server URL)
+Authentication information (certificate/token)
+User information/credentials
+Context (which cluster name and user to use)
+
+Default Location : ~/.kube/config (i.e., /home/ec2-user/.kube/config)
+
+kubectl 
+----------
+kubectl is the command-line tool used to communicate with the Kubernetes cluster.
+Ex: 
+kubectl get pods
+kubectl get nodes 
+kubectl apply -f deployment.yaml        etc....
+
+
+How kubectl works :
+
+Suppose you execute :  
+cmd : kubectl get pods 
+step 1  --->  kubectl starts.
+Step 2  ---> It automatically looks for the kubeconfig file.
+Step 3  ---> It reads Cluster endpoint API server , Username , Token/Certificate , Current context
+Step 4  ---> It connects to the Kubernetes API Server.
+Step 5  ---> API Server authenticates the request.
+Step 6  ---> API Server returns the result.
+Step 7  ---> kubectl displays the output.
+
+How does kubectl know which Kubernetes cluster to connect to?
+kubectl automatically looks for the kubeconfig file, which is stored by default at ~/.kube/config. This file contains the Kubernetes API Server endpoint, user credentials, cluster information, and the current context. Using this information, kubectl authenticates with the API Server and executes the requested command.
+
+aws eks update-kubeconfig --region <region> --name <cluster-name>
+
+====================================================================================================================================================================
+
+
+Namespace:
+----------------
+Namespace provide a way to divide cluster resources between multiple users or projects or teams and it helps in organizing and isolating resources with in the same cluster.
+One cluster, multiple logically separated environments.
+
+1)Resources in one namespcae can access/communicate to another namespace resources by default using <service-name>.<namespace-name>.svc.cluster.local  i.e., means if we dont have any NetworkPolicy applied 
+Kubernetes automatically constructs the network domain name using this specific layout ----> [service-name].[namespace-name].svc.cluster.local
+Ex: i have frontend service and dev namespace now i want to communicate by default to backend service and prod namespace it can communicate using 
+<service-name>.<namespace-name>.svc.cluster.local
+
+
+2.Apply a Selective Allow policy that opens specific ports only for approved workloads.
+
+lets say i have only two namespaces and pods in that i want to block communication and allow particular resource to communicate
+Ex:
+Now suppose you want to block traffic to the backend to frontend this services names..apply network policies ......Just blocking incoming traffic from every pod in that namespace
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: deny-backend-ingress
+  namespace: prod
+spec:
+  podSelector:
+    matchLabels:
+      app: backend
+  policyTypes:
+  - Ingress
+  
+#we are controlling incoming traffic to those Pods. it will not allow the incoming traffic from backend service prod namespace to dev namespace ..
+NetworkPolicy with no ingress allow rule → selected Pods' incoming traffic is denied.	
+this code completely blocks all incoming network traffic to any pod labeled app: backend inside the prod namespace, while still allowing it to send outgoing traffic.
+
+Another Example: 
+Now that everything is blocked, you must explicitly whitelist allowed traffic pathways.For example, let's say you want to allow a Frontend application located in a namespace called frontend-ns to connect to a Database pod inside your backend-ns namespace on port 5432 (PostgreSQL).
+
+
+apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: allow-db-access
+  namespace: backend-ns               # The destination namespace being protected
+spec:
+  podSelector:
+    matchLabels:
+      app: postgres-database          # Target only the database pods
+  policyTypes:
+  - Ingress										# 2. Lock down all incoming traffic!
+  ingress:
+  - from:
+    - namespaceSelector:
+        matchLabels:
+          access-role: frontend-apps 			# Step A: Allow traffic coming from this namespace
+      podSelector:
+        matchLabels:
+          app: frontend-web        			   # Step B: Allow only this specific app inside that namespace
+    ports:
+    - protocol: TCP
+      port: 5432                     					 # Step C: Only open this exact communication port
+
+3.Apply a Default Deny All policy to isolate the namespace completely.
+
+3)lets say we dont know no of namespaces and pods present in the cluster i want to block communication from all namespaces and services and from prod to my frontend service and dev namespace i.e., You have many namespaces in the cluster, but you want your namespace to be completely isolated from other namespaces.
+You don't need to list every other namespace.
+Instead, you create a default-deny NetworkPolicy in your namespace.
+Ex: apiVersion: networking.k8s.io/v1
+kind: NetworkPolicy
+metadata:
+  name: default-deny-all
+  namespace: my-app
+spec:
+  podSelector: {}							#Apply this policy to ALL Pods in my-app. or # An empty selector matches EVERY pod in this namespace
+  policyTypes:
+    - Ingress										 # we are blocking both incoming ingress and outgoing egress both and if we use only ingress it will block only incoming requests like that 
+    - Egress
+it doesnt allow both incoming and outgoing traffic to our pods in production env we will write network policies to allow the required traffic 
+If I have many namespaces in a cluster and want to completely isolate my application's namespace, I don't need to create a deny rule for every other namespace. I apply a default-deny NetworkPolicy to my namespace using an empty podSelector and deny both ingress and egress. Then I create separate allow policies only for the traffic my application actually requires, such as DNS, database access, or specific application services. Everything not explicitly allowed remains blocked.
+
+Example:
+Without name suppose in single cluster if u have different teams like dev, test and prod teams if u dont orgainise it is all together resources are it is clumzy that we dont know which resource belongs to which team,project or env etc..
+
+
+with namespace in single cluser we will be having seperate isolation part so that only dev team resources will be there in that namespace and in testing namespace only their resources/applications available etc...Now everything is organized. Each team works independently.
+
+Scenario :
+------------
+Real-Time Example : 
+Suppose your company has Dev Team , QA Team , Prod Team. Instead of creating three Kubernetes clusters.we create one cluster inside that we create 3 namespaces so that isolation will be there
+
+What resources are inside a Namespace             ---> pods , deployments , services , configmaps , secrets , replicatsets , jobs  etc...
+Which resources are NOT inside a Namespaces ---> nodes , persistent volumes , storage classes and namespaces themselves 
+
+Command :   kubectl get namespace or kubectl get namespaces  or  kubectl get ns
+
+Inside Namespaces by default  we will have default namespaces
+1.Default
+If you don't specify a namespace, everything goes here. It is created in default
+2. kube-system
+contains Kubernetes system objects and many cluster add-ons, commonly including CoreDNS, kube-proxy , metrics-server
+3. kube-public
+intended for publicly readable cluster information; it is normally readable by all clients, including unauthenticated clients when cluster authorization permits the standard behavior
+4. kube-node-lease
+Used internally by Kubernetes to monitor node health.
+contains Lease objects used for node heartbeats and node availability tracking
+
+
+
+Questions:
+
+Can two namespaces have the same Pod name -----> yes
+Do Pods in different namespaces communicate ---> Yes, but not by just using the Pod name.
+To communicate across namespaces, Kubernetes uses fully qualified service names (DNS), for example: ClusterIP etc...
+
+Real-Time Usage in Projects
+one Kubernetes Cluster --> we can create dev , sit, uat, prod , monitoring , ingress and loggin namespaces..... Different teams manage different namespaces
+Monitoring tools like Prometheus and Grafana may run in a monitoring namespace, while application Pods run in prod , dev etc namespaces .
+
+Is Kubernetes Namespace the same as Linux Namespace?
+No. Linux namespaces are kernel-level isolation mechanisms used by containers, such as PID, Network, and Mount namespaces. 
+Kubernetes namespaces are logical partitions within a Kubernetes cluster used to organize Kubernetes resources.
+
+In our project, we used Kubernetes namespaces to logically separate environments and platform components. Application workloads were deployed into environment-specific namespaces such as dev, QA, and production, while shared infrastructure components like monitoring and ingress controllers were deployed into dedicated namespaces. This provided better organization, access control, and resource isolation within the same Kubernetes cluster.
+
+---> namespace name should be unique in cluster 
+
+Example:
+apiVersion: v1
+kind: Namespace
+metadata:
+    name: roboshop
+
+Namespaces Commands manually:
+1)create namespace
+kubectl create namespace <namespace name>  or kubectl create ns <namespace name> 
+2)View namespaces
+kubectl get ns or kubectl get namespaces or kubectl get nampespace
+3)to delete the namespace  ---->  When you delete a namespace, Kubernetes also deletes the resources present inside it.
+kubectl delete namespace <namespace name>
+
+4) Get Pods in a Particular Namespace
+kubectl get pods -n <namespace name>    or   kubectl get pods --namespace <namespace name>
+5)Create Deployment in a Namespace  
+kubectl create deployment nginx --image=nginx -n <namespace name>      
+6) to get detailed info about namespace
+kubectl describe namespace <namespace-name>
+
+
+
+Create a resource from YAML
+1)kubectl create -f <filename.yaml>       ----> it will creates the resource only if it doesn't already exist.If the resource already exists, if u run again it will give already exists error.
+2)kubectl apply -f <filename.yaml>		   ----> apply is declarative and idempotent if resource does not exists it will create if already exists it will show unchanges and if already exists and we updated in 	yaml it will update it 
+
+3)kubectl delete -f namespace.yaml      ----> delete namespace via yaml file 
+
+4)kubectl apply -f deployment.yaml -n dev     ---> create resources in particular namespace 
+
+====================================================================================================================================================================
+
+
+
+Pod :
+-----
+A Pod is the smallest deployable unit in Kubernetes. 
+A pod can contain one or more containers that share the same network (namespace, network ip and nodeport ), storage volumes , and configuration.
+Pods are ephemeral i.e., can be created, destroyed or recreated and allow multiple container work together 
+
+Types of pods:
+Single Container pod ----> contains only one container 
+Multi Container pod  ----> contains multiple containers 
+Init container and side car container 
+
+
+Pod States/lifecycle:
+--------------------------
+1)Pending   		----> 	The Pod has been accepted by Kubernetes, but one or more containers have not yet started
+This can include:
+
+Waiting for scheduling
+Waiting for resources
+Pulling the image
+Waiting for volumes
+
+2)Running			----> The Pod has been bound to a node, and all containers have been created; at least one container is still running or starting/restarting.
+Because Pod phase Running does not necessarily mean the application is healthy. A container can be running while its readiness probe is failing.
+
+3)Succeeded    			----> All containers in the Pod have terminated successfully and will not be restarted. 
+This is common with Jobs/batch workloads rather than continuously running microservices.
+4)Failed 				----> All containers in the Pod have terminated, and at least one container terminated unsuccessfully.
+5)Unknown 				----> The Kubernetes control plane cannot obtain the current state of the Pod, usually because it cannot communicate with the node/Kubelet.
+
+
+
+Scheduled    	---> It means the Scheduler has selected a node for the Pod.
+Pulling 			---> images are being pulled by kubelet 
+
+Before Pod :  We build an image ---> Docker file --> docker build ---> docker images ---> docker run ---> container. 
+In Docker, Container is the smallest deployable unit.
+
+In Kubernetes : Kubernetes does not deploy containers directly. It deploys Pods. So, Container runs inside a Pod.
+flow 
+Docker Image ---> Kubernetes ---> Pod ---> Container
+
+Docker already runs containers. Why does Kubernetes use Pods?
+A container alone is not enough. Sometimes two containers need to work together
+
+Example:
+Application Container + Logging Sidecar Containe
+Both should start together , stop together , communicate through localhost , share storage .... So Kubernetes groups them into one Pod.
+
+Imagine Kubernetes has 1000 containers. Instead of managing each one separately, Pods manages them.
+Pods become the unit for:
+
+Deployment
+Scaling
+Networking
+Scheduling
+Monitoring
+
+Everything happens at the Pod level.
+
+Pod Networking : Every Pod gets One IP Address
+
+Example
+Pod : IP -- 10.244.1.5
+
+If there are two containers
+Pod --> App Container + Log Container---> Both share 10.244.1.5 ---> They communicate using localhost ---> because they are inside the same Pod.
+
+Pod Storage : Containers inside one Pod share volumes.
+
+Pod Lifecycle : A Pod is temporary (ephemeral).
+Suppose Pod ---> Crash/dies ---> Kubernetes creates a new Pod. It does not repair the old one.
+
+
+| Container              | Pod                                 |
+| ---------------------- | ----------------------------------- |
+| Docker concept         | Kubernetes concept                  |
+| Runs application       | Runs one or more containers         |
+| Has its own filesystem | Has one or more containers          |
+| Created by Docker      | Created by Kubernetes               |
+| Smallest Docker unit   | Smallest Kubernetes deployment unit |
+
+pod vs container
+Container (Docker) 	:  Single container , Manual management , No self-healing , Scaling is manual , No shared resources
+Pod (Kubernetes)	    :  One or more containers , Managed by Kubernetes , Self-healing (restarts on failure) i , Auto scaling is possible , Shares network & storage
+
+
+How is a Pod Created?
+Normally, we don't create Pods directly. Instead Deployment ---> creates ---> ReplicaSet ---> creates ---> Pods .... We'll learn Deployments next.
+
+Example: Run Nginx
+In Docker :  docker run nginx
+
+Kubernetes:
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+	
+Apply : kubectl apply -f <filename.yaml>
+Now Kubernetes creates :  Pod ---> 1 container
+
+Commands :
+---------------- 
+kubectl apply/create -f <pod.yaml>    			 	 ----> create a pod via yaml file 
+kubectl get pods 													 ----> list all pods in default namespace
+kubectl get pods -n <namespace name>			 ----> list all pods in particular namespace 
+kubectl get pods -o wide 									 ---->  list all pods in default namespace with more details 
+kubectl describe pod <podname>					 ----> show detailed info about a pod 
+kubectl logs <podname>									 ----> view logs of a container in the pod 
+kubectl exec -it <podname> -- bash	 or --sh	 ----> open a bash or shell inside a pod 
+kubectl delete pod <podname>						 ----> delete the pod 
+kubectl get pod --watch					 				     ----> watch the pod in real time
+ 
+
+
+Real Project Flow : GitHub ---> Jenkins ---> Docker Build ---> Docker Hub / ECR ---> Deployment YAML ---> Kubernetes ---> Deployment ---> ReplicaSet ---> Pod ---> Container
+
+Real-Time Example:  Suppose your Catalogue microservice needs 3 replicas.
+
+Kubernetes creates: 
+Deployment ---> ReplicaSet ---> Pod-1 ---> catalogue container ---> Pod-2 ---> catalogue container ---> Pod-3 ---> catalogue container
+Each Pod has --> its own IP , its own filesystem , its own lifecycle
+If Pod-2 crashes, Kubernetes creates a new Pod automatically.
+
+Do containers inside the same Pod communicate using IP ---> no  ---> They communicate using localhost because they share the same network namespace.
+Does every Pod get an IP --> yes --->  Every Pod gets a unique IP address within the cluster.
+
+If a Pod crashes, what happens --->  Kubernetes creates a new Pod (typically through a Deployment/ReplicaSet). It does not repair the old Pod.
+
+Interview Answer (5 Years)
+A Pod is the smallest deployable unit in Kubernetes and a pod can have one or more containers. Containers within a Pod share the same network namespace, IP address, storage volumes, and lifecycle. so they can communicate with each other using localhost and access the same shared files/storage. In our project, we typically used one container per Pod for each microservice. We managed Pods through Deployments, which ensured the desired number of replicas, supported rolling updates, and automatically recreated Pods if they failed.
+
+
+
+Why multiple container in pod :
+ 
+Multi-container patterns :
+---------------------------------
+1)Side-car pattern:
+		Sidecar pattern. Suppose the main container is running the Catalogue application and continuously serving user requests. We don't want the main application container to spend CPU and memory pushing log files to ELK because that affects application performance. 
+		Instead, we add a second container called a Sidecar container(Fluent Bit sidecar container) in the same Pod. The main container simply writes logs to the shared volume, and the Sidecar container reads those logs from the shared storage and pushes them to ELK. 
+		This keeps the main application focused only on serving requests while the Sidecar handles log collection. Since both containers are in the same Pod, they can easily share the same network and storage. 
+
+
+Manifest files:
+Main Container → Catalogue Application
+Sidecar Container → Fluent Bit (push logs to ELK)
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: catalogue-pod
+
+spec:
+  volumes:
+    - name: log-volume
+      emptyDir: {}
+
+  containers:
+  - name: catalogue
+    image: catalogue:v1
+    volumeMounts:
+      - name: log-volume
+        mountPath: /app/logs
+
+  - name: fluent-bit
+    image: fluent/fluent-bit:latest
+    volumeMounts:
+      - name: log-volume
+        mountPath: /app/logs
+
+How it works :  Catalogue Container ---> write logs to /app/logs/app.log ---> in shared volume ---> Fluent Bit pushes logs to ---> ELK 
+
+2)Proxy pattern: 
+		Suppose our main container is running the Catalogue application, and we want every incoming request to be validated before it reaches the application. Instead of implementing authentication, authorization, rate limiting, SSL termination, or request filtering inside the application, we deploy a Proxy container in the same Pod it sits bw the user and main application container. 
+		All client requests first reach the Proxy container, which inspects and validates them. If the request is valid, it forwards it to the main application container using localhost(multiple containers in same pod communicate using localhost); otherwise, it rejects the request. Since both containers share the same network namespace and IP address, communication between them is very fast. 
+		This approach keeps the application code simple while the Proxy container handles security and traffic management. 
+In production environments, technologies such as Envoy or NGINX are commonly used as Proxy containers in a Pod.
+
+A Proxy container sits in front of the application and handles traffic before forwarding it to the main container.Incoming requests first reached the Envoy proxy, which performed authentication, SSL termination, and rate limiting before forwarding valid requests to the application container using localhost.
+
+Every request must
+Authenticate JWT token
+Apply Rate Limiting
+Terminate SSL
+Add Security Headers
+
+Instead of coding all this inside the application, we deploy an Envoy or NGINX proxy.
+If the request is valid ---> Forward to Catalogue ---> If invalid ---> Reject immediately.
+
+Manifest files:
+Suppose
+Envoy acts as proxy
+Catalogue is application
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: catalogue-pod
+
+spec:
+  containers:                          
+  - name: nginx or envoy-proxy                           #container 1 
+    image: nginx or envoyproxy/envoy:v1.29
+    ports:
+      - containerPort: 8080
+
+  - name: catalogue    						   #container 2
+    image: catalogue:v1
+    ports:
+      - containerPort: 8081
+	  
+
+3)Init Container (Real-Time Example)
+			Init container runs only once before the main application container starts. Suppose our Catalogue application requires a database connection, configuration files, or some initialization scripts before it can start successfully. 
+			Instead of adding all these checks inside the application code, we use an Init container. The Init container first verifies that the database is reachable, downloads required configuration files, creates necessary directories, or performs initialization tasks. 
+			Only after the Init container completes successfully Kubernetes start the main application container. If the Init container fails, the main container never starts. This ensures the application always starts in a ready and consistent state. 
+			In production, Init containers are commonly used for database readiness checks, configuration setup, schema migrations, and downloading required files before the application starts.
+
+An Init container performs initialization tasks before the application starts.
+
+Real-Time Example – Database Readiness
+Suppose Catalogue depends on MongoDB.If MongoDB is not ready,the application fails during startup. Instead of retrying forever, we use an Init container.
+
+We used Init containers to perform dependency checks before starting the application. For example, the Init container waited until MongoDB was reachable. Once the database became available, Kubernetes automatically started the main application container.
+Another Example
+Suppose configuration files are stored in S3.
+Init Container ---> Downloads config.yaml from S3 ---> Stores in Shared Volume ---> Application starts ---> Reads config.yaml
+
+Suppose Catalogue should start only after MongoDB is ready. 
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: catalogue-pod
+
+spec:
+
+  initContainers:
+
+  - name: wait-for-mongodb
+    image: busybox
+    command:
+      - sh
+      - -c
+      - |
+        until nc -z mongodb 27017;
+        do
+          echo "Waiting for MongoDB..."
+          sleep 5
+        done
+
+  containers:
+  - name: catalogue
+    image: catalogue:v1
+	
+Flow 
+Pod Starts ---> Init Container checks ---> MongoDB Ready? ---> Yes ---> Catalogue Starts
+
+
+Lets say i have create 2 container in same pod if i want to login to particular container
+kubectl exec -it <podname> -c <containername> --bash
+inside container if u do ----> curl localhost ---> u will get nginx response ---it communicates via localhost 
+
+kubectl describe pod <podname>
+
+====================================================================================================================================================================
+
+labels vs annotation:
+
+labels have some limitations on the length and special characters of key and values 
+no limit on length and special characters also can be used  for annotations
+functionality 
+labels are used to select other kubernetes resources 
+annotations are used to select externale resources to kubernetes
+
+Labels :
+----------
+Labels are key-value pairs attached to Kubernetes objects that are used to filter, identify, organize subset of object like to select the resource
+
+Why do we use Labels ---> Suppose your cluster has 500 Pods like catalogue, cart, user, shipping etc... to identify only catalogue we use like 
+in labels 
+Example: while creation of pod
+labels:
+  app: catalogue
+  env: prod
+  team: payments
+  tier: db
+  version: 1
+  component:api
+
+Now Kubernetes can easily find them.
+  
+Commands: 
+get pods labels 		:  kubectl get pods --show-labels
+filter pods				:  kubectl get pods -l app=catalogue
+
+now u can filter using ----> kubectl get pods -l env=prod   or kubectl get pods -l app=catalogue --> u will all the pods 
+
+Used By:
+✓ Service
+✓ Deployment
+✓ ReplicaSet
+✓ kubectl -l
+
+
+Selectors:
+------------
+selectors are used to find a set of objects/resource based on labels 
+used by services, deployment, network policies and replica sets and more 
+
+Selector supports:
+=        ---> equal       		Ex: env = prod
+! =		 ---> not equal to 		Ex: if we have frontend and backend if we give backend it willl attach to frontend becasuse not equal
+in 		 ---> in a set 			Ex: env in (dev, prod, test)
+notin 	 ---> not in a set 	    Ex: env in (dev, test)
+exists 	 ---> key exists 		Ex: version
+!exists  ---> key does not exists 		Ex: !version
+
+
+types: 
+1)equality based 
+Ex:
+selector:
+	matchLabels: 
+		app: catalogue
+		env: dev 
+
+2)set based 
+selector:
+	matchExpression: 
+	-	key: env
+		operator: in
+		values: [dev, prod]
+		
+		
+
+Annotations:
+----------------
+Annotations are key-value pairs used to store additional information or metadata about Kubernetes objects. They are not used for selecting or filtering resources.
+annotations:
+  owner: Arun Kumar
+  build-number: "125"
+  git-commit: "e89ac43"
+  deployed-by: jenkins
+  jenkins-url: https:jenkins.com/catalogue/app 
+  
+  
+Real-Time Project Example
+Suppose Jenkins builds version v2.1.5. During deployment, Jenkins updates the annotation.
+
+annotations:
+  build-number: "325"
+  git-commit: "7a5f23d"
+  deployed-by: Jenkins
+  deployment-time: "2026-08-07T11:00"
+
+Months later, if a production issue occurs, you can inspect the Deployment and immediately see which build and Git commit were deployed.
+
+Used By: external 
+✓ Jenkins
+✓ ArgoCD
+✓ Humans
+✓ Monitoring Tools
+  
+How Kubernetes Uses Labels
+Suppose your Deployment has
+
+labels:
+  app: catalogue
+ 
+Service
+selector:
+  app: catalogue
+ 
+Service automatically sends traffic only to Pods with labels app:catalogue --> This is why labels are very important.
+
+
+
+
+What are Labels?
+Labels are key-value pairs attached to Kubernetes objects for identification, organization, and selection. They are used by Kubernetes resources like Services and Deployments to locate matching Pods.
+
+What are Annotations?
+Annotations are key-value pairs used to store descriptive metadata such as build numbers, Git commits, deployment timestamps, or owner information. They are intended for tools and humans, not for selecting resources.
+
+Give one production use case for Labels.
+"In our project, we labeled Pods with values such as app=catalogue, env=prod, and version=v1. Kubernetes Services used these labels to route traffic to the correct Pods, and we also used them to filter resources during troubleshooting."
+
+Give one production use case for Annotations.
+We stored deployment metadata such as Jenkins build number, Git commit ID, deployment timestamp, and deployment owner in annotations. This made it easy to trace which build was running in production.
+
+
+If labels are changed, what happens?"
+If a Pod's labels no longer match a Service's selector, the Service immediately stops routing traffic to that Pod. Similarly, if a Deployment's selector doesn't match its Pods, it may create new Pods because it believes the desired ones don't exist. That's why labels must be planned carefully and not changed arbitrarily in production.
+
+
+Env :
+-----
+Environment Variables are key-value pairs used to pass configuration values to a container at runtime without modifying the application code.
+Instead of hardcoding values like database URLs, passwords, or API endpoints inside the application, we pass them as environment variables.
+
+Using Environment Variables
+DB_HOST=mongodb
+DB_USER=admin
+DB_PASSWORD=password123
+
+The application reads these values from the environment instead of the source code. after logging into container type ---> env or printenv
+Kubernetes passes the environment variables through the manifest.
+
+Application Access
+In Java 	:  String host = System.getenv("DB_HOST");
+Python   	:  os.environ["DB_HOST"]
+NodeJS   	:  process.env.DB_HOST
+
+Real-Time Example: Docker image remains same but in manifest files we can define like this 
+Development
+DB_HOST=dev-mongodb
+
+QA
+DB_HOST=qa-mongodb
+
+Production
+DB_HOST=prod-mongodb
+
+What are Environment Variables
+Environment Variables are key-value pairs passed to a container at runtime to provide configuration without changing the application code or rebuilding the Docker image.
+
+Why do we use ENV
+They separate configuration from the application. The same Docker image can be deployed to Dev, QA, and Production by changing only the environment variable values in manifests files 
+
+Can we store passwords in ENV
+Technically yes, but it's not recommended because environment variables can be viewed by processes with sufficient access. In Kubernetes, sensitive data should be stored in Secrets instead of plain environment variables.
+
+Interview Answer (5 Years)
+
+In our project, we used Kubernetes environment variables to pass application configuration such as database host, application environment, and service endpoints to containers. This allowed us to use the same Docker image across Development, QA, and Production while changing only the runtime configuration through Kubernetes manifests. For sensitive information like passwords and API tokens, we used Kubernetes Secrets instead of hardcoding values in the manifest.
+
+ ⭐ Interview Tip
+"If you change an environment variable in the Deployment YAML, will the running Pod automatically get the new value?"
+No. Existing containers keep the environment variables they received at startup. To use the new values, Kubernetes must create new Pods (for example, through a Deployment rollout or a Pod restart).
+
+
+====================================================================================================================================================================
+
+
+EKS Cluster:
+---------------
+
+1)Create A worstation that is ec2 along with that install docker, kubectl and eksctl via workstation-install.sh script file  ---> k8-eksctl folder 
+2)Create an eks.yaml file and write eks cluster and node group manifest code 
+
+file name: eks.yaml
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: roboshop
+  region: us-east-1
+
+managedNodeGroups:
+- name: my-mng
+  instanceType: m5.large
+  desiredCapacity: 3
+  spot: true          #we are using spot instances to reduce billing 
+  
+Spot intsances:
+AWS has unused resources like CPU and memory so instead of keeping them idle AWS will give then for 70% of discount we can use them but user are requesting for the esources aws will give 2 mins notice period and they can take back those resources .. we can use them only for dev and testing not prod 
+
+To create cluster   :      eksctl create cluster --config-file=eks.yaml
+
+Explanation:
+
+apiVersion: eksctl.io/v1alpha5
+apiVersion specifies which version of the eksctl configuration schema should be used to interpret this YAML file.
+This is Deployment API Version."
+
+kind: ClusterConfig  ---> kind specifies what resource should create.
+ClusterConfig ---> Create an Amazon EKS Cluster.
+
+metadata :                    #Metadata gives information about the object.
+	name: roboshop      #resource name      ---> here cluster name it refers 
+  region: us-east-1		#region  ---> Which AWS Region should the create resource
+  
+aws eks update-kubeconfig --name roboshop
+eksctl delete cluster --name roboshop
+
+managedNodeGroups:
+A Managed Node Group is a group of EC2 instances managed automatically by AWS EKS. These EC2 instances act as Kubernetes Worker Nodes where Pods run.
+
+Where do Pods run ---> On Worker Nodes. 
+Where do Worker Nodes come from ---> From Managed Node Groups.
+
+name: my-mng
+This is the Node Group name.
+AWS Console ---> EKS ---> Node Groups
+
+instanceType: m5.large
+Which EC2 instance type should be used?
+
+desiredCapacity: 3      # AWS should create 3 Ec2 instances i.e., 3 worker nodes  ---> Pods will be scheduled across these nodes.
+
+spot: true                  #This tells AWS Use Spot Instances instead of On-Demand EC2.
+
+
+
+====================================================================================================================================================================
+
+
+
+We can restrict the resources consumed by containers 
+
+Resource requests and limits : 
+---------------------------------------
+Resource Requests and Limits define how much CPU and Memory a container requires and the maximum amount it is allowed to use.
+Resource requests and limits are configured on containers, not directly on Pods.
+
+There are two terms:
+Requests
+Limits
+
+
+Why do we need Resource Limits?
+Suppose one Kubernetes Worker Node has:  8 CPU and 16 GB RAM
+Now you deploy three applications ---> catalogue, cart and user 
+Suppose the Cart application suddenly consumes: 90% CPU and 15 GB RAM so other application and node performance will go down 
+
+To prevent one container from consuming all resources, Kubernetes allows us to define Requests and Limits.
+
+Request : Request is the minimum amount of CPU and Memory that Kubernetes guarantees to a container.
+Example
+resources:
+  requests:
+    cpu: "500m"               # 0.5 CPU 
+    memory: "512Mi"   #512 mb 
+	
+Scheduler says: I will place this Pod only on a node that has at least 0.5 CPU and 512Mi memory available.
+
+
+Limit:   Limit is the maximum amount of CPU and Memory a container is allowed to consume.
+Example
+resources:
+  limits:
+    cpu: "1"
+    memory: "1Gi"        #1 CPU and 1 GB RAM
+
+
+Example:
+spec:
+ container:
+ - name: resourcerequestandlimitcontainer
+   image: nginx
+   ports:
+   - containerPort: 80
+   resources:
+    requests:
+      cpu: "100m"
+      memory: "68Mi"
+    limits:
+      cpu: "200m"
+      memory: "100Mi"
+	  
+	  
+What happens during Scheduling?
+Suppose
+
+Worker-1 : Available
+CPU = 200m
+Memory = 400Mi
+
+But in manifest file u mention 
+Request
+CPU = 500m
+Memory = 512Mi
+
+Scheduler says ❌ Cannot schedule. Need another node.
+
+What happens if Limit is crossed?
+
+CPU 
+
+Suppose
+Limit ---> 1 CPU
+Application tries ---> 2 CPU
+
+Kubernetes ---> Throttles CPU.Application becomes slower. Pod is not killed.
+
+Memory
+
+Suppose
+Limit --- > 1Gi
+Application uses  ----> 2Gi
+
+Kernel ---> OOM Killer ---> Container terminated. Pod restarts.
+
+Interviewer
+CPU ---> Throttle
+Memory ---> OOMKilled
+
+
+How to Check container resources :    kubectl describe pod catalogue
+
+Requests and Limits are configured on individual containers. Since a Pod can contain multiple containers, each container can have different resource requirements.
+Request is the minimum guaranteed resource used by the Kubernetes Scheduler to place the Pod on a node. Limit is the maximum resource the container can consume during execution.
+What happens if CPU Limit is exceeded ----> Kubernetes throttles the CPU.
+What happens if Memory Limit is exceeded ----> The container is terminated by the Linux OOM Killer and Kubernetes restarts it (if managed by a Deployment/ReplicaSet).
+If a Pod has two containers, where do you configure resources ---> for each container we will specify 
+
+In our Kubernetes deployments, we configured CPU and memory requests and limits for each container. Requests ensured that the Kubernetes Scheduler placed Pods only on nodes with sufficient resources, while limits prevented a container from consuming excessive CPU or memory. If CPU usage exceeded the limit, the container was throttled, whereas exceeding the memory limit resulted in an OOMKilled event and Kubernetes recreated the container. Configuring appropriate requests and limits helped us achieve stable resource utilization and prevented one application from impacting others on the same worker node.
+
+
+
+
+===================================================================================================================================================================
+
+
+
+ConfigMap:
+--------------
+A ConfigMap is a Kubernetes object used to store non-sensitive configuration data in key-value pair 
+It allows us to seperate configuration from the image and manifest and used as env variables and mounted as files in pods
+
+Real-Time Example : Suppose your company has three environments.
+
+Development
+DB_HOST=dev-mongodb
+LOG_LEVEL=DEBUG
+
+QA
+DB_HOST=qa-mongodb
+LOG_LEVEL=INFO
+
+Production
+DB_HOST=prod-mongodb
+LOG_LEVEL=ERROR
+
+The Docker image is exactly the same for all env's. Only the ConfigMap changes.
+
+Example :   ConfigMap Manifest
+------------
+
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: catalogue-config
+data:
+  DB_HOST: mongodb
+  DB_PORT: "27017"
+  LOG_LEVEL: INFO
+  APP_ENV: Production
+  
+How does the Application use ConfigMap ---> we have 3 ways 
+
+Mathod : 1  Instead of loading all values, suppose we only need 1 or 2 details from configmap file  ---------    Imports only specific keys.
+
+spec:
+      containers:
+
+      - name: catalogue
+        image: catalogue:v1
+
+        env:
+        - name: DB_HOST
+          valueFrom:
+            configMapKeyRef:
+              name: catalogue-config
+              key: DB_HOST
+
+        - name: DB_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: catalogue-config
+              key: DB_PORT
+
+Method 2 – Environment Variables if application needs all keys present in config yaml file  ---------  Imports all keys. The application needs all configuration values.
+
+spec:
+      containers:
+      - name: catalogue
+        image: catalogue:v1
+
+        envFrom:
+        - configMapRef:
+            name: catalogue-config
+			
+What happens     ---> Kubernetes reads catalogue-config file and automatically creates
+
+DB_HOST=mongodb
+DB_PORT=27017
+LOG_LEVEL=INFO
+inside the container.
+
+Method 3 – Mount as Files to pods 
+
+volumes:
+- name: config-volume
+  configMap:
+    name: catalogue-config
+
+
+spec:
+      containers:
+      - name: catalogue
+        image: catalogue:v1
+		volumeMounts:
+		- name: config-volume
+		  mountPath: /app/config
+  
+Now Kubernetes creates /app/config/
+
+DB_HOST
+DB_PORT
+LOG_LEVEL   as files.
+
+
+env is used to import specific keys from a ConfigMap or Secret as environment variables, whereas envFrom imports all the key-value pairs from the referenced ConfigMap or Secret. We use env when only a few configuration values are required and envFrom when the application needs all the configuration values.
+
+
+
+Real-Time Example
+
+Spring Boot ---> Instead of application.yml inside Docker Image, we mount ConfigMap. 
+Now Changing ConfigMap -----> Restart Pod ------ > Application uses new configuration. No new Docker image
+
+
+Commands:
+Create ConfigMap
+kubectl apply -f configmap.yaml
+
+View
+kubectl get configmap
+
+Describe
+kubectl describe configmap catalogue-config
+
+View YAML
+kubectl get configmap catalogue-config -o yaml
+
+Delete
+kubectl delete configmap catalogue-config
+
+
+Real Production Example :  Suppose Catalogue connects to MongoDB.
+Earlier Docker Image   ----> DB_HOST=mongodb ---> Hardcoded.
+
+Now Docker Image ----> ConfigMap ----> DB_HOST=prod-mongodb 
+Tomorrow Database url changes -------> prod-mongodb --to-> mongodb-primary -----> Only we change in ConfigMap. No Docker rebuild required. if we restart the application it automatically pick new config details
+
+
+ConfigMap vs Environment Variables
+
+Without ConfigMap
+
+env:
+- name: DB_HOST
+  value: mongodb
+  
+Problem : If we have 100 Deployment manifest files if we want to change DB_HOST, You must change 100 YAML files.
+
+With ConfigMap :
+One ConfigMap -----> 100 Deployments ----> Everyone gets same configuration. Much easier.
+
+ConfigMap vs Secret
+
+| ConfigMap          | Secret         |
+| ------------------ | -------------- |
+| Non-sensitive data | Sensitive data |
+| DB Host            | DB Password    |
+| Port               | API Key        |
+| Log Level          | Access Token   |
+| Environment Name   | Certificate    |
+
+ConfigMaps separate configuration from the application. The same Docker image can be deployed across Development, QA, and Production while changing only the configuration.
+
+Can ConfigMap store passwords ----> No. Passwords should be stored in Secrets.
+
+
+Interview Answer (5 Years)
+
+In our Kubernetes deployments, we used ConfigMaps to externalize application configuration such as database host, application environment, service URLs, and log levels. This allowed us to use the same Docker image across multiple environments while changing only the configuration. Our applications consumed ConfigMaps primarily through environment variables, although some applications also mounted ConfigMaps as configuration files. For sensitive values like database passwords and API tokens, we used Kubernetes Secrets instead of ConfigMaps.
+
+
+===================================================================================================================================================================
+
+
+Secrets:
+----------
+A Secret is a Kubernetes object used to store sensitive information such as passwords, API keys, tokens, certificates and SSH keys securely instead of hardcoding them in the application or manifest files.
+Normally it stores Secret values as Base64 encoded values. used as env variables mounted as files in pods 
+
+Base64 is NOT encryption. It is only encoding. Anyone can decode it. For stronger protection, many organizations integrate Kubernetes with tools like HashiCorp Vault or cloud secret managers such as AWS Secrets Manager.
+
+Example
+apiVersion: v1
+kind: Secret
+
+metadata:
+  name: catalogue-secret
+
+type: Opaque
+
+data:
+  DB_USERNAME: YWRtaW4=
+  DB_PASSWORD: QWRtaW5AMTIz
+  
+
+type: Opaque ----> General-purpose Secret. This is the most commonly used Secret type.
+
+Instead of Opaque we also have Other types exist
+
+kubernetes.io/dockerconfigjson
+kubernetes.io/tls
+kubernetes.io/service-account-token
+
+Example : Types to access 
+
+1) Using Secret with env 		--> if u want particular secret instead of importing all keys 
+
+ spec:
+      containers:
+      - name: catalogue
+        image: catalogue:v1
+        env:
+        - name: DB_USERNAME
+          valueFrom:
+            secretKeyRef:
+              name: catalogue-secret
+              key: DB_USERNAME
+        - name: DB_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: catalogue-secret
+              key: DB_PASSWORD
+			  
+
+2)Usinf envFrom  --------> it imports all keys declared in secret manifest
+spec:
+  containers:
+  - name: catalogue
+	image: catalogue:v1
+	envFrom:
+	- secretRef:
+		name: catalogue-secret
+			
+			
+3)Mount Secret as Volume
+Sometimes applications need   ---> certificate.pem , tls.key , tls.crt.....Instead of environment variables, Secrets can be mounted as files.
+
+spec:
+  containers:
+  - name: catalogue
+	image: catalogue:v1
+	volumeMounts:
+	- name: secret-volume
+	  mountPath: /etc/secrets
+	  
+volumes:
+- name: secret-volume
+  secret:
+    secretName: catalogue-secret                    #in secret manifest file secret name check above secret manifest file example 
+
+
+
+/etc/secrets/DB_PASSWORD          ---> application reads this key DB_PASSWORD from secrets file which i spresent in /etc location
+
+
+Process to convert to base64 encoded ------>
+1) echo -n "Admin@123" | base64   ---> give value    ---->  QWRtaW5AMTIz       ---> paste it in secret manifest file DB_PASSWORD value 
+
+
+Commands
+create secret 				:   kubectl apply -f secret.yaml
+View						:   kubectl get secrets
+Describe secrets            :   kubectl describe secret <secret name>
+View yaml                   :   kubectl get secret catalogue-secret -o yaml
+
+
+Create Secret from Command Line
+kubectl create secret generic catalogue-secret --from-literal=DB_USERNAME=admin --from-literal=DB_PASSWORD=Admin@123
+
+Decode Secret
+echo "QWRtaW5AMTIz" | base64 -d
+
+
+The application receives credentials as environment variables.
+
+Difference between ConfigMap and Secret?
+| ConfigMap     | Secret         |
+| ------------- | -------------- |
+| Non-sensitive | Sensitive      |
+| Plain text    | Base64 encoded |
+| DB Host       | DB Password    |
+| Environment   | API Key        |
+
+Q4. How can a Pod consume a Secret?
+
+Three ways
+env
+envFrom
+Volume Mount
+
+Exactly the same as ConfigMap.
+
+
+Interview Answer (5 Years)
+
+In our Kubernetes deployments, we used Secrets to store sensitive configuration such as database passwords, API keys, JWT tokens, and service credentials. The application consumed these Secrets primarily through environment variables using secretKeyRef. For non-sensitive values such as database host, ports, and environment names, we used ConfigMaps. In production environments, we integrated Kubernetes with HashiCorp Vault/AWS system Manager for centralized secret management instead of storing long-lived credentials directly in Kubernetes Secrets.
+
+
+
+===================================================================================================================================================================
+
+Services:
+-----------
+A Kubernetes Service is a Kubernetes object that provides a stable IP address and DNS name for a group of Pods and distributes traffic among them using labels and selectors.
+
+Why do we need Kubernetes Services?
+Suppose we have a Deployment with 3 Pods.
+
+Catalogue Deployment ---> has 3 pods with 3 Ip address
+
+        │
+
+ ┌──────┼──────┐
+
+ │      │      │
+
+Pod1   Pod2   Pod3
+
+10.0.1.1
+10.0.1.2
+10.0.1.3
+
+Each Pod gets its own IP. Now the User microservice wants to call the Catalogue microservice. It calls ----> 10.0.1.1 ---> Everything works.
+
+Problem 1 – Pod IPs are Temporary 
+Pod ip are temporary if pod creashe and recreated then pod ip changes if User Service is still trying to call old pod IP which no longer exists. Application fails.
+Problem 2 – Multiple Pods
+Suppode catalogue-deployment has 3 pods --> if user want to call which pod should user call -- pod1 or pod 2 or pod 3 ?
+We don't know.
+So 
+We need
+Load Balancing
+Fixed Endpoint
+Service Discovery
+
+Docker cannot solve this inside Kubernetes. In this scenario USER taking directly to POD 
+
+
+A Kubernetes Service is an abstraction that provides a stable network endpoint and load balances traffic to one or more Pods using labels and selectors.
+
+With Service
+USER ---> talks to ----> catalogue-dervice ---> pod 1 and pod 2 and pod 3 ------> User always talks to Catalogue Service Never directly to Pods.
+
+How Service Finds Pods:   Using LABELS
+
+Deployment file
+----------------
+metadata:
+  labels:
+    app: catalogue
+	
+Service file
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: catalogue
+spec:
+  selector:
+    app: catalogue
+  ports:
+  - port: 8080
+    targetPort: 8080
+
+Service automatically finds every Pod having    ------> app: catalogue
+selector: see This is why Labels are important.
+
+Flow: 
+User Service ---> Catalogue Service ---> Selector ---> app=catalogue ---> Pod1 , Pod2 , Pod3
+
+The User application never connects directly to a Pod. It always connects to the Catalogue Service. If a Pod is deleted, the Service automatically routes traffic to the remaining healthy Pods.
+
+Load Balancing
+Suppose 3 pods we have  ------>  Catalogue Service ---> Pod1 , Pod2 , Pod3
+we got 10 Requests ---> Traffic gets distributed automatically.
+
+If One Pod Crashes EX: pod 2 ---> crashes currently we only have pod1 and pod 3 ---> Service automatically stops sending traffic to Pod2...No manual work.
+
+Service Discovery
+Instead of calling ---> ip 10.0.1.3 ----> Applications call catalogue or catalogue.default.svc.cluster.local
+Kubernetes DNS resolves :  catalogue ---> Cluster IP ---> Correct Pod
+
+
+Commands:
+Create Service        :  kubectl apply -f service.yaml
+View Services 		 :   kubectl get svc
+Describe Service   :   kubectl describe svc catalogue
+Delete  					:   kubectl delete svc catalogue
+
+	
+
+Types of Kubernetes Services
+
+| Service Type | Purpose                                      |
+| ------------ | -------------------------------------------- |
+| ClusterIP    | Internal communication inside the cluster    |
+| NodePort     | Expose application using Node IP + Port      |
+| LoadBalancer | Expose application using Cloud Load Balancer |
+| ExternalName | Maps Service to an external DNS name         |
+
+
+Why do we need Services?
+Pods are ephemeral, so their IP addresses change when they are recreated. Services provide a stable endpoint, service discovery, and load balancing, allowing applications to communicate reliably without depending on Pod IPs.
+
+How does a Service identify Pods?
+Using Labels and Selectors. The Service selector matches Pod labels and automatically routes traffic to the matching Pods.
+
+Does a Service create Pods?
+No. Deployments create Pods. Services only expose and load balance them.
+
+In our Kubernetes deployments, every microservice was exposed through a Kubernetes Service instead of accessing Pods directly. Since Pods are ephemeral and their IP addresses change after restarts or rollouts, Services provided a stable Cluster IP and DNS name for communication between microservices. Services used label selectors to identify the appropriate Pods and automatically distributed traffic across healthy replicas, ensuring reliable service discovery and load balancing within the cluster.
+
+Flow
+Deployment ----> Creates Pods ----> Labels (app=catalogue) ----> Service ----> Selector (app=catalogue) ----> Stable IP + DNS ----> Load Balancing ----> Client
+
+After creating service resource it will have ----> Service name and ip address and port number 
+
+Kubectl get pods --> take one pod name any pod even it is not attached to service do below 
+kubectl exec -t <podname> --bash 
+now inside pod ----> if u do ---> curl <ip of service> --> u will get response and curl <service-name> --> u will get response --> both ip and service name can works as dns resolver  
+Service ip also not a permanent ip address ---> name is permannent mostly --> even it is recreated 
+
+Some random pod ---> we do above curl commands ---> forwards to ---> service ---> service connects with ---> pod which inside running on nginx and get response 
+
+Types:
+--------
+
+1.ClusteIP:
+--------------
+ClusterIP is the default Kubernetes Service type. It provides a stable internal IP and DNS name that can be accessed only from within the Kubernetes cluster.
+commonly used type for microservice-to-microservice communication.
+
+Example :  user pod wants to call to catalogue pod 
+user ---> request to ---> service(clusterip) ---> it forwards to ---> catalogue pod to container ---> and gives the response back 
+
+The User service doesn't care about Pod IPs 
+user calls --> catalogue:8080 --> catalogue port --> that forwards to catalogue -pod 
+
+Real project example: 
+Example:  we have different components in roboshop 
+user → catalogue
+cart → catalogue
+payment → cart
+These internal communications can use ClusterIP Services.
+
+We primarily used ClusterIP Services for internal microservice communication. They provide a stable virtual IP and DNS name, and the Service routes traffic to the appropriate Pods using label selectors.
+
+Example : path =====>   k8-concept-wise\03-services\01-clusterip.yml
+
+
+2. NodePort
+----------------
+
+NodePort exposes a Kubernetes Service on a static port on every worker node, allowing clients outside the cluster to access the application using the node's IP and that port.
+
+Even after creating nodeport nodeport service will have cluster ip ---> cluster ip subset of nodeport 
+
+Request flow --> 
+user ---> node port ---> this forwards to service (which has clisterip )---> forwards to ---> pod 
+or
+External Client  ----> Node-IP:30080 (hits <ip of worker node ec2>:30080) ---> node ---> forwards to ---> services ---> pods 
+And in security groups of cluste u need to open all tcp in inbound rules 
+
+ex: path ----> k8-concept-wise\03-services\02-nodeport.yaml
+
+
+3. LoadBalancer
+LoadBalancer exposes a Kubernetes Service externally through a cloud provider's load balancer.
+This is particularly useful in cloud environments such as AWS EKS.
+
+Nodeport is subset of load balancer --> even if u create load balancer if u see ---> kubectl get svc   ---> u can find lb ip and nodeport number and cluster ip all three
+
+Flow :
+user ----> load balacer ---> one f the worker node port ----> service ----> pod 
+
+Interview answer
+
+"In AWS EKS, a LoadBalancer Service can provision an AWS load balancer and expose the application externally. It is useful when a service needs a direct external load-balancer endpoint, although for many HTTP/HTTPS applications we prefer an Ingress-based architecture so multiple applications can share the same load balancer."
+
+
+4. ExternalName
+ExternalName creates a Kubernetes Service that maps a Kubernetes DNS name to an external DNS name using a CNAME record.
+Suppose your application needs an external database: mongodb.company.com
+There is no selector:
+
+
+In our microservices architecture, ClusterIP was commonly used for internal service-to-service communication, while external HTTP/HTTPS traffic was typically handled through an ingress/load-balancing layer."
+
+ClusterIP has no load balancing.
+It does distribute traffic across the matching backend Pods. The difference is that ClusterIP is internally reachable, whereas NodePort and LoadBalancer provide external exposure.
+
+
+
+
+
+
+
+
+===================================================================================================================================================================
+
+
+ReplicaSet:
+--------------
+A ReplicaSet is a Kubernetes controller that ensures the desired number of Pods are running at all times.
+
+For example:  
+replicas: 3   =====> means Kubernetes should maintain 3 Pods. ReplicaSet continuously maintains the desired number.
+If one Pod dies: ReplicaSet notices that only 2 Pods are running and creates a replacement pod automatically So the desired count becomes 3 again.
+
+ReplicaSet's Main Responsibilities
+Maintain replica count/desired count 
+Replace failed Pods --> if pod fails recreate replacement pod 
+Select Pods using labels
+
+Example:
+
+apiVersion: apps/v1
+kind: ReplicaSet
+
+metadata:
+  name: catalogue-rs
+
+spec:
+  replicas: 3
+  selector:
+    matchLabels:
+      app: catalogue           #this labels should match the pod labels then only replica set can manage/control pods  
+											#It tells the ReplicaSet controller: "Go look across the cluster and manage any Pod that has the tag app: catalogue
+  template:										#pod start point
+    metadata:
+      labels:
+        app: catalogue         #pod labels 
+    spec:
+      containers:
+      - name: catalogue
+        image: catalogue:v1
+		ports:
+        - containerPort: 8080
+		
+
+If the labels do not match perfectly, the ReplicaSet will not be able to track or manage those pods		
+		
+		
+Commands:
+kubectl get replicasets   or kubectl get rs        ---> get list if replicasets
+kubectl describe rs catalogue-rs                   ---> describe replica means all info about that 
+
+
+
+ReplicaSet vs Deployment
+| ReplicaSet                               | Deployment                      |
+| ---------------------------------------- | ------------------------------- |
+| Maintains desired number of Pods         | Manages application releases/lifecycle    |
+| Creates/replaces Pods                    | Creates and manages ReplicaSets |
+| Supports scaling                         | Supports scaling                |
+| Self-healing of replica count            | Rolling updates                 |
+| No proper application rollout management | Rolling updates & rollbacks     |
+| Usually managed by Deployment	             | Common production resource      |
+
+		
+		
+Then Why Do We Need Deployment?
+Flow --->  Deployment ---> Replica Set ---> pods		
+Deployment manages the Replica Set. Replica Set manages the Pods.
+
+Example: Updating the Application
+Suppose you're applications has running: catalogue:v1  code -------> replica set ---> with 3 Pods:
+Now you want to update code changes version : catalogue:v2
+
+U updated the images new version and pushed and u puled in ec2 and ---> u applied replica set manifest file again --> but it will not create anything and update because already pods are 3 running 
+it won't update the new code 
+
+A Replica Set by itself isn't designed to manage application rollouts the way a Deployment does.
+
+But Deployment creates the new replica set with new code 
+
+
+
+What is a Replica Set and why do we use it?
+
+A ReplicaSet is a Kubernetes controller responsible for maintaining the desired number of identical Pods. 
+For example, if we configure three replicas and one Pod fails, the ReplicaSet detects that the actual number has dropped to two and creates a replacement Pod. 
+It uses label selectors to identify the Pods it manages. In our production deployments, we generally don't create ReplicaSets directly; we use Deployments, which create and manage Replica Sets and provide additional capabilities such as rolling updates and rollbacks.
+
+Deployment = manages releases
+ReplicaSet = maintains replica count
+Pod = runs the container
+
+===================================================================================================================================================================
+
+
+Deployment:
+-----------------
+A Deployment is a Kubernetes resource that manages the desired state and lifecycle of application Pods through ReplicaSets. It provides declarative updates, scaling, rolling updates, rollbacks, and self-healing.
+
+
+The most important relationship is:   Deployment ---> replicaset ---> Pod ---> containers 
+
+
+Why do we need Deployment?
+Suppose your Catalogue application is running ----->  catalogue:v1 ------> with 3 replicas: i.e., 3 pods 
+Now u want to release ---> catalogue: v2 ---> You don't want to manually delete the old Pods and create new ones.
+Basically, deployment can detect the code changes, but replica set can't 
+
+Deployment handles the rollout.
+Deployment
+   │
+   ├── Old Replica Set → v1
+   │
+   └── New Replica Set → v2
+
+It gradually replaces v1 Pods with v2 Pods. That's a Rolling Update.   
+when u apply the updated image manifest file with ---> catalogue: v1 
+
+kubectl apply -f <filename.yaml >        ---> in this image is updated to ----> catalogue: v1 
+Now deployment do  -------> 
+step : 1 ---->  Create new replicaset and old replica set is there and pods are running 
+when u apply updated manifest file by default if performs ---> rolling update feature 
+
+step: 2 
+Rolling update :  we mentioned replica : 3 in manifest file 
+It gradually shifts traffic/workload from old Pods to new Pods according to the rollout strategy.
+set 1
+in new replicaset it create the new pod 1 with updated image i.e., new version catalogue:v2 
+in old replicaset it down and removes the pod 1 which is running with catalogue:v1 
+set 2
+in new replicaset it create the new pod 2 with updated image i.e., new version catalogue:v2
+in old replicaset it down and removes the pod 2 which is running with catalogue:v1 
+set 3
+in new replicaset it create the new pod 3 with updated image i.e., new version catalogue:v2
+in old replicaset it down and removes the pod 3 which is running with catalogue:v1 
+
+so we mention replicas : 3 so it replaced all 3 ... if we mention 5 it remove like above and finally the old replica set also deleted 
+Currently we will have new replicaset with 3 pods ---> desired state is up 
+
+
+Example  :   Same code as replicaset only change is 
+
+kind : Deployment 
+
+
+apiVersion: apps/v1   --->  Tells Kubernetes which API version to use.
+kind : Deployment     --->   Tells Kubernetes that we are creating a Deployment.
+replicas: 3 					  --->   We want 3 Pods.
+
+selector:
+  matchLabels:
+    app: catalogue            # Deployment identifies the Pods it manages using labels.
+	
+template:                    ---->  This is the Pod template. It tells Kubernetes how the Pods should be created.
+
+Container								#This specifies the container image that should run inside each Pod.
+containers:
+- name: catalogue
+  image: catalogue:v1
+  
+Commands :
+kubectl get deployment
+kubectl get rs
+kubectl get pods
+
+
+Self-Healing :  Desired = 3 if pod 2 dies it detects  ---> The ReplicaSet managed by the Deployment notices that only 2 Pods exist. So the Deployment indirectly provides self-healing through its Replica set.
+
+Scaling: 
+Suppose traffic increases. 
+You currently have: replicas: 3
+
+You can scale to 5:   kubectl scale deployment catalogue --replicas=5
+
+You can also change replicas: 5 and apply the manifest.
+
+Rollback
+Suppose v2 has a bug. You can check rollout history:
+
+kubectl rollout history deployment catalogue
+Then rollback: kubectl rollout undo deployment catalogue
+
+Kubernetes can return the application to the previous revision.This is one of the major reasons we use Deployment rather than directly creating ReplicaSets.
+
+Check Rollout status :  kubectl rollout status deployment catalogue
+
+Real Production Flow :   Dockerfile ---> Docker Image ---> ECR ---> Deployment YAML ---> Kubernetes Deployment ---> ReplicaSet ---> Pods ---> Containers
+
+What is a Kubernetes Deployment?
+A Deployment is a Kubernetes resource used to manage the lifecycle and desired state of application Pods. It manages ReplicaSets, which in turn maintain the required number of Pods.
+
+In our projects, we used Deployments for microservices because they provided replica management, self-healing through ReplicaSets, rolling updates, scaling, and rollback capabilities. 
+For example, when we released a new version of the Catalogue service, we updated the image version in the Deployment and Kubernetes created a new ReplicaSet and gradually replaced the old Pods with the new version.
+
+
+===================================================================================================================================================================
+
+
+I have create a custom namespace for roboshop proj if i want to make that as default namespace for your active terminal session So change your kubectl context configuration.
+1)kubectl config set-context --current --namespace=<custom-namespace>
+2)kubectl config view --minify | grep namespace:            ----> How to Verify the Change
+3)kubens <custom-namespace>
+
+
+
+K8's roboshop:
+-------------
+
+Step 1: 
+create a cluster through manifest file ---> create an ec2 instance and install docker, kubectl and eksctl 
+
+To create cluster 
+apiVersion: eksctl.io/v1alpha5
+kind: ClusterConfig
+metadata:
+  name: roboshop
+  region: us-east-1
+
+managedNodeGroups:
+- name: worker_nodes
+  instanceType: m5.large
+  desiredCapacity: 3
+  spot: true
+      # ssh:  we can give likethis also but we do with aws configure in terminal
+      # publicKeyPath: ~/.ssh/ec2_id_rsa.pub
+	  
+Now open ec2 public ip in superputty and pull the repo k8-eksctl repo and go to that folder in ec2 ----> 
+To create cluster   :      eksctl create cluster --config-file=eks.yaml
+It will create one EKS cluster and 3 worker nodes (desiredCapacity: 3)
+
+when u create a cluster or run above command to create cluster ----> in background it will automatically create ---> 
+----------------------------------
+1)seperate vpc , subnets , internet gateway, nat gateway and route tables 
+2)it will create a new cluster and security groups  --> Control Plane Security Group and Shared Node Security Group
+3)IAM role  ---> Cluster IAM Role: : Grants the EKS master components permission to manage AWS resources (like EC2 instances and Elastic Load Balancers) on your behalf.
+Node Instance IAM Role: Attached to worker nodes so they can safely pull images from Amazon ECR, log metrics to Amazon CloudWatch, and interface with the EKS API server.
+Service Linked Role: Automatically creates AWSServiceRoleForAmazonEKS if it does not already exist in your account.
+4)Data Plane (Compute & Storage Stack)
+EC2 Auto Scaling Group (ASG) ---> ec2 and storage volumes 
+5)Local Client Configurations
+kubeconfig updates: It automatically downloads the cluster certificates and appends a pre-configured context directly into your local ~/.kube/config file. This allows you to immediately type kubectl get nodes right after completion without manual linking.
+
+Step: 2 
+1)create a mongodb folder and copy all the application code if any
+2)Write Docker file instructions to package everything into docker image ---> build the image (docker build -t url/<imagename>:<version> . ) ---> docker push -- it to docker hub 
+3)write manifest files to create mongodb service , pod through deployment and replicaset --- (it will create no of replicas of pod and container inside it )
+
+commands :  
+kubectl apply -f manifest.yml     					--> create the resources written in manifest file
+kubectl get deployment -n roboshop 			--> it will show the deployments present in roboshop namespace
+kubectl get rs -n roboshop								--> it will show the replicaset present in roboshop namespace
+kubectl get pods -n roboshop    					--> get the pods list present in roboshop namespace 
+kubectl get svc -n roboshop      						--> get the services list present in roboshop namespace 
+kubectl logs <podname>  -n roboshop		--> to see pod logs in roboshop namespace
+Enter into pod/container :   kubectl exec -it <podname> -- bash
+kubectl get pods -o wide                   				--> give the more detailed info about pods 
+
+name of the pod how it will write 
+deployment name :   mongodb-ds
+replicaset name  	  :   mongodb-ds-57479ffb9c
+pod name  			  :   mongodb-ds-57479ffb9c-ng5s9
+
+so in pod name it will combine    ---->      deployment name + replicaset generated id + pod id generated random id  ----> all 3 together is the pod name 
+service name will be what ervr we give in manifest file that will come 
+
+
+
+In catalogue :
+ENV MONGO=true          ---> pass it trough config file instead of putting it in docker file if we want to change in feature we need to rebuild the image so we pass it k8's congifmap can acces at container runtime 
+
+In web
+We removed urls in roboshop.conf because while each component we add one by one we cannot update every time web image so url give as config maps volumes 
+
+    location /api/catalogue/ {
+        proxy_pass http://catalogue:8080/;
+    }     related to this urls 
+	
+If u see in load balancer in aws console ---> target instances ---> out of service ---> we blocked the ports for that we need to add because load balanceris not able to reach target instances  
+we need to addd --> click on any worker node ---> click on sg present in security ---> inbound rules ---> add rule --> all traffic ---> 0.0.0.0/0 ---> add 
+
+In manifest file : configmap check once 
+
+In service mention this :     type: LoadBalancer
+because we are exposing it to outside world 
+
+Same for user, cart like catalogue etc...............
+
+
+We used secrets concept in mysql component 
+
+ 
+
+
+
+
+
+
+
+
+
+
+
+# 1. Clone the repository into the /opt directory
+sudo git clone https://github.com/ahmetb/kubectx /opt/kubectx
+
+# 2. Create the symbolic link for kubectx using lowercase -s
+sudo ln -s /opt/kubectx/kubectx /usr/local/bin/kubectx
+
+# 3. Create the symbolic link for kubens using lowercase -s
+sudo ln -s /opt/kubectx/kubens /usr/local/bin/kubens
+
+4. kubens <custom-namespace>
+or
+
+I have create a custom namespace for roboshop proj if i want to majke that as default namespace for your active terminal session So change your kubectl context configuration.
+1)kubectl config set-context --current --namespace=<custom-namespace>
+2)kubectl config view --minify | grep namespace:            ----> How to Verify the Change
+3)kubens <custom-namespace>
+
+
+===================================================================================================================================================================
+
+imagePullPolicy :   imagePullPolicy controls when the container runtime should pull an image from the registry before starting a container.
+Types: 
+by default  : 
+
+| Policy         | Meaning                                                |
+| -------------- | ------------------------------------------------------ |
+| `Always`       | Check/pull the image every time a container starts     |
+| `IfNotPresent` | Pull only if the image isn't already available locally |
+| `Never`        | Never pull; image must already exist on the node       |
+
+
+Always : When the container starts, Kubernetes contacts the registry and checks for the image and pull the image 
+Important: Always doesn't necessarily mean the entire image is downloaded every time. The runtime can use cached image layers if the resolved image digest is already present.
+
+IfNotPresent   --->  Kubernetes checks whether the image already exists on the node.it will pull the image from registry if image is not present in local..if image exists it will not pull ....
+Scenario:
+Suppose if u update the instructions in docker file and build a new image with new changes when u run manifest again... if image present locally it will not pull the updated image it will use old image instead.
+
+Never  :   Kubernetes does not pull anything. The image must already exist on the worker node.
+
+
+⭐ Very Important Interview Point: Default Policy
+You don't always have to explicitly write imagePullPolicy. Kubernetes has defaulting behavior based on the image tag.
+If image tag is mentioned as ---> latest or not mentioned version ----> Kubernetes by default uses the Always policy only for latest tag 
+example:   
+image: catalogue:latest 
+image: catalogue    ---> because it automatically pulls latest images ryt so thats y 
+
+
+other than latest tag all remaining by default ----> IfNotPresent     ---> u have to mention explicity u want policy 
+
+Real Production Example:
+Suppose your CI/CD pipeline builds:   catalogue:v1.2.5  ---> and pushes it to: Amazon ECR
+
+Your Deployment:
+
+containers:
+- name: catalogue
+  image: 123456789.dkr.ecr.us-east-1.amazonaws.com/catalogue:v1.2.5
+  imagePullPolicy: IfNotPresent
+
+When a new Pod is scheduled: it will check the image if exists use it orther wise pull it from ECR 
+
+
+Interview Scenario:
+I pushed a new Docker image with the same v1 tag, but my new Kubernetes Pod is still running the old code. Why?
+Possible reason:
+imagePullPolicy: IfNotPresent    -----> and node has already old image So the runtime may use the existing local image instead of pulling the newly pushed image with the same tag.
+
+===================================================================================================================================================================
+
+
+Another Part 
+
+
+===================================================================================================================================================================
+
+
+
+State/data = information that the application needs to remember.
+
+Stateless
+Stateless applications don't keep or depend on critical data stored locally inside the application instance to handle the requests
+Even that instance deleted or recreated or created newly it will automatically serve the requests because data is not stored locally and not dependent on data 
+
+stateless: applications doesnt store anything 
+Applications which doesnt have any storage are called as stateless applns u can easily create or delete or restart the applicaions it doesnt affect anything
+ex:
+A Pod can be deleted, recreated, or moved to another node, and the application can continue serving requests because important state is stored outside that Pod.
+
+
+stateful :
+
+A stateful application is an application whose operation depends on data that must survive application/container/Pod restarts, replacement, or rescheduling.
+Ex : mongodb, mysql and postgraceSQL etc...
+
+In Kubernetes 
+For stateless applications we use
+Deployment 
+For statefull applications we use
+statefulset
+
+
+Storage:
+-----------
+1) emptyDir:
+It is a temporary storage created when a Pod is assigned to a node. It can be shared between containers in the same Pod and remains available as long as the Pod exists. When the Pod is deleted, the emptyDir data is deleted.
+
+Important point :  emptyDir is not persistent storage.  And it is pod level storage
+If the application container restarts   ---> emptyDir  remains and data will be present
+If the pod deleted automatically emptyDir deleted
+So it's useful for temporary/shared data between containers in the same Pod, such as this Filebeat sidecar pattern.
+
+
+Ex: Side-Car patterns 
+Imagine a Pod with two containers:
+Pod
+│
+├── Main Application Container  ----> writes logs to shared volume 
+└── Filebeat Container   ------> reads logs from the shared volume  and pushes to ELK 
+             
+---> Shared emptyDir
+Ex:  path :  k8-concept-wise\05-storage\01-empDir.yml
+
+2)HostPath:
+hostPath mounts a directory or file from the worker node's filesystem directly into a Pod.
+Storage belongs to the Worker Node..even if Pod deleted → node's files remain
+To ship server logs we use Daemonset
+
+Here : DaemonSet  + Fluentd 
+Run one Fluentd logging agent on every Kubernetes node and give that Fluentd container access to the node's /var/log directory so it can collect logs and send them to Elasticsearch.
+
+Because it is a DaemonSet, Kubernetes creates one Fluentd Pod on every eligible node. Each Fluentd instance reads logs from its own node.
+Because Fluentd is being used as a node-level log collector.  Because Fluentd itself is the logging agent. collect logs from each worker node.
+Fluentd DaemonSet is deployed in the Kubernetes system(i.e., kube-system) namespace.
+
+That's why the combination makes sense:   DaemonSet + hostPath
+
+DaemonSet : 
+A DaemonSet is a Kubernetes controller that ensures a copy of a specific Pod runs on all or some nodes in a cluster. As new nodes join the cluster, Pods are automatically added to them, and when nodes leave, those Pods are cleaned up.
+Ex using fluentd :
+The DaemonSet ensures one Fluentd Pod runs on every eligible node and if we create a new node DaemonSet automatically create a Fluentd pod in new node, and the Fluentd container mounts that node's /var/log using hostPath, reads the logs, and forwards them to Elasticsearch.
+
+
+
+Static Provisioning :
+-------------------------
+Your main scenario is: AWS EKS + AWS EBS + Kubernetes PV + PVC + Pod
+
+
+In static provisioning, the EBS volume and PV are created BEFORE the application creates the PVC.
+
+Why do we need persistent storage?
+A Pod is temporary. If we store the data in pod but If the Pod is deleted/crashed..Total data will lost.. Even if Kubernetes creates another Pod the new Pod does not automatically get the old container's local data.we need persistent storage outside the Pod.
+
+Why not store data on the worker node?
+Suppose we have a worker node inside that we have a pod and container and data stored inside that and worker node crashed or deleted kubarnetes may create another node and pod but total data will lost ..We don't want critical application data to depend on temporary worker-node storage.	
+
+NOW:
+EBS = Elastic Block Store
+--------------------------------
+It is AWS persistent block storage. It is like a virtual hard disk that you can attach to an EC2 instance.
+Your application can store data on it. So EBS volume exists independently of the Pod/node lifecycle 
+
+Important EBS Point — Availability Zone :
+Suppose your EBS volume is created in: us-east-1b But your worker node is in: us-east-1a ... It cannot mount across Availability Zones.
+
+We need to make sure both EBS and Worker Node should be created in same availability Zone 
+
+Scenario:
+Kubernetes doesn't want the application to directly deal with the EBS volume ID every time. Kubernetes provides a resource called PV
+
+
+Example for All Flow :  path :   k8-concept-wise\05-storage\03-ebs-static-provisioning.yml
+
+PersistentVolume — PV
+-------------------------------
+A PersistentVolume is a Kubernetes resource that represents a piece of persistent storage available to the cluster.
+
+PV is not the actual EBS disk. PV tells the kubenetes ----> This storage is available and this is how you can use it. It Shows Storage Available 
+
+
+Static provisioning:
+In static provisioning, we manually create the storage first.
+Step 1: Create an EBS Volume in AWS Console
+Step 2: We create PV and PVC using manifest file 
+Step 3: Kubernetes Binds that PVC to PV and Pod uses the PVC claimed 
+
+Flow: 
+Flow : AWS EBS Volume ---> PersistentVolume (PV) ---> PersistentVolumeClaim (PVC) ---> Pod ---> Container ---> Application..
+
+Commands:
+kubectl apply -f pv.yaml
+kubectl get pv
+
+If u see Volumes in aws console if Volume is in Available state the volume not used Because no PVC has claimed it yet. but if it is in-use state already it is used by pod 
+
+PersistentVolumeClaim — PVC
+----------------------------------------
+A PersistentVolumeClaim is a request made by a user/application for persistent storage(i.e., PV).
+
+Ex: 
+resources:
+  requests:
+    storage: 5Gi
+
+It is requesting i need 5GB of storage from 10GB available in PV.. Condition Satisfies the request 
+
+
+Commands:
+kubectl apply -f pvc.yaml
+kubectl get pvc
+
+Bound means 
+Before: PV : STATUS = Available
+After PVC uses it: PV : STATUS = Bound     ---> Means : The PVC has successfully claimed/bound to the PV.
+
+
+Very important difference:
+----------------------------------
+PV  = storage available
+PVC = request for storage
+
+PV:  "I have 10 GB available."
+PVC: "I need 5 GB."
+Kubernetes: "Okay, this PV satisfies your request."
+
+
+Why storageClassName: "" in static provisioning?
+If you want to explicitly use a statically created PV and avoid relying on a StorageClass for dynamic provisioning, you can use:  storageClassName: "" .. means Do not use a StorageClass.
+
+
+
+NOW POD USES THE PVC:
+----------------------------------
+In Pod level we use like to mount the volume 
+
+  containers:
+    - name: nginx
+      image: nginx
+      volumeMounts:
+        - name: nginx-data
+          mountPath: /usr/share/nginx/html
+  volumes:
+    - name: nginx-data
+      persistentVolumeClaim:
+        claimName: ebs-static
+		
+Complete Flow: 
+AWS Console create a EBS (capacity and availability zone )  ---> Volume Handle in PV says ---> Use this create EBS ---> Create PVC to request the storage from PV --> PVC attached to Pod ---> Containers uses it at some location 
+
+
+What happens when the Pod starts?
+kubectl apply -f pod.yaml
+
+Back Flow :  Pod needs PVC ---> PVC is Bound to PV ---> PV points to EBS (we created manually)  ---> EBS CSI Driver handles EBS ---> EBS gets attached to appropriate worker node ---> Volume gets mounted ---> Container starts
+Kubernetes + CSI driver handles the storage integration.
+
+What if Pod is deleted?
+Pod can be deleted/restarted but PVC,PV and EBS remains same..Suppose if new Pod created by default it can access the persistent data.
+
+Example:
+Suppose the application writes : /usr/share/nginx/html/ebs.html
+echo "<h1>Hello from EBS</h1>" > ebs.html
+
+Now delete the pod and create new pod it will automaticaly display the data ---> url load balancer service use thet 
+
+
+Access Modes:
+-------------------
+1. ReadWriteOnce — RWO
+		Read + Write ----> into Single Node 
+
+The volume can be mounted read-write by a single node at a time.
+
+2. ReadOnlyMany — ROX
+		Read Only  ----> Many Nodes 
+
+Multiple nodes can read the storage, but they cannot write to it.
+
+3.	 ReadWriteMany — RWX
+		Read + Write ----> into multiple nodes
+	
+Multiple nodes can read/write. This is commonly associated with shared filesystems such as EFS rather than EBS.
+
+For AWS:
+EBS → commonly we use RWO
+EFS → commonly we use RWX
+
+PV vs PVC vs EBS
+EBS							---> Actual AWS persistent block storage
+PV							---> Kubernetes resource representing available persistent storage
+PVC							---> Request for persistent storage
+Pod							---> Consumes the PVC
+CSI Driver				---> Connects Kubernetes to EBS
+volumeMounts		---> Where storage appears inside container
+mountPath	        ---> Directory inside container
+
+Details :
+----------
+EBS is the actual storage created in AWS . 
+PV object represents actual storage in Kubernetes and it is Cluster Scoped not namespace level
+PVC requests/claims through requesting it and PVC is namespace-scoped.
+Pod consumes it and Pod and PVC must be in the same namespace because the Pod references the PVC by name.
+
+Check all together :  kubectl get pv,pvc,pods
+
+How to troubleshoot if PVC is not Bound:
+
+1. PV exists?														kubectl get pv  or kubectl describe pv ebs-static
+2. PV is Available?											check details when u do above cmd
+3. PVC request matches PV capacity?			kubectl describe pvc ebs-static and check Events
+4. AccessMode matches?
+5. StorageClass settings match?
+6. Correct namespace?
+
+Static provisioning in your interview :
+In static provisioning, we create the storage before/first and then make it available to Kubernetes through a PersistentVolume(PV). 
+For example, in AWS EKS, 
+1)we can manually create an EBS volume and configure a PersistentVolume using the AWS EBS CSI driver and the EBS volume ID Given in PV manifest. 
+2)The application then creates a PersistentVolumeClaim requesting a specific amount of storage and access mode. 
+3)Kubernetes binds the PVC to a matching PV. The Pod references the PVC in its volume configuration and mounts it into the required container path. 
+This separates the application's storage request from the underlying storage implementation. Since the data is stored on the persistent EBS volume rather than the Pod's temporary filesystem, the data can survive Pod recreation, subject to the volume lifecycle and reclaim policy
+
+Static provisioning = storage is manually created first → PV represents that storage → PVC claims the PV → Pod uses the PVC.
+
+Pod directly connects to EBS :  Pod ---> PVC ---> PV ---> CSI Driver ---> EBS (actual in aws)
+
+
+How did you handle persistent storage in Kubernetes?
+
+For applications that required persistent data, we used external persistent storage instead of relying on the worker node's local storage. In AWS EKS, we used EBS with the EBS CSI driver. Kubernetes represented the storage through PersistentVolumes, and applications requested storage using PersistentVolumeClaims. The Pod mounted the PVC into the required container path. This allowed the application data to survive Pod restarts or Pod recreation because the data was stored on the persistent EBS volume rather than inside the temporary Pod filesystem. We also used appropriate access modes such as ReadWriteOnce and handled the storage provisioning based on the application requirement.
+
+
+
+
+
+Kubernetes Storage — EBS + PV + PVC + Pod
+In our AWS EKS environment, we should not store important application data directly inside the worker node because worker nodes and Pods are temporary. If the Pod or node is deleted, local data can be lost. So we use external persistent storage such as AWS EBS. First, we create an EBS volume in the same Availability Zone where the worker node can access it. Then Kubernetes uses a PersistentVolume (PV) as the Kubernetes representation of that external storage. The application does not directly request the EBS volume; instead, it creates a PersistentVolumeClaim (PVC), which is basically a request for storage. Kubernetes binds the PVC to a suitable PV, and the Pod uses the PVC in its volume definition. So the overall flow is AWS EBS → PV → PVC → Pod → Container.
+
+1. Create EBS volume in AWS console ---> EBS is the actual physical/cloud storage
+2. Install the EBS CSI Driver                   ---> Kubernetes needs a storage driver to communicate with AWS EBS. In cluster we need to install driver The CSI driver allows Kubernetes to create, attach, mount and manage EBS volumes for Pods.
+3. IAM permissions   ---> The EBS CSI Driver needs permission to perform operations on EBS. Attach proper role which has permision to perfoem operations like CreateVolume , DeleteVolume , AttachVolume , DetachVolume , DescribeVolume
+4. PV represents storage that is available to Kubernetes ---> means the PV provides 10 GB of storage. 
+In PV manifest file ---> volumeHandle ---> identifies the actual EBS volume in AWS using EBS volume id 
+5. PersistentVolumeClaim — PVC   :   PVC is created by the application/team when it needs storage. liek I need 5 GB of persistent storage. It is a request for storage.
+6. Pod uses PVC ---. Now the Pod doesn't directly use the EBS volume. we need to specify as volume and volumemounts blocks code in manifest file......Mount the storage requested through this PVC into the Pod.
+
+EBS is generally used with ReadWriteOnce because an EBS volume is attached for read/write access to one node at a time.
+
+Created EBS volume should be deleted manually
+
+
+Ex: PV and PVC and pod usage 
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ebs-static
+spec:
+  accessModes:
+  - ReadWriteOnce #EBS volume should have readwriteonce, because it HD.
+  capacity:
+    storage: 10Gi
+  csi:
+    driver: ebs.csi.aws.com
+    fsType: ext4
+    volumeHandle: vol-095b046ae862ee1ff
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ebs-static
+spec:
+  storageClassName: "" # Empty string must be explicitly set otherwise default StorageClass will be set. for static provisioning this is empty
+  volumeName: ebs-static
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+  labels:
+    demo: ebs-static
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+    - name: nginx-data
+      mountPath: /usr/share/nginx/html
+  nodeSelector:
+    zone: 1b
+  volumes:
+  - name: nginx-data
+    persistentVolumeClaim:
+      claimName: ebs-static
+	  
+	  
+	  
+	  
+	  
+	  
+
+Dynamic Provisioning
+----------------------------
+EBS Volume and PV will be created automatically.There is a object called  StorageClass that will create storage dynamically based on the storage request(ex: 10Gi etc..) mentioned in PVC defination.. 
+When u do provisioning using StorageClass ----> it will automatically create both ----> External Volume + PV 
+
+By default in kubernetes there will be one storage class and driver -----> Do ----> kubectl get sc
+StorageClass is cluster level resource and EBS will have one storageclass cluster wide and admin should create this 
+
+---> U can see which are namespace level and non namespace/cluster level resources using 	----> kubectl api-resources 
+
+In dynamic provisioning, we don't manually create the EBS volume or PV. Kubernetes automatically provisions the storage when the application creates a PVC.
+Dynamic provisioning automates the creation of persistent storage when a PVC requests it.
+
+Why do we need Dynamic Provisioning?
+Imagine your company has 50 applications ---> to create 50 EBS volumes and pv it is difficult 
+
+Flow : PVC ---> StorageClass ---> CSI Driver ---> EBS created automatically and PV created automatically 
+
+StorageClass :  StorageClass defines how Kubernetes should dynamically provision storage.StorageClass is basically the template/instructions for provisioning.
+-------------------
+StorageClass is a template that tells Kubernetes what type of storage to dynamically create when a PVC requests storage.
+or
+StorageClass acts as a template for dynamic provisioning. In EKS, we configure the AWS EBS CSI driver as the provisioner, and when a PVC requests storage, Kubernetes automatically provisions the required EBS volume and creates the corresponding PV
+
+Static
+You manually prepare everything: AWS EBS ---> PV ---> PVC ---> Pod
+
+Dynamic : You only request storage: through PVC ...The EBS and PV creation are automated.
+PVC ---> StorageClass ---> CSI Driver ---> AWS EBS ---> PV ---> Pod
+
+AWS EBS CSI Driver: 
+It will create a bridge i.e., communication bw kubernetes and AWS EBS 
+The CSI driver handles storage operations such as provisioning and attaching/mounting volumes to nodes
+
+The Kubernetes storage workflow uses the AWS EBS CSI driver to provision and attach EBS volumes.
+
+
+1) create a Storage Class manifest file 
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: ebs-gp3								#name of the StorageClass.
+provisioner: ebs.csi.aws.com    		#Use the AWS EBS CSI driver to provision the volume
+parameters:
+  type: gp3											#This tells the provisioner what kind of EBS volume to create.	gp3 -- General Purpose SSD volume type.
+reclaimPolicy: Delete						
+volumeBindingMode: WaitForFirstConsumer			#
+
+kubectl get storageclass
+
+reclaimPolicy: Delete			#by default it is Delete
+#ReclaimPolicy defines whether the dynamically provisioned storage should be deleted or retained after the PVC is deleted.
+1)Delete --> if pvc deleted both pv and ebs can be deleted  
+2) Retain --- underlying storage is retained for manual recovery/cleanup.
+
+
+volumeBindingMode: WaitForFirstConsumer			
+Instead of immediately creating the EBS volume when the PVC is created, Kubernetes waits until a Pod actually uses the PVC then provisions the EBS volume considering the Pod's scheduling/AZ.
+
+
+Imagine your EKS cluster has: 3 nodes in 3 different AZ zones 1a,1b and 1c 
+If Kubernetes creates the EBS volume too early, it might create it in the wrong AZ.
+
+With: WaitForFirstConsumer ---> Kubernetes can consider where the Pod will run before provisioning the volume.
+PVC created ---> Wait ---> Pod created ---> Scheduler determines suitable node/AZ ----> EBS volume provisioned appropriately ---> Volume attached ---> Pod starts
+
+
+Important fields
+provisioner → tells Kubernetes which CSI driver creates the storage.
+parameters → specifies storage properties such as gp3.
+reclaimPolicy → tells what happens to storage after PVC deletion.
+volumeBindingMode → controls when the volume should be provisioned/bound.
+
+
+2) create the PVC
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: app-data
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: ebs-gp3				#storage class name above give 
+  resources:
+    requests:
+      storage: 10Gi
+	  
+Run :  kubectl apply -f pvc.yaml
+Kubernetes sees:
+IN PVC we mentioned  storageClassName: ebs-gp3 ----> StorageClass ---> EBS CSI Driver ---> AWS EBS will be created 
+The CSI driver provisions the volume.Then Kubernetes creates the corresponding PV.
+
+Now check ---> 
+pv -- kubectl get pv
+pvc -- kubectl get pvc 
+and check ebs volume in aws console ------ all three will be present 
+
+3) Create a pod and attach using volume code in manifest files 
+
+
+Complete Dynamic Provisioning Flow:
+
+Developer  ---> writes PVC with required storage (Ex: 10gi etc...) ---> In PVC code we mentioned StorageClass name ---> it will go there ---> check all the details we mentioned drivaer also in storageclass manifest file ---> EBS driver create the Volime in EBS section in aws ---> PV also automatically created by kubernetes ---> attached to Pod automatically
+
+
+Static:
+Admin creates storage beforehand.. Admin creates PV and EBS storage should be created manually and PV yaml file is required and PVC claims existing PV and more manual work.Suitable when specific existing storage must be used
+EBS → PV → PVC → Pod
+
+Dynamic:
+Storage is provisioned automatically...PV is created automatically...EBS automatically provisioned..No manual PV YAML...PVC triggers provisioning of PV + EBS storage...Suitable for automated/self-service storage
+PVC → StorageClass → CSI drcreate→ EBS + PV → Pod
+
+
+What happens if PVC is deleted?
+If POD deleted The storage remains because the PVC still exists.If a Deployment/ReplicaSet creates a replacement Pod the data is available again to new pod 
+But if PVC is deleted..according to its life cycle we mentioned in StorageClass manifest file 
+reclaimPolicy: Delete   ---> delete the PV + Storage EBS 
+reclaimPolicy: Retain   ---> both pv and ebs ramain exists 
+
+
+Static approach:  You as the administrator:
+1. Create 10Gi EBS
+2. Get EBS volume ID
+3. Create PV
+4. Configure CSI
+5. Create PVC
+6. Deploy application
+
+Dynamic approach:
+Developer/application team:
+1. Create PVC requesting 10Gi
+2. Deploy application
+
+Kubernetes handles:
+StorageClass ---> CSI Driver ---> EBS ---> PV ---> PVC Bound
+
+Commands for StorageClass:
+kubectl get storageclass or kubectl get sc 					 ---> get the list of storage classes available
+kubectl describe storageclass <storageclass name>   ---> full info about that particular storage class 
+kubectl get pvc
+kubectl describe pvc <pvc name>
+kubectl get pv
+kubectl describe pv <pv-name>
+kubectl get pods
+To create Storage class or pvc ---> kubectl apply -f <filename.yml>
+
+
+Troubleshooting dynamic provisioning:
+kubectl apply -f pvc.yaml
+
+kubectl get pvc ---> if pvs is on pending state 
+check : kubectl describe pvc app-data ----> Look at the Events section.
+kubectl get storageclass ---> Make sure the StorageClass exists.
+Then : kubectl describe storageclass ebs-gp3
+Check the provisioner: ebs.csi.aws.com
+
+Also check the CSI driver components: kubectl get pods -n kube-system ----> and look for the EBS CSI driver.
+
+
+Common problems in EKS:
+1)EBS CSI driver issue ---> hen it cannot provision EBS and PVC remains in pending state
+2)IAM permissions --->  The CSI driver needs appropriate AWS permissions to perform EBS operations.
+If permissions are incorrect: CSI Driver ---> AWS API ---> Access denied
+Then volume provisioning/attachment can fail.
+3)Availability Zone : EBS is AZ-specific.thats y we used ---> volumeBindingMode: WaitForFirstConsumer
+4) StorageClass mismatch : giving StorageClass name wrong 
+
+
+Interview
+When a PVC references a StorageClass, Kubernetes uses the configured CSI provisioner to dynamically provision the underlying storage. In EKS, the AWS EBS CSI driver provisions the EBS volume and Kubernetes creates/binds the corresponding PV.
+
+Dynamic provisioning is a Kubernetes mechanism that automatically creates persistent storage when an application requests it through a PersistentVolumeClaim. Instead of an administrator manually creating the underlying storage and PersistentVolume, we define a StorageClass that specifies the storage provisioner and parameters. In our EKS environment, we can use the AWS EBS CSI driver with a StorageClass, for example using gp3 volumes. When a PVC requests storage, Kubernetes uses the StorageClass and CSI driver to provision the EBS volume and automatically create and bind the corresponding PersistentVolume. The Pod then consumes the storage through the PVC. This reduces manual work and provides self-service, standardized and automated storage provisioning.
+
+PVC ---> StorageClass ---> EBS CSI Driver ---> Creates 10Gi gp3 EBS ---> Creates PV ---> PVC ---> Bound
+
+In dynamic provisioning, the application creates a PVC referencing a StorageClass. The StorageClass uses the EBS CSI driver to automatically provision the required EBS volume and corresponding PV, and once the PVC is bound, the Pod mounts the PVC and uses the persistent storage
+
+
+===================================================================================================================================================================
+
+
+EFS:
+-----
+static provisioning
+EFS is shared file storage.
+Flow
+AWS EFS ---> PV ---> PVC ---> Pod ---> Container
+
+1)create a EFS file sysytem in aws console 
+2)Edit the attched security group which is attached to EFS --> to accept nfs --> edit inbound rules --> NFS --> port 2049 --> add the security group which is attched to worker nodes 
+3)Download the EFS Drivers 
+4)Create PV and PVC and use that pvc in the pod 
+
+NFS port no ---> 2049
+
+For EFS static provisioning, we first create the EFS filesystem manually in AWS. Then we create a Kubernetes PersistentVolume using the AWS EFS CSI driver and specify the EFS filesystem ID. We create a PersistentVolumeClaim with ReadWriteMany access and bind it to the PV. Pods then mount the PVC and can share the same EFS filesystem across multiple nodes. This is useful when multiple Pods require shared persistent file storage.
+
+Dynamic Provisioning
+1) We need to create EFS in aws console even for dynamic 
+2) Write a StorageClass manifest file and give the above created EFS name in that yaml file it will create the access point in the EFS u can see that in aws console
+3)give ec2 efs full access role for the  attached to ec2 
+4) if ur un the storage class it will create the Access point in efs can see in aws console so like the u can create n no of access points for multiple projects.
+
+we can write one storageClass manifest file and multiple PVC definations so that it will create multiple acccess points for diff projects 
+one StorageClass can serve many PVCs
+
+
+EFS Static Provisioning — Yes
+                 EFS File System
+                       |
+          ┌────────────┼────────────┐
+          ↓            ↓            ↓
+        PV-1         PV-2         PV-3
+          ↓            ↓            ↓
+        PVC-1        PVC-2        PVC-3
+          ↓            ↓            ↓
+        Pod-1        Pod-2        Pod-3
+
+You can create multiple PVC/PV definitions
+One EFS filesystem → can support multiple PVs/PVCs and multiple Pods, depending on how you configure the EFS CSI driver/access paths.
+but in EBS 
+we cannot create ONE EBS volume for that ine volume we can't create/write 2 or more PV/PVC's definations
+1 EBS -- 1 PV - 1 PVC only ---> One EBS volume → normally one PV/PVC binding.
+
+EBS-1 → PV-1 → PVC-1  
+EBS-2 → PV-2 → PVC-2
+
+EBS vs EFS
+EBS(Elastic Block Store) = a hard disk for a server/application.
+EFS(Elastic File System) = a shared network filesystem that multiple servers/Pods can access.
+
+EBS:
+EBS is block storage. it is like hard disk we are attaching it to ec2 instance 
+
+When do we use EBS?
+Use EBS when your application needs:
+Persistent storage
+High-performance block storage
+Database storage
+One Pod/node needs read-write access to its own volume
+Data that should survive Pod replacement
+
+Flow: pod ---> PVC ---> PV ---> EBS
+
+Ex: MYSQL pod ---> EBS data 
+If the MySQL Pod is deleted and recreated on a suitable node, it can mount the same persistent EBS-backed volume.
+And where ever the node present we should create volume in same availability zone it is zone specific.. and most commonly it is used with RWO(ReadWriteOnce) access mode i.e., means one node/pod can access at a time
+
+Good for:
+Database, application-specific persistent data, block-storage workloads.
+Good when the data primarily belongs to one application/node and you don't need multiple nodes mounting the same filesystem simultaneously.
+
+EFS:
+EFS is file storage. It is like shared Network Folder(ex:google drive)
+Multiple Worker nodes can access the same filesystem at a time 
+Flow :
+Pod-1 ──┐
+Pod-2 ──┼──→ PVC → PV → EFS
+Pod-3 ──┘
+
+And if pod-1 uploads some thing now pod 2 & 3 can access that files also and commonly used with access mode ReadWriteMany (RWX)
+Good for:
+Good when multiple Pods/nodes need to access the same/shared files simultaneously.
+
+When do we use EFS?
+Use EFS when multiple Pods/servers need to access the same files simultaneously.
+
+| EBS                                | EFS                                      |
+| ---------------------------------- | ---------------------------------------- |
+| Block storage Like a hard disk     | File storage Like a shared network folder|
+| Usually used by one node at a time | Multiple nodes can access simultaneously |
+| Commonly RWO(ReadWriteOnce)        | Commonly RWX(ReadWriteMany)              |
+| AZ-Zone specific                   | Designed for shared access across AZs    |
+| Good for databases                 | Good for shared files                    |
+| High-performance block storage     | Shared filesystem                        |
+| Example: MySQL data                | Example: shared uploads                  |
+
+
+EX:
+Suppose i have 3 pods in my application 
+scenario 1: Database
+I have mysql and i want data to be persisted, so we use EBS because the database needs block storage and its own persistent volume.
+
+scenario 2: Shared files
+Your application allows users to upload: photos, files, documents and reports etc..and if u want to access them by all 3 pods we use EFS because EFS provides shared file access.
+
+Interview answer:
+EBS and EFS are both AWS persistent storage services, but they solve different problems. 
+EBS is block storage, similar to a persistent hard disk, and is commonly used for databases and applications that need high-performance persistent storage, typically with ReadWriteOnce access. 
+EFS is a shared file system that multiple EC2 instances or Kubernetes Pods can access simultaneously, typically using ReadWriteMany. 
+In Kubernetes, I would use EBS for application-specific or database storage, while I would use EFS when multiple Pods across different nodes need to share the same files
+
+
+
+
+===================================================================================================================================================================
+
+
+
+Another Part
+
+
+
+===================================================================================================================================================================
+
+
+Helm Charts:
+-----------------
+
+Install Helm:
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
+chmod 700 get_helm.sh
+./get_helm.sh
+
+To check version :  helm version 
+
+
+
+
+Without Helm Charts:
+suppose you have a microservice: we have payment service in that we have deployment.yml,service.yml,hpa.yml,secrets.yml,configMap.yml,ingress.yml etc....
+if u have 20 applications 100's of yml files and may need diff values for diff env's it will be heavy to manage and if u don't want to maintain completely separate YAML files for every environment.
+
+
+What is Helm?
+Helm is a package manager for Kubernetes that allows us to package, template, configure, install, upgrade, and roll back Kubernetes applications.
+
+
+What is a Helm Chart?
+A Helm Chart is a collection of files that defines a Kubernetes application.
+
+Flow : Helm Chart ---> kubernetes yml files ---> configuration files ---> kubernetes resources 
+
+A chart can contain:  deployment,service,hpa,secrets,configMap,ingress,ServiceAccount etc....
+
+
+Helm architecture	
+
+                 Helm
+                  |
+          +-------+-------+
+          |                     |
+       Chart             Values
+          |               		 |
+          +-------+-------+
+                  ↓
+             Templates
+                  ↓
+          Rendered YAML
+                  ↓
+             Kubernetes
+
+We define values in values.yml and manifest files find the values and render the yaml file with values and create k8 resource
+
+	
+
+
+Helm chart Structure
+
+wordpress/
+  Chart.yaml          			# A YAML file containing information about the chart
+  LICENSE             			# OPTIONAL: A plain text file containing the license for the chart
+  README.md        		# OPTIONAL: A human-readable README file
+  values.yaml        			# The default configuration values for this chart
+  values.schema.json   # OPTIONAL: A JSON Schema for imposing a structure on the values.yaml file
+  charts/             			# A directory containing any charts upon which this chart depends.
+  crds/               				# Custom Resource Definitions
+  templates/          		# A directory of templates that, when combined with values,
+										# will generate valid Kubernetes manifest files.
+  templates/NOTES.txt # OPTIONAL: A plain text file containing short usage notes
+
+when u do : helm create payment
+
+payment/
+├── Chart.yaml
+├── values.yaml
+├── charts/
+├── templates/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── ingress.yaml
+│   ├── serviceaccount.yaml
+│   ├── hpa.yaml
+│   ├── _helpers.tpl
+│   └── tests/
+└── .helmignore
+
+Chart.yml  				----> This file contains information about the chart.
+values.yml 			----> this file contains the default configuration values used by the templates.
+templates folder 	----> This folder contains Kubernetes YAML templates.
+charts folder 		----> used to store subcharts (dependent charts) that the main parent chart relies 
+
+Flow with values.yml file : values.yaml ---> Helm Template ---> Rendered Kubernetes YAML ---> Kubernetes API
+if u have different env's we can define like multiple files 
+values-dev.yaml
+values-sit.yaml
+values-prod.yaml
+Same template but diff configuration files This avoids duplicating Kubernetes manifests.
+
+
+Commands :
+1)Helm installation :  Helm renders the templateswith values defined in values.yml and submits the resulting Kubernetes resources to the cluster.
+Suppose ur chart is mongodb  ----->  helm install mongodb ./payment or . 
+
+mongodb ---> release name also
+chart 		  ---> ./payment 
+
+What is a Helm Release?
+When you run ---->  helm install mongodb ./payment or . 
+mongodb ---> is the release name 
+
+A Helm release is an installed instance of a Helm chart in a Kubernetes cluster.
+
+You can install the same mongodb chart multiple times using different release names :
+helm install mongodb-dev . 
+helm install mongodb-sit . 
+helm install mongodb-prod . 
+
+2) Check releases list 
+
+command : helm list    ---> list all te release charts 
+For a namespace          ---> helm list -n payment
+
+3) Helm upgrade : Helm updates the release.
+Suppose your application image changes: from 1.0.5 to 1.0.6  ---> just update the image version in values.yaml and run 
+
+command : helm upgrade payment ./payment 
+
+Flow:  Old Release ---> helm upgrade ---> New configuration ---> Kubernetes resources updated
+
+4) Helm Rollback
+Suppose version 1.0.6 has a production problem.
+you can check history :
+command : helm history payment     ---> list of releases done using payment release name 
+And 
+Rollback to old version using revision version 
+
+command  : helm rollback payment 1
+
+helm rollback <release-name> <revision version>
+Now Helm returns the release to revision 1.
+
+5) Helm uninstall : This removes the Helm release and the Kubernetes resources managed by that release
+command:  helm uninstall <release-name>
+
+
+important commands : suppose assume payment is our application service 
+
+helm create payment    		---> create a chart means create folder structure 
+helm install payment .  		---> install the chart 
+helm list 						  		---> list releases 
+helm upgrade payment .    ---> Upgrade release.
+helm rollback payment 1    ---> rollback to the previous version 
+helm history payment 		---> View release history of payment
+helm uninstall payment      ---> Uninstall release.
+helm status payment 			--->  Check release status.
+helm get values payment	---> See values used by release.
+
+Suppose something isn't working. Instead of directly installing: helm install payment ./payment
+we can do first : helm template payment ./payment  -------> This shows you the Kubernetes YAML that Helm will generate. u can inspect deployment,service,configmap,secrets etc... useful for troubleshoot the templates
+
+helm template payment ./payment		---> Render templates locally without installing.
+
+6)Helm lint : This checks the chart for common structural/template issues.
+helm lint <path of  the chart>
+
+Passing values from command line
+---------------------------------------------
+You don't always have to modify values.yaml. you can override values at runtime/command line 
+
+helm install payment ./payment --set replicaCount=5          ----> this overrides the values.yml file value 
+
+Using environment-specific values
+---------------------------------------------
+For prod:
+helm upgrade --install payment ./payment -f values-prod.yaml
+For dev:
+helm upgrade --install payment ./payment -f values-dev.yaml
+etc..
+
+--install with upgrade :     we use mostly in CI/CD pipelines 
+-----------------------------
+command:  helm upgrade --install payment ./payment
+Meaning: If the release exists, upgrade it; if it doesn't exist, install it.
+
+
+Real project structure:    For a microservice:
+-----------------------------
+payment-chart/
+│
+├── Chart.yaml
+│
+├── values.yaml
+│
+├── values-dev.yaml
+├── values-sit.yaml
+├── values-prod.yaml
+│
+├── templates/
+│   ├── deployment.yaml
+│   ├── service.yaml
+│   ├── configmap.yaml
+│   ├── secret.yaml
+│   ├── ingress.yaml
+│   └── hpa.yaml
+│
+└── charts/
+
+You can maintain one reusable chart and configure it for different environments.
+
+
+Helm vs Kubernetes YAML
+----------------------------------
+
+Kubernetes YAML :  deploment.yml,service.yaml,secret.yaml etc..... ---> You manually manage each manifest.
+Helm   : Helm generates the Kubernetes manifests dynamically.
+Chart
+ ├── templates
+ ├── values
+ └── Chart.yaml
+
+So Helm doesn't replace Kubernetes. Helm manages/packages Kubernetes resources.
+
+❌ Helm is not a container orchestrator.
+✅ Kubernetes = container orchestration platform.
+✅ Helm = Kubernetes package manager/template and release management tool.
+
+Helm doesn't create containers
+Helm ---> Kubernetes manifests ---> Kubernetes ---> Pods ---> Containers
+
+
+Interview : How have you used Helm?
+In our Kubernetes environment, we used Helm to package and manage the deployment of our microservices. Instead of maintaining separate Kubernetes manifests for each environment, we created reusable Helm charts containing templates for Deployments, Services, ConfigMaps, Secrets, Ingress and HPA. We kept environment-specific configurations such as replica counts, image tags, resource requests and limits in separate values files for DEV, SIT and PROD. During CI/CD, after building and pushing the Docker image to the container registry, we used Helm upgrade/install to deploy the required image version to the EKS cluster. We also used Helm history and rollback to manage release versions and quickly revert a problematic deployment.
+
+
+Memorize these 6 things:
+
+Chart → Package of Kubernetes resources
+Chart.yaml → Chart metadata/version
+values.yaml → Configurable values
+templates/ → Kubernetes YAML templates
+Release → Installed instance of a chart
+Helm → Installs, upgrades, manages and rolls back those releases
+
+Docker builds the image → Registry stores it → Helm packages/configures deployment → Kubernetes/EKS runs it.
+
+The Whole Concept
+                 HELM CHART
+                     |
+        +------------+------------+
+        |                        			 |
+   templates/                 values.yaml
+        |                         			 |
+        +------------+------------+
+                     ↓
+              Helm rendering
+                     ↓
+          Kubernetes YAML manifests
+                     ↓
+                  EKS
+                     |
+        +------------+------------+
+        |            |            |
+    Deployment    Service      ConfigMap
+        |
+       Pods
+        |
+    Containers
+
+
+
+
+
+
+From Notes:
+---------------
+Helm charts:
+
+1. templatize the kubernetes manifest files
+2. package manager for kubernetes
+
+1. build the image and pull the image from public registry
+2. configure image through manifest files to run pods 
+
+
+helm install <chartname> . ---> when u do this in background helm will search for the yaml files in templates folder and it will automatically apply cmd i.e., kubectl apply ..
+we can templatise the values ..we can pass values from the separate file called values.yaml and this file should be in root module
+Ex: 
+We declare like this in manifest files --->  {{ Values.<somename>.<variablename> }}
+we declare values in values.yaml like 
+
+somename:
+	variablename: <value>	#yaml file will pick values dynamically from this file 
+Ex: 
+deploment:
+	replicas:2 
+	
+lets say i have given some values already in values.yaml but i want to override from command line 
+helm upgrade <chartname> --set deploment.replicas=3 .
+
+To uninstall or delete every resource in that chart ---> helm uninstall <chartname> . 
+	
+main files: Chart.yaml, templates folder and values.yaml
+	
+Lets say we are going for the new release so we dont touch the manifest files that are present in templates folder we do changes in values.yaml and deploy
+helm upgrade <chartname> .   --> whatever changes we made so just we update so new changes will be deployed insted of install command 
+
+use:
+helm is used to parameterise the kubernetes manifest files 
+
+
+yum install nginx -y  ---> here yum is a package manager and package getting from internet and installing in VM 
+same like 
+1. image is already in public
+2. helm have some public repos to configure the image through manifest files 
+
+In workstation Ec2 add them 
+EBS Drivers:
+1. add helm repo -- kubernetes resource files
+helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+2.helm repo update 
+3.helm upgrade --install aws-ebs-csi-driver --namespace kube-system aws-ebs-csi-driver/aws-ebs-csi-driver
+
+next : 
+1.helm install nginx . 
+2.helm list -n kube-system ---> basicaly it is a ebs-driver so it will add that in kube-system namespace 
+3.helm uninstall aws-ebs-csi-driver -n kube-system 
+
+There is a hub for helm charts repo to insta' into kubernetes ----> Artifact hub 
+
+
+helm history <chart name> ---> u will get how many versions u deployed u get and u will also get REVISION VERSION number 
+helm rollback <chartname> <REVISION VERSION no> ----> to roll back
+Ex: helm rollback nginx 2 
+
+nginx --> chart name
+2 --> revision number if u do helm history u will get 
+
+helm show values .or path 
+
+
+
+
+
+Stateful Set :
+--------------
+
+StatefulSet   ---> used to create stateful applications in k8's (Ex: mongodb,redis,mysql etc..) 
+DeploymentSet ---> used to create stateless applications in k8's (Ex: cart,catalogue,user etc.. basically which does not have own database)
+
+How stateful set/databases works 
+
+												create user
+											   ┌─────────┐                    						  ┌──────┐
+											   │ NODE-1  │───────────────────▶│ DB-1 │
+											   └─────────┘                                		     └──────┘
+													▲
+													│
+													│
+┌─────────┐                 	    	│
+│ master  │──────────── ┌─────────┐                   						  ┌──────┐
+└─────────┘  						│ NODE-2  │───────────────────▶│ DB-2 │
+												└─────────┘                   						  └──────┘
+													 │
+													 │
+													▼
+										   ┌─────────┐                   						 	 ┌──────┐
+										   │ NODE-3  │	───────────────────▶│ DB-3 │
+										   └─────────┘                    						 	 └──────┘
+					
+Now lets say user has requested to create user ---> now request went to node-1 to create user so in DB-1 new user will be created
+Now lets say user want to login --> now request may gi any of the worker node we cannot guaratee that it will go to node-1 it may go node-2 or node-3 also but user is created in DB-1 database for DB-2 and DB-3 there is no new user info 
+These Database cluster will work like when node-1 got request to create user this node responsibility is to create new user and inform to node-2 and node-3 that i got create user request update this info in ur databases same like if request got to node-2 to create user it should infor to node-1 and node-3 same like node 3 also ... in that cluster what ever nodes present that node should inform automatically all the nodes that i got this request update that in ur databases  
+How they will send the information means those nodes should be completely aware of cluster and host names of the worker nodes not be changes we need to take elastic ip 
+--> nodes inside stateful applications should have static hostnames(i.e., elastic ip's) to communicate to other nodes 
+--> And stateful set work like if we give replicas 
+	1) it will create pod replica in node-1 first after complition and running state only then it will go and create in pod replica 2 in node-2 and in node-3 it doesnt create randomly pod replicas like deploymentset(it will create rendomly at a time)....pod name should be fixed 
+	2)y it is following orderly creation/provisioning means if one node replica fails entire database cluster will get issue/disturbed and all nodes should be run
+---> stateful applications should follow orderly provisioning and terminate from backward 
+---> storage of each pod we should create using pv and pvc 
+---> Stateful set applications will have applications
+
+stateful:
+1.Used to deploy stateful applications
+2.Pods created by StatefulSets have unique names which remain constant across application rescheduling.
+3.Its Pods are created in sequential order and deleted in reverse, sequential order.
+4.Its Pods are not interchangeable and maintain their identities after restarts.
+5.It does not allow shared volume. Thus, each Pod replica ls its own stick Volume and PersistentVolumeClaim.
+6.Replication is complex
+7.Stateful set applications will have applications
+
+Deployment
+1.Used to deploy stateless applications
+2.Pods created by Deployment have dynamic, random names and numbers that change across application rescheduling.
+3.Its Pods are created and deleted randomly.
+4.Its Pods are interchangeable and do not maintain their identities after restarts.
+5.It allows shared volume via Volume and PersistentVolumeClaim across all of the Pod replicas.
+6.Replication is easier
+
+
+--> Headless service means in statefulset manifest file we mention ----->  ClusteIP: None     
+
+k8-concept-wise\07-stateful-set\statefulset.yml 
+To create PV and PVC ---> 
+1.we need to install EBS drivers
+2.provide IAM role for EC2 ---> go to aws console --> click on any worker node ec2 --> search for role --> click on that --> add AmazonEBSCSIDriverPolicy ---> add 
+3.install storage class
+
+k8-concept-wise\07-stateful-set\statefulset.yml  ---> after applying if u see 
+--> pods will create orderly means one pod replica will create and get into running state then it will create pod 2 and run etc...
+--> in aws console volumes sections if u see it will create if there is 3 pods it will create 3 volumes i.e., seperate volume for each pod
+
+k8-concept-wise\04-sets\02-deployment.yml ---> create them also 
+1)IF u see ---> kubectl get svc ---> for statefulset ClusteIP will be none why 
+2)login to debug pod ---> just created for testing and 
+3)kubectl exec -it <pod name> -- bash
+4)nslookup <service name of stateful set>   ---> it will list all the ip's 
+
+Why Stateful Set Is Headless Service ---> how it will communicate that i got a request to creae user or other requests
+---> It will do nslookup in background and check the list of ip's present in the cluster and it will send the request information to the other ip's present except own ip 
+---> if normal service it cannot come that how many ip address of worker nodes present in cluster
+
+Headless service is used for stateful applications when u hit the headless service instead of getting single ip address u will get the all pods ip's address in the cluster and it is easy for one replica to communicate the other replicas 
+database clusters lo oka replica others replicas ki data send cheyali ante we use headless service 
+
+Now u did ---> kubectl apply -f statefulset.yaml 
+this create replicas and each volume for each replica now if u perform ---> kubectl delete -f statefulset.yaml 
+it will not delete the volumes but all remaining pods all are deleted except volumes in statefulset we need to delete manually in statefulset 
+
+
+Create k8s-roboshop-databases ---> this we are doing for roboshop proj
+
+
+
+
+
+
+
+
+diff bw deployment vs statefulset
+Deployment is mainly for stateless applications; StatefulSet is for applications where each Pod needs its own identity and/or persistent storage.
+
+StatefulSet:
+---------------
+StatefulSet is a Kubernetes workload controller used to run stateful applications that need stable Pod identity, stable network identity, and persistent storage.
+
+Ex: Mysql, mongodb, postgraceSQL , Elasticsearch, Zookeeper, Kafka etc....
+
+
+
+
+
+
+
+
+
+
+Why do we need StatefulSet?
+Suppose you deploy an application using Deployment with 3 replicas and of Pod A dies it will be recreated and new identity.For a stateless application, that's fine.
+But imagine a database cluster: 3 mysql replicas
+mysql-0
+mysql-1
+mysql-2
+Each instance may have a specific identity and data. u dont want if mysql-0 dies rondomly create new pod.
+You want Kubernetes to recreate: mysql-0 with its associated storage. That's where StatefulSet comes in.
+
+
+Main features of StatefulSet:
+1. Stable Pod identity/names ---> Pods get predictable names like mysql-0, mysql-1 etc...
+2. Stable network identity ---> Each Pod can have a stable DNS identity.
+3. Stable persistent storage ---> Each Pod can get its own persistent volume.
+4. Ordered deployment/scaling ---> Pods are generally created and managed in an ordered manner.
+
+
+| Deployment                           | StatefulSet                            |
+| ------------------------------------ | -------------------------------------- |
+| Mainly stateless applications        | Stateful applications                  |
+| Pods have interchangeable identities | Pods have stable identities            |
+| Pod names are not predictable        | Pod names are predictable              |
+| `app-xxxxx`                          | `app-0`, `app-1`, `app-2`              |
+| Storage generally shared/optional    | Each Pod can have dedicated storage    |
+| Pods are interchangeable             | Pods are individually identifiable     |
+| Common for APIs/microservices        | Common for databases/clustered systems |
+
+
+Why serviceName?
+serviceName: mysql
+StatefulSet uses a Headless Service for stable network identity. Usually --> clusterIP: None
+
+What is a Headless Service?
+Normally a Kubernetes Service gives you one stable virtual IP: service ---> clusterIP  ---> Pods
+But With a Headless Service: clusterIP: None.... Kubernetes doesn't provide a normal virtual ClusterIP. 	
+Instead, DNS can resolve individual StatefulSet Pods Like 
+mysql-0.mysql
+mysql-1.mysql
+mysql-2.mysql
+So applications can address individual database instances.
+
+
+1)Stable Pod names :
+Lets say i have a 3 replicas created using StatefulSet
+mysql-0
+mysql-1
+mysql-2
+lets say if mysql-2 deleted... StatefulSet recreates new replica with same name mysql-2 and it can reconnect to same PVC and PV which already exists i.e., mysql-2 not randomly 
+
+2)Stable network identity
+Because of the Headless Service, the Pod can have a predictable DNS name.
+mysql-0.mysql
+mysql-1.mysql
+mysql-2.mysql
+This is useful for distributed systems where nodes need to discover and communicate with specific members.
+
+3)Stable persistent storage
+We use volumeClaimTemplates.......This automatically creates a PVC for each StatefulSet Pod.
+lets say we have 3 replicas for each pod get its own PVC and we create storage using storageclass which also create pv automatically
+
+volumeClaimTemplates :  Create a PVC for each StatefulSet Pod based on this template.
+Ex: 
+volumeClaimTemplates:
+  - metadata:
+      name: mysql-data
+
+And name of the storage would be :  mysql-data-mysql-0
+mysql-data ---> volume template name
+mysql-0  --> pod name both combines 
+
+Why separate storage?
+
+StatefulSet creation order
+By default, StatefulSet uses ordered Pod management. Ex: mysql-0,mysql-1,etc...
+
+Scale statefulset command line ---> kubectl scale statefulset mysql --replicas=4
+lets say i already have 
+mysql-0, mysql-1 and now i gave sacle upto 4 it create inorders so it creates mysql-2 and mysql-3 etc..
+scaling down it will do from backend order means first it will delete mysql-3 then mysql-2 then 1 and 0 	
+
+Kubernetes removes the higher ordinal Pods first and The PVCs are not automatically removed simply because the Pods were scaled down.
+
+
+commands:
+kubectl get statefulset or sts 			---> Check StatefulSets
+kubectl describe statefulset mysql 		---> describe
+kubectl scale statefulset mysql --replicas=3 ---> to scale 
+kubectl get sts mysql -o yaml ---> Check StatefulSet YAML
+
+
+
+
+
+
+
+
+=====================================================================================================================================================
+
+
+If u get any errors in cluster ex: couldnt get the server ip etc...
+aws sts get-caller-identity 
+aws eks update-kubeconfig --region us-east-1 --name roboshop-cluster 
+
+cluster name --> roboshop-cluster 
+region 
+
+1.Create k8s-roboshop-databases ---> this we are doing for roboshop proj
+2.create mongodb and redis charts 
+3.Install EBS drivers 
+EBS Drivers:
+1. add helm repo -- kubernetes resource files
+helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+2.helm repo update 
+3.helm upgrade --install aws-ebs-csi-driver --namespace kube-system aws-ebs-csi-driver/aws-ebs-csi-driver
+
+4.Add ebscsi driver policy in role which is attached to worker node ec2 
+5.install storage class 
+
+
+Install k9 tool for good ui ---> curl -sS https://webinstall.dev/k9s | bash
+
+
+
+
+Errors:
+CrashLoopBackOff  --->  https://stackoverflow.com/questions/37644118/initializing-mysql-directory-error
+used this in mysql after image :
+args:
+  - "--ignore-db-dir=lost+found"
+
+CrashLoopBackOff come at the time of after image pulled and that image it is trying to create container and container is not able to start 
+
+
+imagePullBackOff ---> get at the time of pulling image but some thing is wrong 
+
+
+
+RBAC:
+----
+namespace level resources 
+Role
+RoleBinding
+
+cluster level resources 
+ClusterRole 
+ClusterRoleBinding
+
+authentiction
+authorization
+
+1)create user and add custom policy 
+Create IAM user ---> give him policy if cluster describe. this is the least access he should have for a specific cluster 
+Iam console --> username ramesh --> attach policy directly --> create policy --> select service EKS --> read --> describecluster option --> resources --> select specific cluster and select ARN --> give region us-east 1 --> cluster name and --> Add ARN's ---> give policy name roboshopClusterDescriibe -->  create policy --> if u refresh in policy section u can search for roboshopClusterDescriibe select that ---> create user 
+
+means he can only describe the particular cluster that its above access 
+
+2)create role and role binding (ramesh --> tagging to particular role)
+3)How EKS will understand or integrate with IAM ---> there is a aws authentication configmap we have for this 
+
+
+kubectl get configmap aws-auth -n kube-system -o yaml 
+
+$)apply both roboshop.yaml and aws-auth.yaml in admin folder 
+
+6) create an ec2 --> and open it in superputty 
+   aws configure --> create an access key for kubernetes-ramesh user and add them in ec2 console in superputty 
+   we need to create kube confif for kubernetes0ramesh user in ec2 and kubeconfig automatically genereate 
+   aws eks update-kubeconfig --region us-east-1 --name ronboshop-cluster 
+   cat .kube/config
+   install kubectl in that server 
+   kubectl get nodes --> get error no access to list the nodes 
+   
+   kubectl api-resources | grep nodes 
+   
+   create clusterrole and clusterrolebinding in admin folder and in roboshop.yaml and apply that manifest files in ec2 
+7)so now in ec2 -->
+kubectl get nodes --> it will show
+kubectl get pv --> it will show
+kubectl get secrets --> it will show
+
+kubectl get pvc or other resource names --> it will give error because we gave 
+  resources: ["secrets", "nodes", "persistentvolumes"] ---> in k8s-roboshop-databases\admin\roboshop.yaml file 
+And he has that --> kubectl get pods -n pods --> it will show because it has access for only roboshop namespace other default or other namespaces doesnt have access  ---> in k8s-roboshop-databases\admin\roboshop.yaml file 
+
+
+----
+now if i want to add new RBAC	--> another role 
+1)Copy roboshop.yaml and change it to roboshop-admin.yaml file and changes the apigroups and resources and verbs to * 
+2)create a user --> raheem name --> attach policies --> RoboshopClusterDescrible policy --> create user 
+3)create an access key for raheem --> click on raheem user and create access 
+	kubectl apply -f roboshop-admin.yaml 
+	kubectl apply -f aws-auth.yaml 
+	aws configure ---> give raheem access key 
+	aws sts get-caller-identity
+	aws eks update-kubeconfig --region us-east-1 --name ronboshop-cluster
+	
+test:
+	kubectl get nodes ---> eror because we didnt gave access in roboshop-admin.yaml in resources section 
+	
+	
+	
+	
+	
+	
+	
+	
+Horizontal Pod Auto-Scaler(HPA):
+------------------------------
+AutoScaling ---> it will check CPU utilization if crosses 80% it will create more new VM 
+Same in Kubernetes Based on the traffic we need to invcrease pods for that we have HPA 
+
+Conditions:
+1)metrics server 
+For servre ---> we do top command we get statistics 
+when u do --> kubectl top pods ---> it shows metric api not available 
+So we need to install metrics server ---> it measures pod resources dynamically 
+kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+it is a pods created in kube-system ---> kubectl get pods -n kube-system 
+now:
+	kubectl top pods 
+
+2)your deployment should have resources implemented i.e., means we need to mention resources section/block in deployment manifest file and 
+to hpa we need to write HPA defination 
+if we mention resources then it can measure --> 5/100 or 67/100 based in the limit  
+
+3) create web folder in k8s-roboshop-databases --> add manifest and HPA defination and mention averageUtilization: 80 as 5 in manifest file 
+4) To generate the load on that url 
+	kubectl run -i --tty load-generator --rm --image=busybox:1.28 --restart=Never -- /bin/sh -c "while sleep 0.01; do wget -q -O- http://<give loadbalacer arn>; done"
+ 
+-----------------------------------------------------------------------------------
+
+install helm and k9s and EBS drivers 
+
+
+1)Install Helm:
+curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
+chmod 700 get_helm.sh
+./get_helm.sh
+
+To check version :  helm version 
+
+2)Install k9's tools for UI --->  curl -sS https://webinstall.dev/k9s | bash
+3)EBS Drivers:
+	1. add helm repo -- kubernetes resource files
+		helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+	2.	helm repo update 
+	3.	helm upgrade --install aws-ebs-csi-driver --namespace kube-system aws-ebs-csi-driver/aws-ebs-csi-driver
+	4.	Go to AWS console --> EC2 (any worker node) --> security --> search for iam role --> click on --> Add permisions --> Attach policy --> AmazonEBSCSIDriverPolicy --> add 
+	5.	Install storage class --> go to this folder k8s-roboshop-proj-databases and clone and run 
+		kubectl apply -f namespace.yaml 
+		kubectl apply -f ebs-sc.yml
+		kubens roboshop --> set this as default namespace 
+		
+		helm install mongodb . ---> same do for redis , mysql , rabbitmq 
+
+4) create a catalogue folder and files templates folder, Chart.yaml, values.yaml and seperate file for HPA etc..and run in server 
+	helm install catalogue .
+
+
+
+
+Horizontal scaling vs vertical scaling :
+--------------------------------------
+
+vertical scaling 
+i have server and that server has CPU, RAM and Hard Disk/storage and resource were not sufficient because of more load.. So add more CPU, RAM and Hard Disk/storage 
+but if once server crashes whole application will go down..
+vertical scaling means adding more resources 
+
+Horizontal scaling 
+Instead of scaling the CPU, RAM, Hard Disk/storage we add more server with same capacity mentioned in manifest files..Even if one server creashes another server will server/handle the requests so no business/application down 
+We are doing HPA based on the CPU utilization or other 
+but in this
+1)we need to install metric server --> we need to measure the resources how much it is consumed 
+	metric server 
+	kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+		To see this pod : kubectl get pods -n kube-system 
+2)deployment should have resources block should be mentioned 
+		resources:
+          requests:
+            cpu: "50m"
+            memory: "128Mi"
+          limits:
+            cpu: "100m"
+            memory: "256Mi"
+
+this block must be mentioned in deployment defination without that HPA doesnt work 
+	
+In kubernetes everything is a pod 
+
+
+
+5)create a user folder and files templates folder, Chart.yaml, values.yaml and seperate file for HPA etc..and run in server 
+	helm install user .
+
+
+6)create a cart folder and files templates folder, Chart.yaml, values.yaml and seperate file for HPA etc..and run in server 
+	helm install cart .
+
+7)create a shipping folder and files templates folder, Chart.yaml, values.yaml and seperate file for HPA etc..and run in server 
+	helm install shipping .
+	Try to give more resources if get OOMkilled or crashloopbackoff error 
+
+8)create a payment folder and files templates folder, Chart.yaml, values.yaml and seperate file for HPA etc..and run in server 
+	helm install payment .
+	
+	
+
+OOM(Out of Memory Killed) Error:
+-------------------------------
+OOMKilled error --> the system completely ran out of available memory if system resources not enough
+
+1)Pod memory limit exceeded ---> An exceeded pod memory limit causes (OOMKilled) termination
+2)Node out of memory		---> Node out of memory causes a (MemoryPressure) and pod eviction.
+
+OOM kill happens when Pod is out of memory and it gets killed because you've provided resource limits to it.
+When Node itself is out of memory or resource, it evicts the Pod from the node and it gets rescheduled on another node. Evicted pod would be available on the node for further troubleshooting.
+
+OOMKilled will only for containers that have been terminated by the kernel OOM killer.container that exceeds its memory limit that gets terminated (and by default restarted) as opposed to the whole pod (which can very well have other containers).
+
+
+
+
+9)For web component before we used classic load balancer and it is already depricated because it has only load balancing thats it no features like it is not scalable and etc..
+
+We have 
+
+Ingrss Controller:
+------------------
+
+ALB is preferred 
+Context path 
+app-dev.devopswitharun.online/catalogue --> go to catalogue target group 
+app-dev.devopswitharun.online/user		--> go to user target group 
+host path 
+catalogue.app-dev.devopswitharun.online ---> now it will go to catalogue target group
+user.app-dev.devopswitharun.online 		---> now it will go to user target group
+
+That ALB we call Ingress Controller in kubernetes..In Kubernetes EKS Cluster then First request will come to ingress controller and then inside components based on path it will redirect to diff components 
+
+1)Create an folder k8s-ingress and create app1 and app2 folder and write a docker file for nginx and remove default html file and add some new html file content 
+
+
+	ingress request flow :
+	Client --> ingress managed LB --> ingress --> service --> diff Pod 
+
+	EKS should have capability of creating the Load Balancer, target groups, listeners and rules etc.. to get all we need to install ingress controller 
+	Install ALB ingress controller
+
+	https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.7/deploy/installation/
+
+	1)eksctl utils associate-iam-oidc-provider --region us-east-1 --cluster roboshop-cluster --approve
+		this is for to authenticate external systems 
+	2)curl -o iam-policy.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.7.2/docs/install/iam_policy.json
+	3)aws iam create-policy --policy-name AWSLoadBalancerControllerIAMPolicy --policy-document file://iam-policy.json
+	4)
+	eksctl create iamserviceaccount --cluster=roboshop-cluster --namespace=kube-system --name=aws-load-balancer-controller --attach-policy-arn=arn:aws:iam::<AWS_ACCOUNT_ID>:policy/AWSLoadBalancerControllerIAMPolicy --override-existing-serviceaccounts --region us-east-1 --approve
+
+
+	Now we are installing AWS load balancer controller through helm charts
+		1)helm repo add eks https://aws.github.io/eks-charts
+		2)helm install aws-load-balancer-controller eks/aws-load-balancer-controller -n kube-system --set clusterName=roboshop-clister --set serviceAccount.create=false --set serviceAccount.name=aws-load-balancer-controller
+		3)kubectl get pods -n kube-system 
+			u can find aws-load-banacer-xxxxx
+
+2)Now create a manifest file in app1 folder add this 
+--> Go to AWS console --> EC2 (any worker node) --> security --> search for iam role --> click on --> Add permisions --> Attach policy --> EC2 fill access policy to create load balancer --> add 
+other wise load balancer will not be able to create 
+--> Go to AWS console --> EC2 (any worker node) --> security --> search for SG --> click on --> edit inbound rules --> Add All traffic --> 0.0.0.0/0 --> add  --> to get traffic from load balancer to ec2 
+
+add deployment and service 
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app1
+  annotations: 		#used for external functionality and labels used for selct the resources insie teh cluster 
+	alb.ingress.kubernetes.io/scheme: internet-facing
+	alb.ingress.kubernetes.io/target-type: ip
+	alb.ingress.kubernetes.io/tags: Environment=dev,Team=test,Project=RoboShop
+	alb.ingress.kubernetes.io/group.name
+	
+spec:
+  ingressClassName: alb				#mention here or annotations 
+  rules:
+  - host: "app1.devopswitharun.online"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: app1    #service of app1 
+            port:
+              number: 80
+
+
+--> each ingress will create an each Load Balancer but we want one for app1 and app2
+	Enni ingresses ki oke load balancer kavalo ola name ichi set cheyochu and aa name anni dantlalo use cheyali 
+		alb.ingress.kubernetes.io/group.name:devopswitharun   #it is a group name 
+--> same manifest.yaml paste in app2 and replace app1 with app2 and image 
+
+3)After creating load balancer 
+	Go to Route53 --> add route -> 
+	* in box record name 
+	Alias --> search for application load balancer and select --> region --> choose created load balancer --> create records 
+	
+	
+now in web --> app1.devopswitharun.online and app2.devopswitharun.online ----> u should get responese 
+Now if u delete app2 folder -->kubectl delete -f manifest.yaml ===> load balancer should not be deleted only rule should be deleted ... if i delete app1 then load balancer has to be deleted because only one rule attached and that is deleted nothing is there to route so delete lb 
+
+
+
+10)we have already web folder so just add routing urls of all components in manifest files 	
+	write ingrss for we and run that manifest files 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	

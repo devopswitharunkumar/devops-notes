@@ -2001,6 +2001,7 @@ statefulset
 
 
 Storage:
+-----------
 1) emptyDir:
 It is a temporary storage created when a Pod is assigned to a node. It can be shared between containers in the same Pod and remains available as long as the Pod exists. When the Pod is deleted, the emptyDir data is deleted.
 
@@ -2034,7 +2035,9 @@ Fluentd DaemonSet is deployed in the Kubernetes system(i.e., kube-system) namesp
 
 That's why the combination makes sense:   DaemonSet + hostPath
 
-One Sentence:
+DaemonSet : 
+A DaemonSet is a Kubernetes controller that ensures a copy of a specific Pod runs on all or some nodes in a cluster. As new nodes join the cluster, Pods are automatically added to them, and when nodes leave, those Pods are cleaned up.
+Ex using fluentd :
 The DaemonSet ensures one Fluentd Pod runs on every eligible node and if we create a new node DaemonSet automatically create a Fluentd pod in new node, and the Fluentd container mounts that node's /var/log using hostPath, reads the logs, and forwards them to Elasticsearch.
 
 
@@ -2047,13 +2050,10 @@ Your main scenario is: AWS EKS + AWS EBS + Kubernetes PV + PVC + Pod
 In static provisioning, the EBS volume and PV are created BEFORE the application creates the PVC.
 
 Why do we need persistent storage?
-A Pod is temporary. If we store the data in pod but If the Pod is deleted/crashed..Total data will lost.. Even if Kubernetes creates another Pod the new Pod does not automatically get the old container's local data.
-
-we need persistent storage outside the Pod.
+A Pod is temporary. If we store the data in pod but If the Pod is deleted/crashed..Total data will lost.. Even if Kubernetes creates another Pod the new Pod does not automatically get the old container's local data.we need persistent storage outside the Pod.
 
 Why not store data on the worker node?
-Suppose we have a worker node inside that we have a pod and container and data stored inside that and worker node crashed or deleted kubarnetes may create another node and pod but total data will lost 
-We don't want critical application data to depend on temporary worker-node storage.	
+Suppose we have a worker node inside that we have a pod and container and data stored inside that and worker node crashed or deleted kubarnetes may create another node and pod but total data will lost ..We don't want critical application data to depend on temporary worker-node storage.	
 
 NOW:
 EBS = Elastic Block Store
@@ -2061,16 +2061,16 @@ EBS = Elastic Block Store
 It is AWS persistent block storage. It is like a virtual hard disk that you can attach to an EC2 instance.
 Your application can store data on it. So EBS volume exists independently of the Pod/node lifecycle 
 
-Important EBS concept — Availability Zone :
+Important EBS Point — Availability Zone :
 Suppose your EBS volume is created in: us-east-1b But your worker node is in: us-east-1a ... It cannot mount across Availability Zones.
 
-We need to make sure both should be created in same availability Zone 
+We need to make sure both EBS and Worker Node should be created in same availability Zone 
 
 Scenario:
 Kubernetes doesn't want the application to directly deal with the EBS volume ID every time. Kubernetes provides a resource called PV
 
 
-Example Foe All Flow :  path :   k8-concept-wise\05-storage\03-ebs-static-provisioning.yml
+Example for All Flow :  path :   k8-concept-wise\05-storage\03-ebs-static-provisioning.yml
 
 PersistentVolume — PV
 -------------------------------
@@ -2080,13 +2080,13 @@ PV is not the actual EBS disk. PV tells the kubenetes ----> This storage is avai
 
 
 Static provisioning:
-In static provisioning, we manually prepare the storage first.
-Step 1: Create an EBS Volume in AWS 
+In static provisioning, we manually create the storage first.
+Step 1: Create an EBS Volume in AWS Console
 Step 2: We create PV and PVC using manifest file 
-Step 3: Kubernetes Binds that PV to PV and Pod uses the PVC caimed 
+Step 3: Kubernetes Binds that PVC to PV and Pod uses the PVC claimed 
 
 Flow: 
-Flow : AWS EBS Volume ---> PersistentVolume (PV) ---> PersistentVolumeClaim (PVC) ---> Pod ---> Container ---> Application
+Flow : AWS EBS Volume ---> PersistentVolume (PV) ---> PersistentVolumeClaim (PVC) ---> Pod ---> Container ---> Application..
 
 Commands:
 kubectl apply -f pv.yaml
@@ -2096,14 +2096,14 @@ If u see Volumes in aws console if Volume is in Available state the volume not u
 
 PersistentVolumeClaim — PVC
 ----------------------------------------
-A PersistentVolumeClaim is a request made by a user/application for persistent storage to PV..
+A PersistentVolumeClaim is a request made by a user/application for persistent storage(i.e., PV).
 
 Ex: 
 resources:
   requests:
     storage: 5Gi
 
-It is requesting i need %GB of storage from 10GB available in PV.. Condition Satisfies the request 
+It is requesting i need 5GB of storage from 10GB available in PV.. Condition Satisfies the request 
 
 
 Commands:
@@ -2112,12 +2112,11 @@ kubectl get pvc
 
 Bound means 
 Before: PV : STATUS = Available
-
 After PVC uses it: PV : STATUS = Bound     ---> Means : The PVC has successfully claimed/bound to the PV.
 
 
 Very important difference:
-
+----------------------------------
 PV  = storage available
 PVC = request for storage
 
@@ -2160,7 +2159,6 @@ What if Pod is deleted?
 Pod can be deleted/restarted but PVC,PV and EBS remains same..Suppose if new Pod created by default it can access the persistent data.
 
 Example:
-
 Suppose the application writes : /usr/share/nginx/html/ebs.html
 echo "<h1>Hello from EBS</h1>" > ebs.html
 
@@ -2200,7 +2198,7 @@ mountPath	        ---> Directory inside container
 Details :
 ----------
 EBS is the actual storage created in AWS . 
-PV object represents actual storage in Kubernetes and it is Cluster Scoped
+PV object represents actual storage in Kubernetes and it is Cluster Scoped not namespace level
 PVC requests/claims through requesting it and PVC is namespace-scoped.
 Pod consumes it and Pod and PVC must be in the same namespace because the Pod references the PVC by name.
 
@@ -2216,9 +2214,9 @@ How to troubleshoot if PVC is not Bound:
 6. Correct namespace?
 
 Static provisioning in your interview :
-In static provisioning, we create the storage before/first and then make it available to Kubernetes through a PersistentVolume. 
+In static provisioning, we create the storage before/first and then make it available to Kubernetes through a PersistentVolume(PV). 
 For example, in AWS EKS, 
-1)we can manually create an EBS volume and configure a PersistentVolume using the AWS EBS CSI driver and the EBS volume ID. 
+1)we can manually create an EBS volume and configure a PersistentVolume using the AWS EBS CSI driver and the EBS volume ID Given in PV manifest. 
 2)The application then creates a PersistentVolumeClaim requesting a specific amount of storage and access mode. 
 3)Kubernetes binds the PVC to a matching PV. The Pod references the PVC in its volume configuration and mounts it into the required container path. 
 This separates the application's storage request from the underlying storage implementation. Since the data is stored on the persistent EBS volume rather than the Pod's temporary filesystem, the data can survive Pod recreation, subject to the volume lifecycle and reclaim policy
@@ -2252,25 +2250,75 @@ EBS is generally used with ReadWriteOnce because an EBS volume is attached for r
 Created EBS volume should be deleted manually
 
 
+Ex: PV and PVC and pod usage 
+
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: ebs-static
+spec:
+  accessModes:
+  - ReadWriteOnce #EBS volume should have readwriteonce, because it HD.
+  capacity:
+    storage: 10Gi
+  csi:
+    driver: ebs.csi.aws.com
+    fsType: ext4
+    volumeHandle: vol-095b046ae862ee1ff
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ebs-static
+spec:
+  storageClassName: "" # Empty string must be explicitly set otherwise default StorageClass will be set. for static provisioning this is empty
+  volumeName: ebs-static
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: app
+  labels:
+    demo: ebs-static
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    volumeMounts:
+    - name: nginx-data
+      mountPath: /usr/share/nginx/html
+  nodeSelector:
+    zone: 1b
+  volumes:
+  - name: nginx-data
+    persistentVolumeClaim:
+      claimName: ebs-static
+	  
+	  
+	  
+	  
+	  
+	  
+
 Dynamic Provisioning
 ----------------------------
-Volume will be created automatically
-There is a object called  StorageClass that can create storage dynamically based on the request mentioned in PVC 
+In dynamic provisioning, we don't manually create the EBS volume or PV. Kubernetes will create automaticall EBS Volume and PV .There is a object called  StorageClass that will create storage dynamically based on the storage request(ex: 10Gi etc..) mentioned in PVC defination.. 
 When u do provisioning using StorageClass ----> it will automatically create both ----> External Volume + PV 
 
-By default in kubernetes there will be one storafe class and driver -----> Do ----> kubectl get sc
+By default in kubernetes there will be one storage class and driver -----> Do ----> kubectl get sc
 StorageClass is cluster level resource and EBS will have one storageclass cluster wide and admin should create this 
 
-U can see which are namespace level and non namespace level resources using ----> kubectl api-resources 
------------------
-
-In dynamic provisioning, we don't manually create the EBS volume or PV. Kubernetes automatically provisions the storage when the application creates a PVC.
-Dynamic provisioning automates the creation of persistent storage when a PVC requests it.
+---> U can see which are namespace level and non namespace/cluster level resources using 	----> kubectl api-resources 
 
 Why do we need Dynamic Provisioning?
 Imagine your company has 50 applications ---> to create 50 EBS volumes and pv it is difficult 
 
-Flow : PVC ---> StorageClass ---> CSI Driver ---> EBS created automatically and PV created automatically 
+Flow : PVC ---> StorageClass ---> CSI Driver ---> EBS + PV created automatically 
 
 StorageClass :  StorageClass defines how Kubernetes should dynamically provision storage.StorageClass is basically the template/instructions for provisioning.
 -------------------
@@ -2281,10 +2329,11 @@ StorageClass acts as a template for dynamic provisioning. In EKS, we configure t
 Static
 You manually prepare everything: AWS EBS ---> PV ---> PVC ---> Pod
 
-Dynamic : You only request storage: through PVC ...The EBS and PV creation are automated.
+Dynamic : You only request storage through PVC how much storage u want ...The EBS and PV creation are automated using storage class .
 PVC ---> StorageClass ---> CSI Driver ---> AWS EBS ---> PV ---> Pod
 
 AWS EBS CSI Driver: 
+-------------------------
 It will create a bridge i.e., communication bw kubernetes and AWS EBS 
 The CSI driver handles storage operations such as provisioning and attaching/mounting volumes to nodes
 
@@ -2292,7 +2341,7 @@ The Kubernetes storage workflow uses the AWS EBS CSI driver to provision and att
 
 
 1) create a Storage Class manifest file 
-
+Ex:
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
@@ -2303,12 +2352,12 @@ parameters:
 reclaimPolicy: Delete						
 volumeBindingMode: WaitForFirstConsumer			#
 
-kubectl get storageclass
+kubectl get storageclass or sc
 
 reclaimPolicy: Delete			#by default it is Delete
 #ReclaimPolicy defines whether the dynamically provisioned storage should be deleted or retained after the PVC is deleted.
 1)Delete --> if pvc deleted both pv and ebs can be deleted  
-2) Retain --- underlying storage is retained for manual recovery/cleanup.
+2)Retain --> underlying storage is retained for manual recovery/cleanup.
 
 
 volumeBindingMode: WaitForFirstConsumer			
@@ -2330,7 +2379,7 @@ volumeBindingMode → controls when the volume should be provisioned/bound.
 
 
 2) create the PVC
-
+Ex:
 apiVersion: v1
 kind: PersistentVolumeClaim
 metadata:
@@ -2362,7 +2411,7 @@ Developer  ---> writes PVC with required storage (Ex: 10gi etc...) ---> In PVC c
 
 
 Static:
-Admin creates storage beforehand.. Admin creates PV and EBS storage should be created manually and PV yaml file is required and PVC claims existing PV and more manual work.Suitable when specific existing storage must be used
+Admin creates storage before handi.e., Admin creates PV and EBS storage should be created manually and PV yaml file is required and PVC claims existing PV and more manual work.Suitable when specific existing storage must be used
 EBS → PV → PVC → Pod
 
 Dynamic:
@@ -2378,11 +2427,11 @@ reclaimPolicy: Retain   ---> both pv and ebs ramain exists
 
 
 Static approach:  You as the administrator:
-1. Create 10Gi EBS
+1. Create 10Gi EBS manually
 2. Get EBS volume ID
-3. Create PV
+3. Create PV using manifest files
 4. Configure CSI
-5. Create PVC
+5. Create PVC using manifest files
 6. Deploy application
 
 Dynamic approach:
@@ -2467,13 +2516,13 @@ one StorageClass can serve many PVCs
 EFS Static Provisioning — Yes
                  EFS File System
                        |
-          ┌────────────┼────────────┐
-          ↓            ↓            ↓
-        PV-1         PV-2         PV-3
-          ↓            ↓            ↓
-        PVC-1        PVC-2        PVC-3
-          ↓            ↓            ↓
-        Pod-1        Pod-2        Pod-3
+          ┌────────────┼──────────────-─┐
+          ↓            			 ↓           				      ↓
+        PV-1                  PV-2         						PV-3
+          ↓                      ↓            					  ↓
+        PVC-1              PVC-2     						PVC-3
+          ↓                     ↓            						  ↓
+        Pod-1              Pod-2     						Pod-3
 
 You can create multiple PVC/PV definitions
 One EFS filesystem → can support multiple PVs/PVCs and multiple Pods, depending on how you configure the EFS CSI driver/access paths.
@@ -2524,15 +2573,15 @@ Good when multiple Pods/nodes need to access the same/shared files simultaneousl
 When do we use EFS?
 Use EFS when multiple Pods/servers need to access the same files simultaneously.
 
-| EBS                                | EFS                                      |
-| ---------------------------------- | ---------------------------------------- |
-| Block storage Like a hard disk     | File storage Like a shared network folder|
-| Usually used by one node at a time | Multiple nodes can access simultaneously |
+| EBS                                							  |                        EFS                                          |
+| ------------------------------------------------- | -----------------------------------------------------|
+| Block storage Like a hard disk                | File storage Like a shared network folder|
+| Usually used by one node at a time  	| Multiple nodes can access simultaneously |
 | Commonly RWO(ReadWriteOnce)        | Commonly RWX(ReadWriteMany)              |
-| AZ-Zone specific                   | Designed for shared access across AZs    |
-| Good for databases                 | Good for shared files                    |
-| High-performance block storage     | Shared filesystem                        |
-| Example: MySQL data                | Example: shared uploads                  |
+| AZ-Zone specific                   						| Designed for shared access across AZs    |
+| Good for databases                                  | Good for shared files                    |
+| High-performance block storage            | Shared filesystem                        |
+| Example: MySQL data                               | Example: shared uploads                  |
 
 
 EX:
@@ -2586,11 +2635,11 @@ Helm is a package manager for Kubernetes that allows us to package, template, co
 
 
 What is a Helm Chart?
-A Helm Chart is a collection of files that defines a Kubernetes application.
+A Helm Chart is a collection of files and templated YAML manifests that describe a related set of Kubernetes resources.
 
 Flow : Helm Chart ---> kubernetes yml files ---> configuration files ---> kubernetes resources 
 
-A chart can contain:  deployment,service,hpa,secrets,configMap,ingress,ServiceAccount etc....
+A chart can contain:  deployment,service,hpa,secrets,configMap,ingress,ServiceAccount etc..
 
 
 Helm architecture	
@@ -2609,7 +2658,7 @@ Helm architecture
                   ↓
              Kubernetes
 
-We define values in values.yml and manifest files find the values and render the yaml file with values and create k8 resource
+--> We define values in values.yml and manifest files take the values from values.yaml and render the yaml file with values and create k8 resource
 
 	
 
@@ -2658,17 +2707,17 @@ Same template but diff configuration files This avoids duplicating Kubernetes ma
 
 
 Commands :
-1)Helm installation :  Helm renders the templateswith values defined in values.yml and submits the resulting Kubernetes resources to the cluster.
+1)Helm installation :  Helm renders the templates with values defined in values.yml and submits the resulting Kubernetes resources to the cluster.
 Suppose ur chart is mongodb  ----->  helm install mongodb ./payment or . 
 
 mongodb ---> release name also
 chart 		  ---> ./payment 
 
 What is a Helm Release?
+A Helm release is an installed instance of a Helm chart in a Kubernetes cluster.
+
 When you run ---->  helm install mongodb ./payment or . 
 mongodb ---> is the release name 
-
-A Helm release is an installed instance of a Helm chart in a Kubernetes cluster.
 
 You can install the same mongodb chart multiple times using different release names :
 helm install mongodb-dev . 
@@ -2689,17 +2738,18 @@ Flow:  Old Release ---> helm upgrade ---> New configuration ---> Kubernetes reso
 
 4) Helm Rollback
 Suppose version 1.0.6 has a production problem.
-you can check history :
-command : helm history payment     ---> list of releases done using payment release name 
+
+5)you can check history :
+command : helm history <release name>     ---> list of releases done using payment release name 
 And 
-Rollback to old version using revision version 
+6)Rollback to old version using revision version(if u do helm history <chart name> u will get revision version) 
 
 command  : helm rollback payment 1
 
 helm rollback <release-name> <revision version>
 Now Helm returns the release to revision 1.
 
-5) Helm uninstall : This removes the Helm release and the Kubernetes resources managed by that release
+7) Helm uninstall : This removes the Helm release and the Kubernetes resources managed by that release
 command:  helm uninstall <release-name>
 
 
@@ -2713,7 +2763,7 @@ helm rollback payment 1    ---> rollback to the previous version
 helm history payment 		---> View release history of payment
 helm uninstall payment      ---> Uninstall release.
 helm status payment 			--->  Check release status.
-helm get values payment	---> See values used by release.
+helm get values payment	---> u can see values used by release while installing .
 
 Suppose something isn't working. Instead of directly installing: helm install payment ./payment
 we can do first : helm template payment ./payment  -------> This shows you the Kubernetes YAML that Helm will generate. u can inspect deployment,service,configmap,secrets etc... useful for troubleshoot the templates
@@ -2729,8 +2779,8 @@ You don't always have to modify values.yaml. you can override values at runtime/
 
 helm install payment ./payment --set replicaCount=5          ----> this overrides the values.yml file value 
 
-Using environment-specific values
----------------------------------------------
+Using environment-specific values from command line
+-----------------------------------------------------------------------
 For prod:
 helm upgrade --install payment ./payment -f values-prod.yaml
 For dev:
@@ -2911,20 +2961,20 @@ How stateful set/databases works
 
 												create user
 											   ┌─────────┐                    						  ┌──────┐
-											   │ NODE-1  │───────────────────▶│ DB-1 │
+											   │ NODE-1  	 │───────────────────▶│ DB-1 │
 											   └─────────┘                                		     └──────┘
 													▲
 													│
 													│
 ┌─────────┐                 	    	│
 │ master  │──────────── ┌─────────┐                   						  ┌──────┐
-└─────────┘  						│ NODE-2  │───────────────────▶│ DB-2 │
+└─────────┘  						│ NODE-2     │───────────────────▶│ DB-2 │
 												└─────────┘                   						  └──────┘
 													 │
 													 │
 													▼
 										   ┌─────────┐                   						 	 ┌──────┐
-										   │ NODE-3  │	───────────────────▶│ DB-3 │
+										   │ NODE-3     │	───────────────────▶│ DB-3 │
 										   └─────────┘                    						 	 └──────┘
 					
 Now lets say user has requested to create user ---> now request went to node-1 to create user so in DB-1 new user will be created
@@ -3001,17 +3051,9 @@ Deployment is mainly for stateless applications; StatefulSet is for applications
 
 StatefulSet:
 ---------------
-StatefulSet is a Kubernetes workload controller used to run stateful applications that need stable Pod identity, stable network identity, and persistent storage.
+StatefulSet is a Kubernetes workload controller used to run stateful applications that need stable Pod identity/name, stable network identity, and persistent storage.
 
 Ex: Mysql, mongodb, postgraceSQL , Elasticsearch, Zookeeper, Kafka etc....
-
-
-
-
-
-
-
-
 
 
 Why do we need StatefulSet?
@@ -3036,7 +3078,7 @@ Main features of StatefulSet:
 | Mainly stateless applications        | Stateful applications                  |
 | Pods have interchangeable identities | Pods have stable identities            |
 | Pod names are not predictable        | Pod names are predictable              |
-| `app-xxxxx`                          | `app-0`, `app-1`, `app-2`              |
+| `app-xxxxx`                          				| `app-0`, `app-1`, `app-2`              |
 | Storage generally shared/optional    | Each Pod can have dedicated storage    |
 | Pods are interchangeable             | Pods are individually identifiable     |
 | Common for APIs/microservices        | Common for databases/clustered systems |
@@ -3098,19 +3140,14 @@ Kubernetes removes the higher ordinal Pods first and The PVCs are not automatica
 
 
 commands:
-kubectl get statefulset or sts 			---> Check StatefulSets
-kubectl describe statefulset mysql 		---> describe
-kubectl scale statefulset mysql --replicas=3 ---> to scale 
-kubectl get sts mysql -o yaml ---> Check StatefulSet YAML
+kubectl get statefulset or sts 								---> Check StatefulSets
+kubectl describe statefulset mysql 					---> describe
+kubectl scale statefulset mysql --replicas=3 	---> to scale 
+kubectl get sts mysql -o yaml								---> Check StatefulSet YAML
 
 
 
-
-
-
-
-
-=====================================================================================================================================================
+===================================================================================================================================================================
 
 
 If u get any errors in cluster ex: couldnt get the server ip etc...
@@ -3152,7 +3189,7 @@ imagePullBackOff ---> get at the time of pulling image but some thing is wrong
 
 
 RBAC:
-----
+--------
 namespace level resources 
 Role
 RoleBinding
@@ -3214,14 +3251,299 @@ test:
 	kubectl get nodes ---> eror because we didnt gave access in roboshop-admin.yaml in resources section 
 	
 	
+ChatGpt Version:
+----------------------
+RBAC --> Role-Based Access Control.
+RBAC controls who can perform what actions on which Kubernetes resources.
+
+Kubernetes RBAC controls who can perform , what actions on which resources, using Roles/ClusterRoles for permissions and RoleBindings/ClusterRoleBindings to assign those permissions.
+
+So RBAC answers three questions: WHO can perform ? ----> WHAT actions can they do? ----> ON WHICH resources?
+
+Why do we need RBAC?
+Imagine everyone in your Kubernetes cluster has full access. A developer could accidentally run --->  kubectl delete deployment payment ==> and production could go down. Instead, we give only the permissions they need like get pods or get deployments or other resources etcc...
+
+This follows the security principle: Least privilege — give users only the permissions they actually need.
+
+
+The 4 main RBAC objects --> Kubernetes RBAC mainly uses:
+
+Role
+ClusterRole
+RoleBinding
+ClusterRoleBinding
+
+Role / ClusterRole   							 ===> defines permissions 
+RoleBinding / ClusterRoleBinding  ===>  assigns PERMISSIONS to a USER / GROUP / SERVICE ACCOUNT
+
+1)Role
+--------
+A Role defines permissions inside a particular namespace
+
+Ex: we have a namespace called roboshop 
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: pod-reader
+  namespace: roboshop
+rules:
+  - apiGroups: [""]	
+    resources:												#  this defines what Kubernetes resource the user can access.   - pods ---> means the rule applies to Pods. 
+      - pods
+    verbs:														#Verbs define what actions are allowed.
+      - get
+      - list
+      - watch
+
+We want a developer to view Pods only in roboshop namespace.
+
+- apiGroups: [""]	 ----> related 
+-------------------------------------------
+For core Kubernetes resources such as: v1 
+Pods
+Services
+ConfigMaps
+Secrets
+
+the API group is:   - apiGroups: [""]	
+
+For Deployments:
+apiGroups:
+  - apps
+ 
+Because Deployment belongs to the apps API group.
+
+
+resources: pods , services , configmaps , secrets , deployments , statefulsets , daemonsets
+-------------
+verbs:
+--------
+Common verbs:  get , list , watch , create , update , patch , delete
+	
+get   → view one resource
+list  → list resources
+watch → watch changes
+create → create a resource
+update → update a resource
+patch → patch a resource
+delete → delete a resource
+	
+Important point:
+Role alone doesn't give access.. RoleBinding give access 
+
+ The Role says: "These permissions exist." But it doesn't say who gets them. For that, we need: RoleBinding
+	
+
+2)RoleBinding
+------------------
+RoleBinding connects: WHO ----> TO ----> WHICH ROLE
+
+The binding determines how the permissions are applied.
+
+--> gives a Role's permissions to a User/Group/ServiceAccount
+
+Ex:
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+
+metadata:
+  name: arun-pod-reader
+  namespace: payment
+
+subjects:
+  - kind: User												
+    name: arun							#create user along with policies in aws iam 
+    apiGroup: rbac.authorization.k8s.io
+
+roleRef:
+  kind: Role
+  name: pod-reader             #above given role name 
+  apiGroup: rbac.authorization.k8s.io
+
+Role ---> namespace-scoped
+ClusterRole ---> cluster-wide permissions
+
+3)ClusterRole
+-----------------
+
+Ex:
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+
+metadata:
+  name: pod-reader
+
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+	
+A ClusterRole can also be bound with a RoleBinding to grant its permissions within a particular namespace.
+
+	
+4)ClusterRoleBinding:
+----------------------------	
+ClusterRoleBinding assigns a ClusterRole cluster-wide.
+	
+	Ex: same like RoleBinding 
+
+--> gives a ClusterRole's permissions cluster-wide
+
+
+RBAC can grant permissions to: Users and Groups and ServiceAccount
+
+
+Why does a Pod need a ServiceAccount?
+Suppose your application running inside a Pod needs to talk to the Kubernetes API.
+
+For example, an application needs to: list Pods , We shouldn't give it administrator access.
+
+Instead: Pod ---> ServiceAccount ---> RoleBinding ---> Role ---> get/list Pods
+
+ServiceAccount example
+
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: payment-sa
+  namespace: payment
+
+Then Role:
+apiVersion: rbac.authorization.k8s.io/v1
+kind: Role
+metadata:
+  name: payment-pod-reader
+  namespace: payment
+rules:
+  - apiGroups: [""]
+    resources:
+      - pods
+    verbs:
+      - get
+      - list
+      - watch
+Then RoleBinding
+apiVersion: rbac.authorization.k8s.io/v1
+kind: RoleBinding
+
+metadata:
+  name: payment-pod-reader
+  namespace: payment
+
+subjects:
+  - kind: ServiceAccount									#mentioning service account 
+    name: payment-sa
+    namespace: payment
+
+roleRef:
+  kind: Role
+  name: payment-pod-reader
+  apiGroup: rbac.authorization.k8s.io
+
+Then in pod we need to define 
+spec:
+  serviceAccountName: payment-sa
+
+Complete flow: Pod ---> payment-sa ---> RoleBinding ---> Role ---> get/list/watch Pods
+
+Why not give cluster-admin?
+It essentially gives administrative access to the cluster. Don't give this to normal applications unless there is a very strong reason.
+Instead: cluster-admin
+Prefer:
+
+✅ Create specific Role
+✅ Give only required verbs
+✅ Bind only to required ServiceAccount
+	
+
+
+Common production example ..Imagine your company has:
+Namespaces: dev , sit , prod
+Developers should be able to work only in dev. Developer ---> RoleBinding ---> Role ---> dev namespace
+
+They shouldn't be able to: prod
+DevOps team might need broader permissions. DevOps ---> ClusterRole ---> ClusterRoleBinding ---> Cluster resources...This is how RBAC helps separate responsibilities.
+
+
+RBAC and kubectl process:  if i run  ===> kubectl get pods -n payment
+Kubernetes checks:
+Who is Arun? ---> What permissions does Arun have? ---> Does he have "get" on "pods"? ---> YES → allow ---> NO  → Forbidden
+You might see: Error from server (Forbidden): That is an RBAC authorization failure
+
+
+| Role                              | ClusterRole                             |
+| --------------------------------- | --------------------------------------- |
+| Namespace-scoped                  | Cluster-scoped permissions              |
+| Used for resources in a namespace | Can grant access across namespaces      |
+| `metadata.namespace` required     | No namespace for the ClusterRole itself |
+| Example: Pods in `payment`        | Example: Nodes across cluster           |
+
+	
+	
+Authentication vs Authorization	
+
+Authentication : Who are you?
+User ---> Authentication ---> Identity verified
+Ex: AWS IAM, Certificates and OIDC
+
+Authorization : What are you allowed to do?	
+Authenticated user ---> RBAC ---> Allowed / Denied
+	
+RBAC is primarily about authorization.
+	
+In EKS, conceptually: Flow 
+User
+ ↓
+AWS/IAM/OIDC authentication
+ ↓
+Kubernetes identity
+ ↓
+RBAC authorization
+ ↓
+API Server
+ ↓
+Resource
+	
+So don't say: "RBAC authenticates users." Say: "Authentication establishes the identity, while RBAC controls what that identity is authorized to do."
+	
+Commands:
+---------------
+kubectl get roles -n payment					---> view roles in particular namespace
+kubectl get clusterroles							---> view cluster roles 
+kubectl get rolebindings -n payment   ---> View RoleBindings
+kubectl get clusterrolebindings			   ---> View ClusterRoleBindings
+kubectl describe role <role name> -n payment  ---> describe role 
+kubectl describe rolebinding  <rolebinding name> -n payment ---> describe role binding
+
+kubectl get role -n payment
+kubectl get rolebinding -n payment
+	
+Can my current identity perform this action?
+kubectl auth can-i get pods -n payment        ---> if u have access/permissions it will show yes , if u dont have access it will show no 
+kubectl auth can-i delete pods -n payment
+
+-->You can also check for a specific user:  kubectl auth can-i get pods --as=arun -n payment
+	
+
+Interview answer — "What is RBAC?"
+RBAC stands for Role-Based Access Control and is used in Kubernetes to implement authorization. It controls which users, groups, or ServiceAccounts can perform specific actions on Kubernetes resources. We define permissions using Role or ClusterRole, and assign those permissions using RoleBinding or ClusterRoleBinding. For example, we can create a Role that allows a developer to get, list and watch Pods only in a particular namespace and bind it to their identity. In production, we follow least privilege and avoid giving unnecessary permissions such as cluster-admin.
+	
+Interview answer — "How did you use RBAC?"
+We used Kubernetes RBAC to control access based on team responsibilities and application requirements. For namespace-level access, we created Roles with only the required resources and verbs and assigned them through RoleBindings. For workloads that needed to interact with the Kubernetes API, we used dedicated ServiceAccounts and granted them limited permissions through RoleBindings instead of using highly privileged accounts. For cluster-level operations, we used ClusterRoles and ClusterRoleBindings where required. During troubleshooting, we used kubectl auth can-i and inspected Roles and RoleBindings to identify authorization issues
 	
 	
 	
 	
-	
+===================================================================================================================================================================
+
+
 	
 Horizontal Pod Auto-Scaler(HPA):
-------------------------------
+-------------------------------------------
 AutoScaling ---> it will check CPU utilization if crosses 80% it will create more new VM 
 Same in Kubernetes Based on the traffic we need to invcrease pods for that we have HPA 
 
@@ -3277,7 +3599,7 @@ To check version :  helm version
 
 
 Horizontal scaling vs vertical scaling :
---------------------------------------
+------------------------------------------------
 
 vertical scaling 
 i have server and that server has CPU, RAM and Hard Disk/storage and resource were not sufficient because of more load.. So add more CPU, RAM and Hard Disk/storage 
@@ -3286,6 +3608,9 @@ vertical scaling means adding more resources
 
 Horizontal scaling 
 Instead of scaling the CPU, RAM, Hard Disk/storage we add more server with same capacity mentioned in manifest files..Even if one server creashes another server will server/handle the requests so no business/application down 
+
+
+
 We are doing HPA based on the CPU utilization or other 
 but in this
 1)we need to install metric server --> we need to measure the resources how much it is consumed 
@@ -3324,7 +3649,7 @@ In kubernetes everything is a pod
 	
 
 OOM(Out of Memory Killed) Error:
--------------------------------
+---------------------------------------------
 OOMKilled error --> the system completely ran out of available memory if system resources not enough
 
 1)Pod memory limit exceeded ---> An exceeded pod memory limit causes (OOMKilled) termination
@@ -3342,8 +3667,9 @@ OOMKilled will only for containers that have been terminated by the kernel OOM k
 
 We have 
 
+
 Ingrss Controller:
-------------------
+-----------------------
 
 ALB is preferred 
 Context path 
@@ -3430,3 +3756,12 @@ Now if u delete app2 folder -->kubectl delete -f manifest.yaml ===> load balance
 
 10)we have already web folder so just add routing urls of all components in manifest files 	
 	write ingrss for we and run that manifest files 
+	
+	
+	
+	
+	
+	
+	
+ChatGpt Version:
+---------------------

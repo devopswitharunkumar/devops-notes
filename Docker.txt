@@ -325,37 +325,44 @@ buildkit ,containers , engine-id , image  , network  , plugins , runtimes  , swa
  The Docker Client receives the command. 
  The Docker Client sends the request to the Docker Daemon. 
  The Docker Daemon checks the local system.if Image already exists internally. it says image already exists No download happens u can use that. if not exists Docker contacts the registry. i.e., Docker Hub and downloads image(by default latest version will be downloaded) and Docker stores the image locally.
- 
+
  Docker Hub ----> create an account 
+ Other option : is Amazon ECR 
+Authentication using credential helper ---> sudo apt-get install amazon-ecr-credential-helper
+it will generate the  --> ~/.docker/config.json  --- we need to replace the amazon credentials inside the file 
+once configured --> run docker pull and push 
  
-4) docker create nginx                ---> used to create a new container from a Docker image, but it does not start the container.
+4) docker create <image name>                ---> used to create a new container from a Docker image, but it does not start the container.
  or docker create nginx:latest    --->  used to create a new container from a Docker image with particular version , but it does not start the container.
    
  
-  docker create <image name/or image id > -- we can give    
+  docker create <image name/or image id > --> we can give    
  
 if u dont want run directily just to create container below one 
 5) docker start <container id/name>      ---> Starts an existing created or stopped container. container must be created 
 
-6) docker run <imagename/imageid>   ---> Docker performs two operations: Creates the container and Start the container. 
-Combination of (docker create + docker start) and evn docker pull also 
+6) docker run -d <imagename/imageid>   ---> Docker performs two operations: Creates the container + Start the container. 
+Combination of (docker create + docker start) and evn docker pull also if image does not exists in local host machine
 When u run this command it will first check images exists or not if image exist it will create and run the container based on that image but if image locally not exits it will automatically downloads the image from docker hub and Creates the container and Start the container. 
 
 
 Imp : if u run docker run <imagename/imageid> like this without background run container (i.e., withot using -d option ) will go to exited status because 
 
-7) docker rm <container id>      ----> used to permanently remove/delete only Docker container from the Docker host not docker image, images will exists and a running container cannot be removed. only stoped containers 
+docker run -d <image name>  ---> If images not exists it automatically pulls from the docker hub and creates a new container from the nginx image and starts container in detached mode, which means it runs in the background instead of occupying the terminal.
 
-8)docker stop <container id>   ---> used to stop the running container
 
-To remove running container directly without using stop command 
+7) docker rm <container id/name>      ----> used to permanently remove/delete only Docker container from the Docker host not docker image, images will exists and a running container cannot be removed. only stoped containers 
 
-docker rm -f <container id>     --->  If you want to remove a running container directly
+8)docker stop <container id/name>   ---> used to stop the running container
+
+9)To remove running container directly without using stop command 
+
+docker rm -f <container id/name>     --->  If you want to remove a running container directly
 -f == force in this case docker stops the container and delete/remove it ... Once removed, Docker deletes the container's metadata and writable layer.
 
 --------> To remove running containers first stop container and then remove container 
 
-9) docker rmi <image-id/image name>  --->  used to remove a Docker image from the local Docker host. docker checks if any container using this image if using then it will not remove 
+10) docker rmi <image-id/image name>  --->  used to remove a Docker image from the local Docker host. docker checks if any container using this image if using then it will not remove 
 Once removed, the image cannot be used to create new containers unless it is downloaded again.
 
 docker rmi -f <image id/image name>  --> it will remove images forcefully even if some container using it 
@@ -365,21 +372,17 @@ docker rmi 'docker images -a -q'        --------> remove all images
 
 i have nginx image and one container using it and if i do docker image -f nginx then what will happen to container ?
 Docker will:
-
 Remove the image reference (tag). and Force removal of the image metadata. but
 The running container continues running.
 Because the container already has everything it needs in memory and still references the image layers it was created from. image only should be present at the time of running/starting the container 
-	 
-10) docker run -d nginx  ---> If images not exists it automatically pulls from the docker hub and creates a new container from the nginx image and starts container in detached mode, which means it runs in the background instead of occupying the terminal.
 
 11)
 Port Mapping
 ------------------
 Now the nginx is running then how to access it 
 
-
 Step 1: First understand the problem
-docker run nginx ---> The container starts successfully. Inside the container we run nginx and Nginx listens on port 80. 
+docker run -d nginx ---> The container starts successfully. Inside the container we run nginx and Nginx listens on port 80. 
 Now you open your browser: http://<EC2-IP>:80 Will it work? no gives ERROR
 Why?
 
@@ -392,14 +395,14 @@ Now I have a Vm and inside Vm we are creating and running a docker container for
 
 <public ip of vm>:80  --> if u do this request reaches only vm not container to reach container also we need to do port mapping
 
-docker run -p <vm port>:<cintainer port i.e., nginx port> nginx
+docker run -p <vm/host port>:<container port i.e., nginx port> <image name>
 
 "-p ----> is used for port mapping."
 
 docker run -p 8080:80 nginx    ----> when u do this 8080 mapped with container port 80 and u will get reponse from container
 Whenever someone accesses ---->  http://EC2-IP:8080 ---->  Docker forwards the request to Container Port 80 where Nginx is listening.
 
-if we want to create multiple container with singale image now VM port number must have to change Host has only one Port 80. if not change it will give error allocated error but even if u created multiple container in vm all those can have same port number and we cannot change the container port 
+if we want to create multiple container with single image now VM port number must have to change Host has only one Port 80. if not change it will give error allocated error but even if u created multiple container in vm all those can have same port number and we cannot change the container port 
 examples:
 docker run -p 8080:80 nginx 
 docker run -p 9090:80 nginx 
@@ -423,7 +426,7 @@ If we want to give a custom name to the container. any name we can give Instead 
 
 docker run --name <container-name> -d -p <HostPort>:<ContainerPort> <image-name>
 
-ex: docker run -d -p 8080:80 --name <nginx_daws76> nginx
+ex: docker run -d -p 8080:80 --name <nginx_cont> <image name>
 
 docker run --name <nginx_daws76> nginx
 But we cannot give same name to other container names should be unique for each container 
@@ -444,7 +447,7 @@ docker create --name nginx-container nginx:latest
 docker start --name nginx-container nginx:latest    --> will not wor it has only options like -a attach mode and -i -- interactive mode 
 
 
-
+13)
 Topic: How do we login into a running Docker container?
 --------------------------------------------------------------------------
 
@@ -478,9 +481,8 @@ Difference between docker exec and docker attach
 | Most commonly used in production                        | Rarely used in production                                     |
 
 
-
-Inspect:
----------
+14)Inspect:
+---------------
 
 docker inspect is used to display detailed low-level information about Docker objects such as containers, images, volumes, networks, and services in JSON format.
 or
@@ -533,8 +535,8 @@ Then I would use docker inspect to validate the container's IP address, port map
 Based on that, I would continue troubleshooting with docker logs if needed."
 
 
-Create Own images:
-----------------------------
+15)Create Own images:
+-------------------------------
 Dockerfiles --> is a declarative way 
 
 Topic: Create Our Own Images
@@ -594,7 +596,7 @@ EXPOSE 8080
 CMD ["node","server.js"]
 
 Build : docker build -t catalogue:v1 .     ---> build an images based on all instructions given in Docker file 
-Run : docker run --name catalogue -p 8080:8080 catalogue:v1.0.0
+Run : docker run -d --name catalogue -p 8080:8080 catalogue:v1.0.0
 Now your own application is running inside Docker.
 
 Interview Answer (5 Years)
@@ -614,7 +616,7 @@ it should be the first instrucion in dockerfile
 docker build -t <url>/<username>/<image:version> . 
 
 docker build -t <username>/<image:version> .
---> if u give username then it willpush to that docker hub but u need to login first 
+--> if u give username then it will push to that docker hub but u need to login first and use docker push 
 
 docker build -t <imagename:version> .
 --> if u dont give url and username that means u r maintaing created image in local u r not pushing anywhere
@@ -689,9 +691,9 @@ Q3. What happens if the base image is not present locally?
 Docker automatically downloads it from the registry (such as Docker Hub) before continuing the build.
 
 ⭐ Interview Tip (Very Important)
-"Why do we use FROM node:18 instead of FROM ubuntu and installing Node.js ourselves?"
+Why do we use FROM node:18 instead of FROM ubuntu and installing Node.js ourselves?
 
-"Using node:18 provides a prebuilt and tested runtime with Node.js and npm already installed, reducing Dockerfile complexity, improving build consistency, and minimizing maintenance. Using a generic Ubuntu image would require manually installing and maintaining the runtime, which increases build time and the chance of configuration drift."
+Using node:18 provides a prebuilt and tested runtime with Node.js and npm already installed, reducing Dockerfile complexity, improving build consistency, and minimizing maintenance. Using a generic Ubuntu image would require manually installing and maintaining the runtime, which increases build time and the chance of configuration drift.
 
 FROM should always be the first instruction in the Dockerfile (except optional comments or parser directives).Because Docker needs a base image before executing any other instruction. Without a base image, Docker doesn't know where to build your application.
 
@@ -781,7 +783,7 @@ Flow :
 docker build ----> Dockerfile ---> FROM ---> WORKDIR ---> COPY ---> RUN ---> CMD ---> Store CMD in Image Metadata ---> Image Created ---> docker run ----> Container Created ----> Read CMD ----> Execute ---> node server.js ----> Application Running
 
 Why not use RUN? 
-Suppose someone writes ----> RUN node server.js ---> What happens? --> during docker build --> docker executes  node server.js ---> Application starts. Image build never completes because the Node.js server keeps running. Build gets stuck. This is wrong. Starting the application must happen after the image is built. So we use CDM command it will run at the time of container process 
+Suppose someone writes ----> RUN node server.js ---> What happens? --> during docker build --> docker executes  node server.js ---> Application starts. Image build never completes because the Node.js server keeps running. Build gets stuck. This is wrong. Starting the application must happen after the image is built. So we use CMD instruction it will run at the time of container process 
 
 Important Rule : Only one CMD should exist.
 Bui if we write like in dockerfile 
@@ -841,7 +843,7 @@ Downloads dependencies every time
 Container startup becomes slow
 Wastes time and bandwidth
 
-Instead : RUN npm install installs everything once during image creation.
+Instead : RUN npm install ---> installs everything once during image creation.
 
 Better Approach :  RUN apt update && apt install -y git wget    --------> Only one RUN instruction. one layer smaller image and faster build
 
@@ -1240,7 +1242,7 @@ Now do build an image  and run
 --> docker run entry:v1
 
 now it will continuosly ping google.com ---> check ---> docker ps -a 
-Now if u want to override google.com with yahoo.com ----> docker run ping yahoo.com entry:v1 --------->In ENTRYPOINT we cannot ovveride if we try It will throw an error 	(ping : ping : name or server not known )
+Now if u want to override google.com with yahoo.com ----> docker run ping yahoo.com entry:v1 ---------> In ENTRYPOINT we cannot ovveride if we try It will throw an error 	(ping : ping : name or server not known )
 
 Now if u see in docker ps -a ---> In commands section u can see that ---> ping google.com yahoo.com 
 In ENTRYPOINT if u try to override it will append the exising command from ------>   ping google.com --> if u try to override ---> ping google.com yahoo.com  --> it will show like this 
@@ -1254,7 +1256,7 @@ ping google.com -------> ping google.com yahoo.com       ----------> Arguments a
 
 BUT To completely override ENTRYPOINT intentionally
 ------------------------------------------------------------------------
-docker run --entrypoint bash catalogue:v1   ---> instead of ENTRYPOINT ["node","server.js"]
+docker run -d --entrypoint bash catalogue:v1   ---> instead of ENTRYPOINT ["node","server.js"]
 
 
 By COMBINING BOTH : we use combination of both CMD and ENTRYPOINT
@@ -1263,7 +1265,7 @@ By COMBINING BOTH : we use combination of both CMD and ENTRYPOINT
 Dockerfile
 FROM centos:8
 CMD ["google.com"]
-ENTRYPOINT ["ping",]
+ENTRYPOINT ["ping"]
 
 docker run entry:v1 -----> ping google.com 
 now if u want to override ------> docker run entry:v1 yahoo.com ---------> now google.com replaced by yahoo.com 
@@ -1275,7 +1277,7 @@ So user can always override the CMD arguments from run time
 We are giving flexibility to change the supply the arguments we not giving option to chage the main argument 
 
 Explain like :
-CMD command/arguments canbe overrideen bit ENTRYPOINT arguments/commands cannot be overridden but we can use CMD & ENTRYPOINT for the best results .. we can use CMD instruction  to give the default arguments to the ENTRYPOINT... if user want to override they can overidde from the run time if user dont want to override default argumen will run  instead of failing container we supply default arguments 
+CMD command/arguments can be overrideen but ENTRYPOINT arguments/commands cannot be overridden but we can use CMD & ENTRYPOINT for the best results .. we can use CMD instruction  to give the default arguments to the ENTRYPOINT... if user want to override they can overidde from the run time if user dont want to override default argument will run  instead of failing container we supply default arguments 
 
 
 
@@ -1512,7 +1514,7 @@ Now -----> docker build -t arg:v1 --build-arg username=arunkumar .    ------>   
 
 Only accessible in the build time ---> if i do env they will not present 
 
-How can i use ARG variables inside container :       we will giev ARG value to ENV variable so that it will be stored inside container env ---> if u type --- env ---inside containe ---> u can see variables 
+How can i use ARG variables inside container :       we will give ARG value to ENV variable so that it will be stored inside container env ---> if u type --- env ---inside containe ---> u can see variables 
 --------------------------------------------------------------    
 Ex:
 FROM redhat/ubi9
@@ -1542,7 +1544,7 @@ ARG username
 
 So u can provide the version at build time directily ---> docker build -t arg:v1 --build-arg version=latest .
 
-ARG instruction can be used befroe FROm instrucion to provide values to FROM instruction like above example and 
+ARG instruction can be used befroe FROM instruction to provide values to FROM instruction like above example and 
 ARG value given before FROM instruction will not be access after FROM instruction
 
 FROM redhat/ubi9:${version} ----> u used this but u forgot to give value while docker build on that basis it will give error but we can give default version if u dont provide version it will take that
@@ -1554,7 +1556,7 @@ docker build -t arg:v1 --build-arg username=arunkumar --build-arg course=devops 
 
 ChatGpt:
 Why do we need ARG?	
-Suppose today your application version is 1.0 ----> but tommorrow it may 1.1 ---> next weel may be 1.2 ---> Should we edit the Dockerfile every time? ---> NO
+Suppose today your application version is 1.0 ----> but tommorrow it may 1.1 ---> next week may be 1.2 ---> Should we edit the Dockerfile every time? ---> NO
 Instead
 
 ARG APP_VERSION
@@ -1675,7 +1677,7 @@ ENV → Run Time (exists inside the running container)
 
 ONBUILD:
 -------------
-ONBUILD is used to define a trigger instruction that is not executed immediately/ image build timme. Instead, it is executed automatically when another Docker image uses this image as its base image (FROM).
+ONBUILD is used to define a trigger instruction that is not executed immediately/image build time. Instead, it is executed automatically when another Docker image uses this image as its base image (FROM).
 
 Why do we need ONBUILD?
 Suppose your company creates a standard Node.js base image for all developers.	
@@ -1725,7 +1727,7 @@ When another Dockerfile uses the image as its parent image with the FROM instruc
 
 ===================================================================================================================================================================
 
-
+Commands manually
 
 
 1. docker logs
@@ -1777,7 +1779,7 @@ Real Project : Suppose image size increased from 350 mb to 900 mb
 docker history catalogue:v1  --> there we will have all the details 
 
 Interview Answer
-"docker history helps analyze image layers, identify large layers, and optimize Dockerfiles for smaller image sizes."
+docker history helps analyze image layers, identify large layers, and optimize Dockerfiles for smaller image sizes.
 
 4. docker diff
 -----------------
@@ -1813,9 +1815,10 @@ I execute to check it may be happening becasue of CPU, memory ---->  : docker st
 
 Interview Answer
 
-"docker stats is used to monitor live resource utilization of running containers. In production, it helps identify containers consuming high CPU or memory."
+docker stats is used to monitor live resource utilization of running containers. In production, it helps identify containers consuming high CPU or memory.
 
 6. docker top
+------------------
 docker top displays the processes running inside a container.
 Syntax : docker top catalogue
 
@@ -1823,7 +1826,7 @@ Real Project : Container is running. But application is slow.
 docker top catalogue  --> to know Which process is running.
 
 Interview Answer
-"docker top shows the operating system processes running inside a container. It is similar to the Linux ps command."
+docker top shows the operating system processes running inside a container. It is similar to the Linux ps command.
 
 7. docker events
 ----------------------
@@ -1841,7 +1844,7 @@ container restart
 Now we know : Container lifecycle events.
 
 Interview Answer
-"docker events provides a real-time event stream from the Docker daemon and is mainly used for troubleshooting and monitoring container lifecycle events."
+docker events provides a real-time event stream from the Docker daemon and is mainly used for troubleshooting and monitoring container lifecycle events.
 
 8. docker save
 -------------------
@@ -1853,9 +1856,10 @@ Real Project :  Production server No Internet. Build server Has Internet.
 docker save ---->  Transfer tar Copy to production Load image.
 
 Interview Answer
-"docker save is used to back up or transfer Docker images between systems without requiring a registry."
+docker save is used to back up or transfer Docker images between systems without requiring a registry.
 
 9. docker load
+------------------
 docker load imports an image that was previously exported using docker save.
 Syntax: docker load -i catalogue.tar
 Real Project : Production server No Docker Hub access.
@@ -1865,9 +1869,10 @@ Receive catalogue.tar Run docker load Image becomes available.
 -----------------------
 docker export exports only the filesystem of a container into a tar archive.
 
-docker export container-id > container.tar
+docker export <container-id > container.tar
 
 11. docker import
+------------------------
 docker import creates a new Docker image from a tar archive generated using docker export.
 
 Syntax : docker import container.tar catalogue:v2
@@ -1882,6 +1887,7 @@ Container ---> Filesystem only. No history.
 
 
 12. docker image prune
+-------------------------------
 Removes dangling (unused) Docker images to free disk space.
 
 docker image prune
@@ -1890,21 +1896,25 @@ Real Project
 CI server has Disk 100%  ------> Reason Unused images ---> Run docker image prune ----> Disk space recovered.
 
 13. docker container prune
+-----------------------------------
 Removes all stopped containers.
 Syntax: docker container prune
 
 Real Project : Hundreds of exited and stopped containers. Instead of removing one by one do docker container prune removes all stopped containers at a time 
 
 14. docker image inspect
+---------------------------------
 Displays detailed metadata about a Docker image, including labels, environment variables, exposed ports, working directory, entrypoint, and image configuration.
 
 Command : docker image inspect catalogue:v1
 
 15. docker image history :  Shows image layers
+---------------------------------
 docker history <image-name>
 
 
 16. HEALTHCHECK
+------------------------
 HEALTHCHECK is a Dockerfile instruction that allows Docker to periodically check whether the application inside a container is healthy.
 
 HEALTHCHECK --interval=30s --timeout=5s CMD curl -f http://localhost:8080/health || exit 1
@@ -1926,29 +1936,12 @@ Now Kubernetes or monitoring tools can take corrective action, such as restartin
 
 
 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
- 
+
+
+
+
+
+
  
  *******************************************************************************************************************************************************************
  
@@ -1957,6 +1950,9 @@ roboshop-proj-docker
 
 
 Docker networking 
+-------------------------
+Docker networking allows isolated containers to communicate with each other, the host machine, and external networks.
+
 
 we first need to understand normal server networking.
 
@@ -1997,7 +1993,7 @@ eth0 is the primary network interface of a Linux machine. It receives the IP add
 
 
 Now Docker Comes:
-
+--------------------------
 When u install Docker in ec2 
 Suppose Your EC2 has : eth0 ----> 172.31.90.88
 
@@ -2009,11 +2005,11 @@ Why?
 Imagine 100 containers. If all of them use eth0 directly, there will be IP conflicts , Security issues , Difficult management So Docker creates its own network.
 
 What is docker0?
-Immediately after installing Docker, Docker automatically creates one virtual network interface.
+Immediately after installing Docker, Docker automatically creates one virtual network interface i.e., docker0.
 EX: Execute --> ifconfig --> u can see ---> docker0   ----> has ip of   ----> 172.17.0.1
 
 docker0 is the default virtual bridge network interface created by Docker. It acts as a virtual switch or gateway for all containers connected to Docker's default bridge network.
-
+-----------
 Docker says "I won't directly connect containers to eth0. Instead "I'll create my own network." That network is docker0
 
 Flow : internet ---> EC2 eth0 (i.e., 172.31.90.88) ---> Docker install --> create docker-0  (i.e., 172.17.0.1) --->  now docker-0 assign containers ip
@@ -2046,7 +2042,7 @@ Solution
 Docker says Don't use my default network.
 
 Create your own.
-docker network create roboshop
+command : docker network create roboshop
 Docker creates ------> Gateway ---> 172.18.0.1
 
 Containers become : MongoDB has 172.18.0.2 and Catalogue has 172.18.0.3
@@ -2055,23 +2051,21 @@ Now run
 docker run -d --name mongodb --network roboshop mongo
 docker run -d --name catalogue --network roboshop catalogue
 
-Now Catalogue can connect using mongodb:27017
-because user-defined bridge networks provide built-in DNS-based name resolution.
+Now Catalogue can connect using mongodb:27017....because user-defined bridge networks provide built-in DNS-based name resolution.
 
 Real-Time Project (RoboShop)
 
 In our RoboShop project, we never used Docker's default bridge network for application deployment. We created a dedicated user-defined bridge network called roboshop, and every microservice such as Catalogue, User, Cart, Shipping, Redis, RabbitMQ, and MongoDB was attached to this network. Since all containers belonged to the same user-defined network, Docker automatically resolved container names to IP addresses through its internal DNS. As a result, the Catalogue service connected to MongoDB simply by using the hostname mongodb instead of a changing IP address. This made deployments much more reliable and easier to maintain.
 
 ⭐ Interview Tip (Very Important)
-"Why does Docker create docker0?"
-"docker0 is a virtual bridge network interface automatically created by Docker during installation. Instead of connecting containers directly to the host's physical interface (eth0), Docker isolates them in its own private network. The docker0 interface acts as the gateway for the default bridge network, assigns private IP addresses to containers, and forwards traffic between containers and the host network. In production, we usually create user-defined bridge networks because they provide better isolation and automatic DNS-based communication between containers."
+Why does Docker create docker0?
+docker0 is a virtual bridge network interface automatically created by Docker during installation. Instead of connecting containers directly to the host's physical interface (eth0), Docker isolates them in its own private network. The docker0 interface acts as the gateway for the default bridge network, assigns private IP addresses to containers, and forwards traffic between containers and the host network. In production, we usually create user-defined bridge networks because they provide better isolation and automatic DNS-based communication between containers.
 
 
 
 how a request reaches a Docker container.
 Scenario:
-suppose we execute :   
-docker run -d --name nginx -p 8080:80 nginx
+suppose we execute :   docker run -d --name nginx -p 8080:80 nginx
 
 Now you open your browser http://<EC2-Public-IP>:8080
 
@@ -2102,7 +2096,7 @@ Docker never changes the application's listening port inside the container. Ngin
 
 Bridge Network
 --------------------
-Bridge Network is Docker's default network driver that creates a private virtual network where multiple containers running on the same host can communicate with each other while remaining isolated from other networks.
+Bridge Network is Docker's default network driver that creates a private virtual network where multiple containers running on the same host and network can communicate with each other while remaining isolated from other networks.
 
 Docker creates ---> docker0 ---> Bridge ---> Containers connect to Bridge ---> Bridge connects to Host.
 
@@ -2138,8 +2132,8 @@ Host Network allows a container to directly use the host machine's network stack
 
 In Bridge Container --->  Own Ip
 But In Host
- Container ---> Uses Host IP ----> No docker0. No Private IP.
-Command : ----> docker run --network host nginx Now Nginx directly listens on Host ports. No port mapping required.
+Container ---> Uses Host IP ----> No docker0. No Private IP.
+Command ----> docker run --network host nginx Now Nginx directly listens on Host ports. No port mapping required.
 
 Advantages : No NAT , No bridge , Very Fast , Lower latency.
 Disadvantages : No isolation,  Container and Host share same network, Port conflicts, Less secure
@@ -2157,6 +2151,7 @@ Container has lo 127.0.0.1 Only ------>  No Internet.No ping. No communication.
 Use Cases : Security , Offline Processing , Batch Jobs , Testing.
 
 Overlay Network
+-----------------------
 Overlay Network allows containers running on different Docker hosts to communicate securely as if they are on the same network.
 
 Suppose
@@ -2515,13 +2510,13 @@ i container deleted ---> Docker deletes overlay2/<random id >  which means volum
 
 types of Volumes:
 -----------------------
-Anonymous Volume
+1)Anonymous Volume
 Suppose : docker run -v /data nginx     ---> Docker automatically creates a random volume name.
 
 Example : f7a89c234abc...  
 Not recommended. Difficult to manage.
 
-Named Volume :
+2)Named Volume :
 cmd : docker run -v mongo-data:/data/db mongo
 
 Docker itself manages storage. Using docker volume commands 
@@ -2532,13 +2527,12 @@ Inspect : docker volume inspect mongodb
 run :docker run -d --name mongodb -v mongodb:/data/db mongo
 
 Here mongodb is Docker Volume. 
-Docker manages it. 
-Application writes to /data/db 
+Docker manages it. Application writes to /data/db 
 Docker stores it inside /var/lib/docker/volumes/mongodb/_data
 
 Since Docker manages these volumes, backup, restore and maintenance become much easier. With bind mounts, Linux directories are managed manually.
 
-Bind Mount (Host Path/unnamed volume)
+3)Bind Mount (Host Path/unnamed volume)
 Instead of Docker managing storage, Suppose you want to use your own directory.
 cmd: docker run -v /home/ec2-user/data:/data/db mongo
 
@@ -2780,17 +2774,14 @@ Don't just say: "It reduces image size."
 Docker Layers
 ------------------
 Why Docker introduced Layers?
-Before understanding Docker Layers, let's understand the problem. Suppose you have a Dockerfile.
-Insterd of create one layer big image 
+Before understanding Docker Layers, let's understand the problem. Suppose you have a Dockerfile.Insterd of create one layer big image 
 
 What is Docker Layey
 A Docker Layer is a read-only filesystem layer created for every Dockerfile instruction. Docker stacks these layers one above another to form the final Docker Image.
 or
 Every instruction in Dockerfile creates one layer.
 
-Internal Working	
-
-Suppose Dockerfile
+Internal Working	 : Suppose Dockerfile
 
 FROM node:20
 RUN yum install git -y
@@ -2853,8 +2844,8 @@ Suppose after one hour you only change ---> server.js
 Now again if u do ------> docker build
 Question : Will Docker build everything again ------------> No. Docker uses Layer Cache.
 During second build 
-Docker checks Layer 1  ---> changes ? No ---> Reuse Cache
-Docker checks Layer 2  ---> changes ? No ---> Reuse Cache 
+Docker checks Layer 1  ---> changes ? No ---> Reuse layer from Cache
+Docker checks Layer 2  ---> changes ? No ---> Reuse layer from Cache
 Docker checks layer 3   ---> we changes server.js so copy should happen so ---> changed ? yes ---> rebuild that layer 
 IMP : ---->   Every instruction after COPY instr is rebuilt.
 
@@ -2984,9 +2975,6 @@ Fewer vulnerabilities.
 "What Docker best practices do you follow while writing Dockerfiles and deploying containers?"
 
 Docker Best Practices
-
-
-
 Whenever we create Docker images, our goal is not just to make the application work.
 
 As DevOps Engineers, we should build images that are:
@@ -3455,7 +3443,7 @@ Ex:  docker build,  docker run , docker pull etc...
 Internal Working :
 Suppose you execute ----> docker run nginx
 	
-User ---> Docker CLI ---> Converts command into REST API request ---> Sends request ---> Docker Socket
+User ---> Docker CLI ---> Converts command into REST API request ---> Sends request through---> Docker Socket ---> docker daemon
 
 
 Real Project
@@ -3774,7 +3762,6 @@ Stage 6 - Removed
 command : docker rm <container name/id>
 
 Docker removes
-
 Container ID , Writable Layer,  Container Metadata but Image will still exists.
 
 
