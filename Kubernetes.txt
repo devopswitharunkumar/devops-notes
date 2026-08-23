@@ -3671,11 +3671,12 @@ We have
 Ingrss Controller:
 -----------------------
 
-ALB is preferred 
-Context path 
+ALB is preferred ...
+So you can route based on:
+1)Context path/Path-based 
 app-dev.devopswitharun.online/catalogue --> go to catalogue target group 
 app-dev.devopswitharun.online/user		--> go to user target group 
-host path 
+2)host path 	
 catalogue.app-dev.devopswitharun.online ---> now it will go to catalogue target group
 user.app-dev.devopswitharun.online 		---> now it will go to user target group
 
@@ -3766,31 +3767,471 @@ Now if u delete app2 folder -->kubectl delete -f manifest.yaml ===> load balance
 ChatGpt Version:
 -----------------------
 
+Scaling : Scaling means adjusting application resources/capacity based on workload/traffic.
+Ex: Suppose your application normally has: 2 pods but But traffic suddenly increases to 100 users → 10,000 users
+
+Two common approaches are:
 Horizontal Scaling → increase number of Pods
 Vertical Scaling   → increase CPU/memory of existing Pods
 
-Horizontal Scaling: Horizontal scaling means increasing or decreasing the number of servers.... in kubernetes we call them as pods .
+Horizontal Scaling: Horizontal scaling means increasing or decreasing the number of servers/application instances(pods).
 -------------------------
-The application gets more capacity by running more replicas.
+Ex: we have 2 pods currently serving the request but traffic increases so increase the pods...The application gets more capacity by running more replicas.
 
-manually :  kubectl scale deployment payment --replicas=5
+To increase we have two ways 
+1)manually scale servers/application instances==> Command :  kubectl scale deployment payment --replicas=5
+2)Kubernetes can do it automatically using HPA.
 
+Adv:
+Adds/removes Pods i.e., creating more instances 
+Good for stateless applications
+Better for handling increased traffic
 
 Vertical Scaling : Vertical scaling means increasing or decreasing the CPU/memory resources allocated to an existing Pod/container.
+--------------------
 Example:
-Before:
-Pod
+Before: Pod resources
 CPU    → 500m
 Memory → 512Mi
 
 After Increase resources:
-After:
-Pod
+After: Pod resources
 CPU    → 2 CPU
 Memory → 2Gi
 
-So instead of adding Pods, we make the existing resource more.
+So instead of adding Pods, we increase the existing resource capacity.
+
+Adv : 
+Increases/decreases Pod resources like CPU and memory and these are Bigger instances
+Useful when application needs more resources per instance
+Useful for resource-intensive workloads
+
+
+HPA (Horizontal Pod Auto-scaler):
+--------------------------------------------
+HPA automatically increases or decreases the number of Pods based on resource utilization or other configured metrics. So HPA performs horizontal scaling.
+Ex: 
+Normal traffic ---> 2 Pods ---> CPU increases ---> HPA detects high CPU ---> 4 Pods
+When traffic decreases: CPU decreases ---> HPA detects lower utilization ---> 4 Pods → 2 Pods
+
+HPA architecture : Metrics ---> Metrics Server ---> HPA ---> Deployment / ReplicaSet ---> Pods increase or decrease
+For CPU-based scaling: Pod CPU usage ---> Pod CPU usage ---> HPA ---> Desired replicas (mentioned in manifest file ) ---> Deployment ---> More/Fewer Pods
+
+Ex:  Suppose our application normally runs on replicas 2 but we want 
+Minimum Pods = 2
+Maximum Pods = 10
+Target CPU = 70%
+
+Ex: 
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shipping
+  namespace: roboshop
+  labels: # these labels are deployment labels
+  etc......
+  
+  
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: payment-hpa
+spec:
+  scaleTargetRef:
+    apiVersion: apps/v1
+    kind: Deployment
+    name: payment					# it is refering to payment deployment above 
+  minReplicas: 2
+  maxReplicas: 10
+  metrics:
+    - type: Resource
+      resource:
+        name: cpu
+        target:
+          type: Utilization
+          averageUtilization: 70
+
+Above code if CPU reaches to 70 percent, then hpa will create the pods automatcally based on traffic
+
+
+What happens internally?
+Suppose: Current replicas = 2 and CPU = 40% ....HPA doesn't need to scale: we have 2 Pods 
+Now traffic increases: CPU = 85%
+HPA sees that the average CPU is above the configured target. It increases the desired number of replicas: 2 → 4 If traffic continues: 4 → 6 until it reaches: maxReplicas = 10
+
+When traffic decreases it reduces the pods to : 10 → 8 → 5 → 2 .... subject to HPA's scaling behavior and stabilization rules.
+
+Questions: 
+1)Important: HPA does NOT directly create Pods..It generally changes the desired replica count of the target workload.  The Deployment/ReplicaSet handles creation and removal of Pods.
+HPA → Deployment → ReplicaSet → Pods...
+In HPA manifest code we reefer the deployment so it will inform to replica set and replicaset will create the pods based on template defined 
+
+2)What does HPA monitor?
+HPA can use different metrics like 
+1)CPU utilization
+2)Memory utilization
+3)Custom metrics : Ex: Requests per second,  Queue length, Application-specific metric
+
+External metrics: Ex: metrics coming from an external system.In production, HPA doesn't have to be limited to CPU.
+
+
+Resource requests are important
+------------------------------------------
+Suppose:
+resources:
+  requests:
+    cpu: 500m				
+
+and HPA says: averageUtilization: 70							means :   350/70 
+CPU utilization is evaluated relative to the configured CPU request. 
+So if CPU request = 500m and the Pod is using 350m
+then: 350 / 500 = 70% 
+Therefore the HPA sees approximately: 70% CPU utilization.
+
+
+Can we use HPA and VPA together?
+Technically they can be used together in certain designs, but you need to configure them carefully because they can make conflicting decisions if both are trying to respond to the same resource utilization signals.
 
 
 
-HPA (Horizontal Pod Auto-scaler)
+HPA + Cluster Autoscaler : 
+Suppose HPA wants to increase: 2 Pods → 10 Pods.. But your cluster doesn't have enough CPU/memory to schedule those Pods. Pods remain Pending
+Then Cluster Autoscaler ---> Adds node capacity ---> Pending Pods get scheduled
+
+So you can have two levels of scaling:
+Application scaling ---> HPA ---> More Pods ---> Cluster capacity scaling ---> Cluster Autoscaler / Karpenter ---> More Nodes
+
+
+Real production example : 
+Imagine we have a Java Spring Boot application: payment-service we normally have 3 pods regularly During peak banking traffic: CPU increases to 80–90%..HPA detects the increased CPU utilization and deploment/replicaset create more pods then Kubernetes Service distributes traffic across the available Pods.
+If the EKS cluster doesn't have enough capacity: HPA ---> More Pods ---> Pods Pending ---> Cluster Autoscaler/Karpenter ---> More EC2 worker capacity ---> Pods scheduled
+
+
+HPA interview answer 
+HPA stands for Horizontal Pod Autoscaler. It automatically adjusts the number of replicas of a Kubernetes workload based on metrics such as CPU, memory, or custom application metrics.
+Ex: if our application normally runs with three Pods and CPU utilization increases beyond the configured target, HPA increases the desired replica count up to the configured maximum. When the workload decreases, it scales the replicas back down to the minimum.
+In our EKS environment, HPA handled application-level scaling, while cluster-level scaling was handled separately through the node autoscaling mechanism.
+
+Horizontal vs Vertical
+
+Horizontal scaling means increasing or decreasing the number of application instances/servers/pods, so in Kubernetes it usually means adding or removing Pods. HPA is used for this. 
+Vertical scaling means increasing or decreasing the CPU and memory resources allocated to an individual Pod using resource block, which can be handled using VPA.	
+For highly available and stateless microservices, horizontal scaling is generally preferred because additional replicas can handle traffic and provide better availability.
+
+And for your EKS production explanation:
+Traffic increases
+       ↓
+CPU / custom metric increases
+       ↓
+HPA
+       ↓
+More Pods
+       ↓
+If nodes have capacity → Pods scheduled
+       ↓
+If no capacity
+       ↓
+Cluster Autoscaler / Karpenter
+       ↓
+More worker nodes
+       ↓
+Pods scheduled
+
+
+Question:
+i have defined max replicas 10 in hpa but traffice is increased more even 10 pods also nit able to handle then how to do and what is the solution
+Solution:
+Imagine your application has:
+minReplicas: 2
+maxReplicas: 10
+
+Traffic increases and HPA reaches to 10 Pods....But even 10 Pods cannot handle the traffic and users are still getting slow responses.
+What happens ---> HPA will not create an 11th Pod, because you explicitly configured ---> maxReplicas: 10
+
+
+Step 1: First, don't blindly increase maxReplicas..You would first identify the bottleneck means what is causing the issue .
+check using :
+kubectl top pods
+kubectl get hpa
+kubectl describe hpa <hpa-name>
+kubectl get pods
+Then check application and infrastructure metrics in Prometheus/Grafana/CloudWatch.
+or
+So the application can start experiencing:
+Possible issue 
+High CPU , High latency , 5xx errors , Request timeouts , Queue buildup
+You check and find:
+Application Pods → Healthy
+CPU → Normal
+Memory → Normal
+Database → CPU 100%
+
+Here: Database is the issue.....Because the database is the thing preventing the whole application from handling more traffic.
+
+step 2:
+If Pods are healthy but simply need more replicas ---> then u need to check the node resource capacity like cpu and memory ---> if u have sufficient worker node capacity u can simply do 
+maxReplica: 20 
+
+Are my Pods overloaded ---> if 10 pods overloaded ---> increase the maxReplica count after checking the node capacity
+
+step 3:
+But What if Kubernetes doesn't have enough node capacity ---> what ever pods is there those will be in pending  state and using Cluster AutoScaler we need to increase the worker nodes 
+What if Kubernetes doesn't have enough node capacity?
+
+Do I have enough worker-node capacity ---> Suppose HPA wants 20 Pods but your EC2 worker nodes don't have enough CPU/memory. So remaining pods are in pending state then u need to increase the worker nodes
+
+Step 4 : What if even 20 Pods cannot solve it?
+Then you have to investigate the actual issue causing the application 	
+
+Are the Pods okay but something else is slow ---> All pods are healthy ---> Database is overloaded..You need to fix/scale the database or whatever dependency is causing the slowdown.
+
+For example: we have 20 application Pods but Database can handle only 5,000 connections here database is the problem increasing the more pods doesnt solve the problem.. u need to find the issue and based on that we need to provide solution 
+Other possible issues:
+		Optimize application code
+		Increase database capacity
+		Increase DB connection limits carefully
+		Add caching
+		Tune connection/thread pools
+		Improve slow queries
+		Scale another dependent service
+		Increase node capacity
+		Optimize resource requests/limits
+
+Suppose your application is: Users ---> payment service ---> Database
+Initally we have ---> Payment Pods = 2 ---> Traffic increases ---> pods increased to 2 --- 10... But the database can handle only 10,000 requests/minute.
+Your 10 Pods together are sending: 20,000 requests/minute.. So the database cannot keep up. here database is the issue ... Adding more Pods won't solve the problem
+
+
+
+
+Ingress controller:
+-----------------------
+
+First, what problem does Ingress solve?
+Suppose you have multiple applications inside Kubernetes like catalogue, cart, user, mongodb etc....
+You want users outside the cluster to access them
+https://example.com/catalogue
+https://example.com/cart
+https://example.com/user    etc.......
+
+One option is to expose every service using a separate LoadBalancer so that we need to create seperate LoadBalancer foe every component...This can become expensive and difficult to manage.
+
+Instead, we can use Ingress:
+Users/Clients ---> load Balancer ---> Ingress Controller ---> diff components like catalogue , cart , user etc... ---> diff service for each component catalogue, cart etc.... ---> pods 
+One external entry point can route traffic to multiple internal Services.
+
+Ingress: Ingress is a Kubernetes API resource that defines HTTP/HTTPS routing rules for external traffic going to Services inside the cluster.
+
+For example:
+example.com/catalogue  → catalogue-service
+example.com/cart   → cart-service   etc.........
+But there is an important point: Ingress itself does not process traffic. This is where Ingress Controller comes in.
+
+Ingress Controller : An Ingress Controller is the component that actually watches Ingress resources and configures a load balancer/proxy to route incoming HTTP/HTTPS traffic to the appropriate Kubernetes Services
+
+Ex:
+NGINX Ingress Controller , AWS Load Balancer Controller , Traefik , HAProxy
+
+For AWS EKS = AWS Load Balancer Controller
+It can provision and configure AWS load balancers based on Kubernetes resources.
+
+Ingress vs Ingress Controller
+
+Ingress Defines: "Where should this request go?"
+Example:
+/payment → payment-service
+/orders  → order-service
+
+Ingress Controller  : Actually implements those rules ===> Receives request -----> Reads Ingress rules -----> Routes request -----> to Correct Service
+
+
+==> How does it know where to send the request?
+Ingress rules contain things So you can route based on: Host and Path 
+1) Host-based routing
+		catalogue.example.com → catalogue-service
+		mongodb.example.com   → mongodb-service
+
+Ex: 
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: app1
+  annotations:
+    alb.ingress.kubernetes.io/scheme: internet-facing
+    alb.ingress.kubernetes.io/target-type: ip
+    alb.ingress.kubernetes.io/tags: Environment=dev,Team=test,Project=Roboshop
+    alb.ingress.kubernetes.io/group.name: joindevops
+spec:
+  ingressClassName: alb
+  rules:
+  - host: "app1.daws76s.online"
+    http:
+      paths:
+      - pathType: Prefix
+        path: "/"
+        backend:
+          service:
+            name: app1
+            port:
+              number: 80
+
+
+
+2) Context/Path-based routing
+		example.com/catalogue → catalogue-service
+		example.com/mongodb  → mongodb-service
+
+--> This is useful when multiple microservices share the same domain.
+
+
+==> Ingress Controllers can also handle TLS/HTTPS.
+Ex : User ---> HTTPS :443 ---> LB ---> Ingress Controller ---> service ---> pod 
+Ingress can reference a Kubernetes TLS Secret:
+Ex: 
+tls:
+  - hosts:
+      - shop.example.com
+    secretName: shop-tls
+	
+--> The certificate can then be used for HTTPS termination depending on the controller/configuration.
+
+==> Ingress vs LoadBalancer Service
+LoadBalancer Service --> one service -- one external Load Balancer 
+Ex: we have catalogue , user, mongodb so we need to create 3 load balancers for 3 diff components 
+catalogue.example.com
+mongodb.example.com
+user.example.com
+
+Ingress:
+One external LB or entry point ---> ingress ---> can have diff components like catalogue, cart, user etc... one LB for multiple services(i.e. 1 service for 1 component or application) 
+So one Ingress setup can route traffic to multiple Services.
+Ex: 
+example.com/mongodb
+example.com/cart
+example.com/catalogue
+
+
+==> Ingress vs NodePort
+
+NodePort : User ---> <ip of worker node>:<port no> ---> service ---> pod 
+u expose a service using a port on the worker nodes.
+
+Ingress : User ---> example.com/catalogue ---> Load Balancer ---> Ingress Controller ---> service ---> pod 
+Ingress is more suitable for HTTP/HTTPS application routing.
+
+
+==> What happens when you create an Ingress?
+This depends on the controller. Conceptually : 
+
+kubectl apply -f ingress.yaml
+             ↓
+       Kubernetes API
+             ↓
+     Ingress resource
+             ↓
+    Ingress Controller
+             ↓
+Reads routing rules
+             ↓
+Configures proxy/load balancer
+
+The controller continuously watches the Kubernetes API for changes.
+If you modify the Ingress: /payment → payment-service
+to: /payment → payment-v2-service ..... the controller updates its routing configuration.
+
+In Kubernetes using EKS 
+Internet/Users/Clients ---> Route53/DNS ---> AWS LB ---> AWS Load Balancer Controller(Ingress Controller)--->  Kubernetes Service ---> Pods 
+
+Ingress Controller is the Kubernetes component that watches Kubernetes resources and configures the routing/load-balancing behavior.
+
+==> Important troubleshooting  
+-----------------------------------------
+Suppose:  https://shop.example.com/payment  is not working.
+I would troubleshoot layer by layer.
+
+Step 1 — Check Ingress
+	kubectl get ingress
+then 
+	kubectl describe ingress app-ingress
+		check :
+			host , path , Backend Service , Events 
+
+Step 2 — Check Service
+	kubectl get svc  ---> Check whether payment-service exists.
+
+Step 3 — Check Endpoints
+	kubectl get endpoints payment-service  or  kubectl get endpointslices
+		If there are no endpoints, the Service isn't selecting the expected Pods.
+
+Step 4 — Check Pods
+	kubectl get pods
+	kubectl describe pod <pod name>
+	kubectl logs <pod name>
+
+Step 5 — Check Ingress Controller
+Depending on your controller: 
+		kubectl get pods -n <ingress-controller-namespace>
+	Check controller logs:
+		kubectl logs <ingress-controller-pod>
+
+Step 6 — Check AWS Load Balancer
+For EKS: DNS ---> ALB/NLB ---> Target health ---> Ingress/controller ---> Service ---> Pods
+
+Check whether targets are healthy and whether security groups/NACL/network configuration allow the traffic.
+
+
+Common problems
+-------------------------
+Ingress has no address
+	kubectl get ingress
+		--> If the address is missing ==> Ingress Controller problem, AWS provisioning problem, IAM issue, Subnet/tagging issue .... depending on the controller.
+
+404 error --> wrong path, wrong host, wrong ingress rule, or Wrong backend Service
+503 error --> service ---> endpoints ---> pods 
+			--> the Service may have no healthy endpoints.
+TLS error --> check TLS Secret, Certificate, Hostname, Ingress TLS configuration
+
+Questions
+1)Ingress vs Ingress Controller — interview answer
+Ingress is a Kubernetes API resource that defines HTTP/HTTPS routing rules, such as host-based or path-based routing to Kubernetes Services.
+The Ingress Controller is the actual component that watches those Ingress resources and implements the routing using a proxy or load balancer.
+For example, in an EKS environment we can use the AWS Load Balancer Controller, which can provision and configure an AWS Application Load Balancer based on Kubernetes configuration.
+
+or
+Ingress defines how external HTTP/HTTPS traffic should be routed, while the Ingress Controller actually implements those routing rules and forwards traffic to Kubernetes Services.
+
+2)How have you used Ingress in your project?
+We used Ingress to provide a common HTTP/HTTPS entry point for our microservices instead of exposing every Service individually. We configured host-based and path-based routing so requests were forwarded to the appropriate Kubernetes Services, which then routed them to the Pods. The Ingress Controller watched the Ingress resources and implemented the routing configuration. We also configured TLS for HTTPS and used environment-specific configuration through our deployment process. During troubleshooting, we checked the Ingress resource and events, backend Service, EndpointSlices, Pods, controller logs, and the external load balancer health to identify where the request was failing.
+
+
+Flow : 
+				USER
+                   ↓
+              DNS / Route53
+                   ↓
+          External Load Balancer (ALB)
+                   ↓
+          Ingress Controller
+                   ↓
+            Ingress Rules (in aws console --> load balancer --> Listners and rules tab --> rules )
+             /          \
+        /payment       /orders					#diff types of applications 
+           ↓              ↓
+    payment-service   order-service
+           ↓              ↓
+         Pods            Pods
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+		 
+===================================================================================================================================================================
+
+
+
+
+		 
