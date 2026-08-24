@@ -8,7 +8,8 @@ nodeselector
 deamonset and hostpath --- together how they are using 
 EBS vs EFS 
 
-
+ALB vs ELB vs NLB 
+LTM vs GTM 
 
 
 
@@ -4233,6 +4234,383 @@ Flow :
 
 
 
-K8-Architecture:
----------------------
+K8-Architecture notes:
+----------------
 		 
+Control plane objects 
+1)kubectl  ---> command line t connect to k8 cluster
+2)kube-apiserver ---> respond to kubectl commands 
+	Ex: when u type : kubectl get pods ---> from client (kubectl ui) ---> first comes to kube API server 	generally validates authentication and authorization
+	getting information done by kube api server..creating resources kube api server will handle/forward	that request to scheduler 
+3)scheduler --> It will decide in which node the newly created pod should be scheduled based on some factors if we define node labels and node selectors and taints and tolerations and affinity and anti-affinity.. if we dont define it will schedule randonly based on own consideration
+4)etcd ---> entire data corresponds to our cluster... generally this will be managed as EBS so it is out of eks 
+		if it corrupts then it is very big issue 
+kube control manager ---> 
+there will some controllers 
+	node controller --> responsible for noticing and responding when nodes go down 
+	job controller 	--> same like pod there is a job defination controlls the jobs means create pod and after completing the task job controller mart the task as completed 
+	
+	replication controller - it make sure requested no of replicas are always running.. lets say if we ask replicas = 5 .. this replication controller continuously watches and compared the desired state and actual state if pod goes down immeadiately create new pod in replace of old pod 
+	endpointslice controller --> make sure the end points are created for services  
+
+worker nodes we have diff components 
+kubelet --> components that make sure nodes are connected to control plane 
+kube-proxy --> it is the process responsible for forwarding the request from service to the right pods 
+container runtime(mostly containerd) --> responsible for running the containers on running pods and runtime that can run any images into containers  	
+
+
+
+
+
+Kubernetes Architecture: 
+------------------------
+
+Kubernetes cluster has two major parts:
+Control Plane ---> Control Plane makes decisions and manages the overall Kubernetes cluster.
+Worker Nodes  ---> Worker Nodes are where our application Pods actually run.
+
+The Control Plane contains the components that manage and control the cluster.
+Control Plane
+│
+├── kube-apiserver
+├── etcd
+├── kube-scheduler
+└── kube-controller-manager
+
+1)kuber-apiserver : kube-apiserver is the central communication/entry point of Kubernetes cluster. The API Server also communicates with other Kubernetes components. Basically everything communicates through kube apiserver 
+Tools such as kubectl, Helm and other Kubernetes components communicate through the API server.
+
+2)etcd : etcd is the key-value store used by Kubernetes to store cluster state and configuration data not application data.
+Ex: 
+	How many Pods should exist?
+	Which Deployments exist?
+	Which Services exist?
+	Which Nodes exist?
+	Which Secrets/ConfigMaps exist?
+	Deployment, service, COnfigmap , secrets, pod info, replica count, node info etc...
+This information is stored in etcd.
+The control-plane components use this information to determine the current/Actual and desired state of the cluster.
+
+Api server ---> etcd ---> cluster state stored 
+Ex: if u mention ===> replicas: 4    ===> The desired state is maintained in Kubernetes.
+
+3)kube-scheduler : 
+	 scheduler is responsible for scheduling newly created pods to suitable worker nodes based on resource availability and scheduling constraints
+
+ex: if we define in deployment defination replicas: 3 
+
+The scheduler considers things such as: 
+	-> based on CPU & memory  availability
+	-> based on resource requests mention in defination file 
+	-> node selectors 
+	-> affinity/anto-affinity 
+	-> taints and tolarations 
+	-> other scheduling runs
+
+4)kube-controller-manager : 	
+	It is basically maintains the desired state of resources .. controller continuously monitors/compares Desired vs Actual state and if the actal state is not equal to desired state controller will try to match the desired state 
+	So always  Desired State = Actual State 
+
+Ex: You specify replicas: 4 But currently Running Pods = 3 Controller sees 
+
+Desired = 4
+Current = 3    so Create 1 additional Pod the both are equal 
+	
+Worker node/Data Plane 
+
+Worker Node
+│
+├── kubelet
+├── kube-proxy
+└── Container runtime
+       │
+       └── Pods
+	  
+1)kubelet : kubelet is the node-level agent running on each & every worker node and it Make sure the pods assigned to this node are actually running according to their specifications.
+It communicates with the Kubernetes control plane.
+It will work with container runtime(containerd) to run the containers. It also reports node/Pod status back to Kubernetes.
+
+
+2)Container Runtime : Kubernetes needs a container runtime to actually run containers. 
+It is responsible for pulling images and running the containers inside the pods.
+It uses mostly containerd or other CRI-compatible runtime 
+
+
+3)kube-proxy : kube-proxy helps implement Kubernetes Service networking on nodes.
+A request comes to the Service.It participates in implementing the networking rules that allow traffic to reach the appropriate backend Pods.
+or
+kube-proxy helps implement Service networking rules on nodes and forwarding request to correct Pod backends on Kubernetes nodes.
+or
+kube-proxy is responsible for implementing Service networking rules on nodes so that traffic can be directed to the appropriate backend pods.
+
+service : The Service provides a stable networking abstraction while Pods can be recreated and their IPs can change.
+
+
+
+
+How all components work together ?
+When u run --> kubectl apply -f payment-deployment.yaml
+
+Step 1 — kubectl 		---> Your request reaches the API Server.  kubectl ---> API server 
+Step 2 — API Server		---> API Server validates/authenticates/authorizes the request and persists the relevant cluster state. API server --> etcd 
+Step 3 — Controller 	---> The Deployment controller notices that the desired workload needs Pods. Deployment ---> ReplicaSet ---> Pods
+Step 4 — Scheduler		---> scheduler decides where the pods need to be scheduled i.e., in which node 
+Step 5 — kubelet		---> The kubelet on each selected node sees that a Pod is running or not. Scheduler --> node --> kubelet 
+Step 6 — Container runtime	---> kubelet works with the container runtime i.e., containerd to create and run container 
+Step 7 — Application runs	---> Application runs 
+
+Complete request flow
+                 kubectl
+                    |
+                    ↓
+              kube-apiserver
+                    |
+             +------+------+
+             |             |
+             ↓             ↓
+            etcd      Controllers
+                           |
+                           ↓
+                      Deployment
+                           |
+                        ReplicaSet
+                           |
+                           ↓
+                         Pods
+                           |
+                       Scheduler
+                           |
+                           ↓
+                     Worker Node
+                           |
+                         kubelet
+                           |
+                    Container Runtime
+                           |
+                           ↓
+                       Container
+					   
+					   
+What happens when a Pod crashes ?
+Suppose 
+	Desired Pods = 3
+	Running Pods = 3
+One crashes:
+	Desired = 3
+	Actual = 2
+
+Kubernetes controllers notice the mismatch : 
+Controller ---> Need another Pod ---> Scheduler ---> Selects node ---> kubelet ---> Container runtime ---> New Pod
+
+Eventually:
+Desired = 3
+Actual = 3
+
+
+Explain Kubernetes architecture :
+
+Kubernetes follows a control-plane and worker-node architecture. 
+-> The control plane is responsible for managing the cluster and maintaining the desired state. The main components are the kube-apiserver, etcd, scheduler and controller manager. The API server acts as the central communication layer, etcd stores the Kubernetes cluster state, the scheduler assigns Pods to suitable worker nodes, and controllers continuously work to maintain the desired state.
+
+-> Worker nodes are responsible for running the application workloads. Each node has a kubelet, container runtime and networking components such as kube-proxy. The kubelet communicates with the control plane and ensures that the Pods assigned to the node are running, while the container runtime actually runs the containers.
+Ex: 
+-> when I deploy an application using kubectl, the request reaches the API server, the desired state is stored in etcd, controllers create the required workload objects usinf deployment and replicaset controllers, the scheduler selects suitable worker nodes to schedule newly created pods , and the kubelet on those nodes works with the container runtime to start the application containers. 
+In our AWS environment using EKS, AWS manages the Kubernetes control plane, while we manage the worker-node capacity and the workloads running on it.
+
+
+or 
+
+In my project, developers commit the application code to Git. Jenkins triggers the CI/CD pipeline, where we build the application, perform SonarQube analysis, create the Docker image and push it to Amazon ECR. During deployment, we use Helm to deploy or upgrade the microservice in EKS. Helm communicates with the Kubernetes API server, and Kubernetes then creates or updates the required resources such as Deployment, Service, ConfigMap, Secret and Ingress.
+
+
+
+
+
+======================================================================================================================================================================
+
+
+
+
+
+
+Deployment startegies:
+---------------------
+1)Rolling update/Ramped -- it zero downtime/minimal downtime deploment startegy 
+-----------------------
+Ex:
+Currently we have a application version v1 and that version running on 4 pods and currently serving the requests  
+Lets say developers pushes new feature of application and pushed the code to github and they updated version to v2 and new image were build now we want to deploy
+now Rolling update do 
+Initially we have 4 pods which has version v1 now new deployment triggered with version v2 kubernetes gradually do
+process :
+	1 new pod will be created & up nd running state(i.e in v2) then one old pod will be deleted or terminated (i.e., v1)
+	then 2nd new pod will be created & up nd running state(i.e v2) then 2nd old pod will be deleted or terminated (i.e., v1)
+	then 3rd new pod will be created & up nd running state(i.e v2) then 3rd old pod will be deleted or terminated (i.e., v1)
+	then 4th new pod will be created & up nd running state(i.e v2) then 4th old pod will be deleted or terminated (i.e., v1)
+	
+so now all new pods with updated application version v2 while maintaining the required availability.
+
+Example:
+
+Before:
+
+v1   v1   v1   v1
+
+
+Deployment starts:
+
+v2   v1   v1   v1
+
+v2   v2   v1   v1
+
+v2   v2   v2   v1
+
+v2   v2   v2   v2
+
+Adv:
+Minimal downtime
+No need to maintain a complete duplicate environment
+Lower infrastructure cost
+Kubernetes Deployment manages the rollout
+Easy rollback
+
+disadv : 
+here ur application is serving some people with new version of application and some set of people will be served with od version of application.. request may go any version 
+so developers has to handle the code they can manage both versions and stateful application management is easy
+
+
+
+
+Rolling deployment was our normal deployment strategy for microservices. If we had four pods running version V1 and a new V2 image was released, Kubernetes gradually created V2 pods and terminated V1 pods while maintaining the required availability. We used readiness probes and resource configuration to make sure traffic was sent only to healthy new pods.
+
+Interview Answer
+For our regular application releases, we primarily used the Kubernetes Rolling Update strategy. Our microservices were deployed as Kubernetes Deployments, and when a new Docker image version was available in ECR, we updated the image version through our Helm deployment. Kubernetes gradually replaced the old Pods with the new Pods instead of stopping all the Pods at once.
+
+We configured parameters such as maxUnavailable and maxSurge based on the application requirement, and we used readiness probes so that a new Pod received traffic only after the application was ready. During the deployment, we monitored the Pod status, application health, logs and metrics. If the new version had an issue, we could stop the rollout and perform a rollback to the previous Deployment revision.
+
+What exactly did YOU do during Rolling Update? and What was your responsibility?
+My responsibility was to update and manage the deployment through the CI/CD pipeline, verify that the new image was available in ECR, update the Helm values with the required image tag, deploy it to the target Kubernetes environment, and monitor the rollout. I checked Pod readiness, deployment status, application logs and monitoring dashboards. If the rollout wasn't healthy, I investigated the issue and, depending on the impact, rolled back to the previous stable version.
+
+
+
+How did you perform rollback?
+First I check the Deployment rollout status and identify whether the issue is with the new Pods, image, configuration, readiness probe or application itself. 
+If the issue cannot be resolved within the release window, I roll back/undo to the previous stable revision.
+
+Rollback : 
+kubectl rollout status deployment/payment-service  --> to check status 
+kubectl rollout history deployment payment		   --> to check rollout history
+kubectl rollout undo deployment/payment-service    --> if anything wrong we can go back to previous/old version
+or
+through our deployment process we can redeploy the previous Helm/image version.
+
+2) Blue - Green 
+---------------
+Blue -- old version code (currently running version)
+Green -- new version of code (new version)
+Ex:
+	--> Currently we have 4 pods running with application old version v1 
+	--> So Developer pushed new features and updates the version to v2 
+	--> Now blue - green deployment create new replica set with 4 pods called as green deployment then we will test the green deployment new version but here traffic still serverd by blue deployment not green deployment 
+	--> After testing(sanity or health check etc..) if all are good then we will route(change the dns records) the traffic to green deployment
+	--> if anything issue came after deployment we can route the traffic to blue again if everything fine then only blue deployment pods will be deleted 
+	
+==>	we have a target group for old pods that is blue deployment and we create another new target group points to new version v2 that is green (in target group we will have multiple servers) --> if everything is fine we will update/swith the load balancer alb  the rule to send requests to new tartget group 
+	After running 30-40 mins we got a big defect and users are facing the issues so the deploment will fail... so immeadiately they will change the target group to old version instances that is blue deployment pods 
+	
+	if users able to access all and no issues in new version then this green version becomes blue if new version releases then new version will be green etc,,,
+
+disadv:
+	no clash b/w old and new version but for some time we are using double the resources it increases the cost and testing should be properly done and stateful application management is little bit hard 
+	
+explain this as your higher-risk release strategy
+For higher-risk releases, we followed a Blue-Green deployment approach. We maintained the currently stable version as Blue and deployed the new version separately as Green. We validated the Green environment before directing production traffic to it. Once the new version passed our validation, we switched the traffic from Blue to Green. The advantage was that the previous stable version was still available, so if we identified a critical issue after the switch, we could quickly route traffic back to Blue.
+
+What would you say you actually did for Blue-Green?
+I was involved in preparing the new application version, deploying the Green version separately, validating the Pods and application health, and coordinating the traffic switch after approval. We monitored the application after the switch, and the previous Blue version was retained for quick rollback if required.
+
+How was Blue-Green implemented?
+We used labels to distinguish the versions and controlled which version received traffic through the Service/Ingress layer. The new version was deployed and validated independently, and after approval the traffic was switched to the new version.
+
+For major releases where we wanted a safer deployment and fast rollback, we used the Blue-Green approach. Blue represented the currently running version and Green represented the new version. We deployed the new version separately, validated application health and functionality, and then switched traffic to the Green environment. If issues were detected after the switch, we could route traffic back to Blue.
+	
+3)Canary deployment :
+--------------------
+Canary means --> Don't send everyone to the new version immediately.
+lets say we have version A (old version) and version B (new version)
+now they will release the some percentage of traffic to new version like 
+ex : 
+step 1 : 5% of users to new version or some regions locations and 95% of users to old version ---> if everything looks good monitor : errors, cpu, memory , metrics, latency , logs and bussiness metrics if healthy
+step 2 : 25% of users to new version and 75% of users to old version ---> if everything looks good
+step 3 : 50% of users to new version and 50% of users to old version ---> if everything looks good
+step 4 : 100% of users to new version and 0% of users to old version ---> here full rollout to new version 
+
+
+The idea is to deploy the new version to a small percentage of traffic first, monitor its behavior, and gradually increase traffic if the metrics remain healthy.
+
+For high-risk releases, we can use Canary deployment. Instead of moving all traffic to the new version, we initially expose a small percentage of traffic to V2, monitor application and infrastructure metrics, and gradually increase traffic if everything is healthy. If we observe errors or performance degradation, we stop the rollout and route traffic back to V1.
+
+
+
+
+
+4)Recreate :	
+---------- 
+In this version A terminated/shutdown first and then version B is rolled out and routes the traffic to pods through service and there will be downtime(will announce downtime at particular time and do this process) depends on shoutdown of old version A and boot/start time of version B duration of the application. 	
+
+5)A/B testing : 
+--------------
+A/B testing exposes different application versions to different user groups so that we can compare functionality or business behavior between the versions. Means Compare behavior/business results between two versions.
+
+6)Shadow
+--------
+In Shadow deployment, production traffic is duplicated to the new version, but the response from the new version is not returned to the user. This allows us to test V2 with realistic production traffic without affecting users.
+
+Real User
+    |
+    v
+V1
+    |
+    +-------------> Response to User
+    |
+    +---- copy traffic ----> V2
+                              |
+                         Response ignored
+Users receive the V1 response. V2 receives copied traffic for testing.
+
+
+Which deployment strategy did you use
+
+For our regular Kubernetes deployments, we primarily used Rolling Updates. Our applications were deployed through Helm, and when a new image version was released, the Deployment gradually replaced the old Pods with the new Pods. We used readiness probes and rollout monitoring to make sure only healthy Pods received traffic. For higher-risk or critical releases, we also followed a Blue-Green approach, where we deployed and validated the new version separately before switching production traffic. We retained the previous stable version so that we could quickly switch back if we encountered a production issue.
+
+
+For our cluster we will do blue - green 
+EKS upgrade:
+-----------
+Currently we have 3 nodes and running the applications on version 1.27 (i.e., blue )
+we upgrade the master node(control plane) ---> u can't deploy new applications but existing applications runningi n worker nodes will continue to run
+this is platform upgrade so we need to annountce downtime ..if application upgrade means no need downtime 
+
+we will create another node group for version 1.29  (i.e., green)
+
+--> we will slowly drain the nodes for 
+	ex: from old-node group node1 will be drained and other nodes are tainted ---> means it will delete pods in old node and it qill make sure those pods go to other nodes 
+	then replication controller pushed new pods will automatcally comeup into new nodes 
+	then we will delete the old node group  (i.e., green)
+
+same process for another newer version .. create new node group drain the old group 
+
+
+
+
+
+
+
+
+Deployment Strategies :
+-----------------------
+Deployment strategy means how we release a new application version into an environment while maintaining application availability and minimizing deployment risk. 
+We mainly used Kubernetes Rolling Updates for regular releases, and for critical or higher-risk releases we followed a Blue-Green deployment approach.
+
+1) Rolling update/Ramped Strategy 
+Rolling deployment was our normal deployment strategy for microservices. If we had four pods running version V1 and a new V2 image was released, Kubernetes gradually created V2 pods and terminated V1 pods while maintaining the required availability. We used readiness probes and resource configuration to make sure traffic was sent only to healthy new pods.
