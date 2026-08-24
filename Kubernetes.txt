@@ -4434,9 +4434,13 @@ In my project, developers commit the application code to Git. Jenkins triggers t
 
 
 Deployment startegies:
----------------------
-1)Rolling update/Ramped -- it zero downtime/minimal downtime deploment startegy 
------------------------
+------------------------------
+Deployment strategy means how we release a new application version into an environment while maintaining application availability and minimizing deployment risk. 
+We mainly used Kubernetes Rolling Updates for regular releases, and for critical or higher-risk releases we followed a Blue-Green deployment approach.
+
+1)Rolling update/Ramped Strategy -- it zero downtime/minimal downtime deploment startegy 
+----------------------------------------------
+Rolling deployment was our normal deployment strategy for microservices. If we had four pods running version V1 and a new V2 image was released, Kubernetes gradually created V2 pods and terminated V1 pods while maintaining the required availability. We used readiness probes and resource configuration to make sure traffic was sent only to healthy new pods.
 Ex:
 Currently we have a application version v1 and that version running on 4 pods and currently serving the requests  
 Lets say developers pushes new feature of application and pushed the code to github and they updated version to v2 and new image were build now we want to deploy
@@ -4505,7 +4509,7 @@ or
 through our deployment process we can redeploy the previous Helm/image version.
 
 2) Blue - Green 
----------------
+--------------------
 Blue -- old version code (currently running version)
 Green -- new version of code (new version)
 Ex:
@@ -4535,7 +4539,7 @@ We used labels to distinguish the versions and controlled which version received
 For major releases where we wanted a safer deployment and fast rollback, we used the Blue-Green approach. Blue represented the currently running version and Green represented the new version. We deployed the new version separately, validated application health and functionality, and then switched traffic to the Green environment. If issues were detected after the switch, we could route traffic back to Blue.
 	
 3)Canary deployment :
---------------------
+----------------------------
 Canary means --> Don't send everyone to the new version immediately.
 lets say we have version A (old version) and version B (new version)
 now they will release the some percentage of traffic to new version like 
@@ -4602,15 +4606,3 @@ same process for another newer version .. create new node group drain the old gr
 
 
 
-
-
-
-
-
-Deployment Strategies :
------------------------
-Deployment strategy means how we release a new application version into an environment while maintaining application availability and minimizing deployment risk. 
-We mainly used Kubernetes Rolling Updates for regular releases, and for critical or higher-risk releases we followed a Blue-Green deployment approach.
-
-1) Rolling update/Ramped Strategy 
-Rolling deployment was our normal deployment strategy for microservices. If we had four pods running version V1 and a new V2 image was released, Kubernetes gradually created V2 pods and terminated V1 pods while maintaining the required availability. We used readiness probes and resource configuration to make sure traffic was sent only to healthy new pods.
