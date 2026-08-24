@@ -4591,18 +4591,54 @@ For our regular Kubernetes deployments, we primarily used Rolling Updates. Our a
 For our cluster we will do blue - green 
 EKS upgrade:
 -----------
-Currently we have 3 nodes and running the applications on version 1.27 (i.e., blue )
-we upgrade the master node(control plane) ---> u can't deploy new applications but existing applications runningi n worker nodes will continue to run
-this is platform upgrade so we need to annountce downtime ..if application upgrade means no need downtime 
+Currently we have 3 nodes in old node group and running the applications on version 1.27 (i.e., blue )
+we upgrade the master node(control plane) ---> u can't deploy new applications but existing applications running in worker nodes will continue to run
+this is platform upgrade so we need to announce downtime ..if application upgrade means no need downtime 
 
-we will create another node group for version 1.29  (i.e., green)
+we will create another new node group for version 1.29  (i.e., green) ... Then gradually move workloads.
 
+EKS Node Group Blue-Green
 --> we will slowly drain the nodes for 
-	ex: from old-node group node1 will be drained and other nodes are tainted ---> means it will delete pods in old node and it qill make sure those pods go to other nodes 
+	ex: from old-node group node1 will be drained and other nodes are tainted ---> means it will delete pods in old node 1 and it will make sure those pods go/schedule to other nodes and schedule
 	then replication controller pushed new pods will automatcally comeup into new nodes 
-	then we will delete the old node group  (i.e., green)
+	then we will delete the old node group  (i.e., blue)
 
 same process for another newer version .. create new node group drain the old group 
 
 
+		EKS Cluster
+                 |
+       +---------+---------+
+       |                   	    |
+ Old Node Group   New Node Group
+   Blue 1.27             Green 1.29
+       |                   		|
+     Pods                New Pods
 
+Then:
+Step 1 — Create new node group ==> i.e., called as Green Node Group 
+Step 2 — Validate
+Check:
+kubectl get nodes
+kubectl get pods -A
+
+Step 3 — Cordon/drain old nodes
+kubectl cordon <old-node>    ---> prevents new Pods from being scheduled there.
+kubectl drain <old-node>  ---> evicts eligible workloads/pods so they can run elsewhere.
+Step 4 — Pods move to new node group nodes 
+Step 5 — Delete old node group -- Once workloads are healthy
+
+Both are diff 
+Application Blue-Green : V1 application ---> Blue ---> V2 application ---> Green ---> Traffic switches Blue → Green
+EKS infrastructure/node-group Blue-Green : Old node group ---> Blue ---> New node group ---> Green then Pods migrate to green nodes ---> Old nodes drained ---> Old node group removed
+
+
+
+Explain Kubernetes architecture based on your project ? 
+In my project, we used Amazon EKS for container orchestration of multiple microservices. Architecturally, the Kubernetes cluster consists of the control plane and worker nodes. The API server is the central communication point, and we interact with it using kubectl and Helm. The scheduler assigns newly created pods to suitable worker nodes, while the controller manager continuously reconciles the desired state with the actual state. Cluster state and configuration are persisted in etcd.
+
+On the worker nodes, kubelet communicates with the API server and makes sure the assigned pods are running, kube-proxy handles Kubernetes Service networking, and the container runtime runs the containers.
+
+From our CI/CD pipeline, after building and validating the application image, we push it to Amazon ECR and deploy it to EKS using Helm. Kubernetes then creates or updates resources such as Deployments, Services, ConfigMaps, Secrets and Ingress. For availability and scaling, we use multiple replicas, readiness/liveness probes, resource requests and limits, and HPA where required.
+
+I have worked on Kubernetes-based deployments in EKS, mainly around application deployment, troubleshooting, scaling and release management.
