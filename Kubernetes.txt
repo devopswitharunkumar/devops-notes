@@ -4878,7 +4878,213 @@ Taints and tolerations are used to control Pod scheduling. A taint is applied to
 
 
 ===================================================================================================================================================================
+
+
+
+
 Taints + Tolerations + Node Affinity together
 
 node selector 
 
+
+First Example:
+
+1)kubectl label nodes  <node name> project=roboshop
+
+2)create a file in selectors folder and create a 02-node-affinity.yaml 
+
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-node-affinity
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: project
+            operator: In
+            values:
+            - roboshop
+
+  containers:
+  - name: with-node-affinity
+    image: nginx
+
+roboshop  -- if we give value wrong like roboshop123 when u apply pod will be in pending state because we didnt labled the node with roboshop123
+			 scheduler is not able to find the matching node as per we given key and values 
+		  --> if we give correct the pod will be created and running state in matched node 
+if u describe the pod u can see the error ---- kubectl describe pod <pod name> -- will get error like nodes not matching with node affinity/selector 
+
+Another Example 
+
+1)kubectl label nodes  <node name> project=roboshop  ---> we already labled 
+2)kubectl label nodes  <node name> project=amazon  	 ---> labels this now 	
+3)create 04-node-affinity-weight in selectors folder 
+	
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-node-affinity
+spec:
+  affinity:
+    nodeAffinity:
+	  preferredDuringSchedulingIgnoredDuringExecution:
+      - weight: 1
+        preference:
+          matchExpressions:
+          - key: project
+            operator: In
+            values:
+            - amazon
+      - weight: 50
+        preference:
+          matchExpressions:
+          - key: project
+            operator: In
+            values:
+            - roboshop
+
+  containers:
+  - name: with-node-affinity
+    image: nginx
+
+weight means : 
+
+
+03-node-anti-affinity
+
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-node-anti-affinity
+spec:
+  affinity:
+    nodeAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+        nodeSelectorTerms:
+        - matchExpressions:
+          - key: project
+            operator: NotIn			#it will not schedule the pod in node labeled with key: project and value: roboshop it will select other node to schedule pod
+            values:
+            - roboshop
+
+  containers:
+  - name: with-node-anti-affinity
+    image: nginx
+	
+Pod affinity ---> create 05-pof-affinity.yaml
+Ex:
+apiVersion: v1 
+kind: Pod			
+metadata: 
+  name: Pod-affinity-1 
+  labels:
+	podtype: pod-affinity
+spec:
+  containers:
+  - name: nginx-container
+    image: nginx
+    ports:
+    - containerPort: 80
+---
+apiVersion: v1
+kind: Pod
+metadata:
+  name: with-pod-affinity-1
+spec:
+  affinity:
+    podAffinity:
+      requiredDuringSchedulingIgnoredDuringExecution:
+      - labelSelector:
+          matchExpressions:
+          - key: podtype			#above give lable key 
+            operator: In
+            values:
+            - pod-affinity			#above give lable value 
+        topologyKey: topology.kubernetes.io/zone
+
+  containers:
+  - name: nginx-container-2
+    image: nginx
+
+we create pod 1 using ---> kubectl apply -f 05-pof-affinity.yaml  ---> it will create first pod 
+now we added pod affinity pod so in podAffinity section we mentioned 
+	key ---> first pod lable name 
+	value ---> first pod label value 
+so in which ever node first pod is running 2 nd pod also go an run there 
+
+06-Pod anti-affinity.yaml
+
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: Pod-anti-affinity
+spec:
+  selector:
+    matchLabels:
+      app: store
+  replicas: 2
+  template:
+    metadata:
+      labels:
+        app: store
+    spec:
+      affinity:
+        podAntiAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+          - labelSelector:
+              matchExpressions:
+              - key: app
+                operator: In
+                values:
+                - store
+            topologyKey: "kubernetes.io/hostname"
+      containers:
+      - name: nginx-server
+        image: nginx
+
+Here we mentioned replicas-2 
+So 1st pod will create in the random node with labels of app: store because there is no node labeld with app: store lets say it is created in node-1
+2nd pod will again validate the podAntiAffinity: block now there is a pod already with labels app: store in node-1 and now we mentioned podAntiAffinity so it will not schedule on node 1 whre pod-1 is present 
+if we mention podAffinity it will schedule the pod-2 also in node-1 where pod1 is running 
+
+Lets say we have mentioned replicas 5 and we have only nodes are 2 at that case podAffinity will not work so remainig 3 pods will be in pending state 
+
+
+
+
+
+
+
+
+
+
+Adminstartion EKS upgrade
+
+
+u can announe a create/update of application, no release or changes  
+
+1. create a seperate node group called green ---> k8s-terraform-aws-eks/03-eks --> main.tf 
+	eks_managed_node_groups {
+	blue {}
+	green {
+	}
+	
+	}
+2.create a upgreade folder in k8-concept-wise folder and create a deployment 
+3.we need to taint new nodes i.e., green deployment nodes 
+	kubectl taint nodes <node name> project=roboshop:NoExecute
+4. upgrade control plane to 1.28  --> aws console -- eks cluster and u can see update now after cluster name 
+	instead of doing it from terraform we do manually 
+5. upgrade node group to 1.28  --> aws console -- eks cluster -- compute and u can see update now after node name
+6. taint blue nodes so that no new pods will be schedule on blue deployment nodes 
+			kubectl taint nodes <node 1> project=roboshop:NoSchedule
+			kubectl taint nodes <node 2> project=roboshop:NoSchedule
+	we should not give NoExecute because all pods will be evicted directly
+7. untaint green nodes to schedule pods ---- we tainted at point 3 
+	
+8. cordon/drain the blue nodes 
