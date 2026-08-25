@@ -4642,3 +4642,243 @@ On the worker nodes, kubelet communicates with the API server and makes sure the
 From our CI/CD pipeline, after building and validating the application image, we push it to Amazon ECR and deploy it to EKS using Helm. Kubernetes then creates or updates resources such as Deployments, Services, ConfigMaps, Secrets and Ingress. For availability and scaling, we use multiple replicas, readiness/liveness probes, resource requests and limits, and HPA where required.
 
 I have worked on Kubernetes-based deployments in EKS, mainly around application deployment, troubleshooting, scaling and release management.
+
+
+
+
+
+
+
+===================================================================================================================================================================
+
+
+
+
+
+We are creating customised EKS Cluster using terraform code
+K8s terraform aws EKS 
+------------------------------
+EKS is vpc based resource
+
+
+
+
+
+
+
+Taints and Tolerations :
+------------------------------
+Taint : A taint is applied to a Kubernetes nodes if we taint a node then by default scheduler cannot schedule normal pods on that node 
+.... used cases  few projects they add their own nodes to eks cluster they dont allow other projects nodes then they taint the nodes obviously scheduler will not allow the pods to schedule on nodes 
+
+Tolerations
+Tolerations are applied/configured on pods to allow that Pod to be scheduled onto a tainted node with matching taints.
+
+Taints and tolerations work together to ensure that pods are not scheduled onto inappropriate nodes. One or more taints are applied to a node; this marks that the node should not accept any pods that do not tolerate the taints
+
+
+Taint a node :  
+Ex : kubectl taint nodes <node name> project=roboshop:NoSchedule
+This means that no pod will be able to schedule onto tainted node unless it has a matching toleration.
+
+Untaint a node : To remove the taint
+Ex: kubectl taint nodes <node name> project=roboshop:NoSchedule-
+atlast :
+The "-" at the end means remove the taint.
+
+To Schedule a pod on a tainted node we need to specify the tolerations in pod level i.e., equal to container defination
+==> We have two types of operators :
+1)Equal		---> Equal requires both the taint key and value to match the toleration key and value 
+tolerations:	
+- key: "key1"															#this name and above command taint key - project should match 
+  operator: "Equal"
+  value: "value1"													#this value and above command taint value - roboshop should match 
+  effect: "NoSchedule"
+  
+2)Exists        ---> Exists checks only whether the taint key exists and toleration key same , so the value isn't considered
+tolerations:
+- key: "key1"
+  operator: "Exists"
+  effect: "NoSchedule"
+  
+Scenarion : if like above 2 matches the fine what if we didnt mention or key is empty 
+Ex: 
+tolerations:
+  - operator: Exists
+    effect: NoSchedule				
+	
+An empty key with Exists can match all taints with that effect --> means Tolerate all NoSchedule taints means it can schedule any node which has effect NoSchedule
+ The effect also needs to match, such as NoSchedule, PreferNoSchedule or NoExecute.
+  
+Example:
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+    env: test
+spec:
+  containers:
+  - name: nginx
+    image: nginx
+    imagePullPolicy: IfNotPresent
+  tolerations:
+  - key: "example-key"
+    operator: "Exists"
+    effect: "NoSchedule"
+
+The default value for operator is Equal.
+
+==> There are multiple types of effects we have :
+1. NoSchedule --> new Pods will not be scheduled on the tainted node unless if they have a matching toleration. Pods currently running/Existing on the node are not evicted continue to run.
+2. PreferNoSchedule --> Kubernetes tries to avoid placing the Pod on that node or The control plane will try to avoid placing a Pod that does not tolerate the taint on the node, but it is not guaranteed
+or 
+I would prefer another node, but if I don't have a suitable alternative, I may still use this node. So it is a soft restriction.
+3. NoExecute --> It affects both: New Pods + Existing Pods
+This affects pods that are already running on the node
+		--> Pods that do not have tolerate the taint are evicted immediately or Pod has NO toleration Kubernetes evicts Pod A immediately.
+		--> Pod has toleration but NO tolerationSeconds specified in tolerations defination means pod can stay/bound on the node indefinitely time
+		--> Pod has toleration WITH tolerationSeconds specified in tolerations defination in yaml file 
+						Ex: tolerationSeconds: 300
+							--> Pod C can stay for 300 seconds (5 minutes). After 5 minutes, Kubernetes evicts the pod.
+	---> NoExecute affects pods that are already running on the node. If a pod doesn't tolerate the taint, Kubernetes evicts it immediately. If it tolerates the taint without tolerationSeconds, it can stay indefinitely. If tolerationSeconds is configured, the pod stays only for that duration and is then evicted.
+			ex: 
+				tolerations:
+				- key: "key1"
+				  operator: "Equal"
+				  value: "value1"
+				  effect: "NoExecute"
+				  tolerationSeconds: 3600
+				  
+So remember:
+NoSchedule
+→ Don't schedule new Pods
+
+PreferNoSchedule
+→ Try to avoid scheduling
+
+NoExecute
+→ Don't schedule + potentially evict existing Pods
+
+
+Practical project scenario you can explain
+In our EKS environment, we had different types of workloads, and for workloads that required dedicated nodes, we used node taints and Pod tolerations. We applied a taint to the dedicated node group so that normal application Pods would not get scheduled there. For the application that was supposed to run on those nodes, we added the corresponding toleration in the Deployment/Helm values.
+Then continue:
+We also used node affinity or node selectors when we wanted to make sure that the workload was actually placed on the intended node group. Toleration only allows the Pod to run on the tainted node; it doesn't guarantee placement.
+
+
+Multiple Taints + Multiple Tolerations for single node and pod 
+
+You can put multiple taints on the same node and multiple tolerations on the same pod. The way Kubernetes processes multiple taints and tolerations is like a filter: start with all of a node's taints, then ignore the ones for which the pod has a matching toleration; the remaining un-ignored taints have the indicated effects on the pod. In particular,
+
+if there is at least one un-ignored taint with effect NoSchedule then Kubernetes will not schedule the pod onto that node
+if there is no un-ignored taint with effect NoSchedule but there is at least one un-ignored taint with effect PreferNoSchedule then Kubernetes will try to not schedule the pod onto the node
+if there is at least one un-ignored taint with effect NoExecute then the pod will be evicted from the node (if it is already running on the node), and will not be scheduled onto the node (if it is not yet running on the node).
+
+Node has taints → Pod has tolerations → Kubernetes checks each taint → Matching taints are ignored → Any remaining taint affects the Pod.
+A node can have multiple taints and a Pod can have multiple tolerations. Kubernetes checks each node taint against the Pod's tolerations. If the Pod has a matching toleration, that taint is ignored. Any remaining unmatched taints affect the Pod. NoSchedule prevents new scheduling, PreferNoSchedule tries to avoid scheduling, and NoExecute prevents scheduling and evicts an already running Pod.
+
+
+Ex:
+In node we does 
+Node-1
+
+1. environment=prod:NoSchedule
+2. gpu=true:PreferNoSchedule
+3. maintenance=true:NoExecute
+
+Ex : 
+kubectl taint nodes <node name> environment=prod:NoSchedule
+kubectl taint nodes <node name> gpu=true:NoSchedule
+kubectl taint nodes <node name> maintenance=true:NoExecute
+
+lets say we define only 2 taint tolerations 
+spec:
+-	containers:
+		----
+	tolerations:	
+	- key: "environment"														
+	  operator: "Equal"
+	  value: "prod"												
+	  effect: "NoSchedule"
+
+	tolerations:	
+		- key: "gpu"														
+		  operator: "Equal"
+		  value: "true"												
+		  effect: "NoSchedule"
+		  
+above mentions in pod will match with taints so those wil be ignored it does not do anything 
+Now we didnt define in pod so this will affect the pod :
+	maintenance=true:NoExecute    
+				==> means NoExecute = Don't place pods + remove existing/runnning Pods. or The Pod cannot be scheduled onto that node, and if it is already running there, it will be evicted.
+				
+Another scenario :
+if we mentioned only 1 tolerations 
+Ex:
+spec:
+-	containers:
+		----
+	tolerations:	
+	- key: "environment"														
+	  operator: "Equal"
+	  value: "prod"												
+	  effect: "NoSchedule"
+we didnt define so  
+2. gpu=true:PreferNoSchedule       	==> avoild scheduleing the pod in this node 
+3. maintenance=true:NoExecute		==> both doesnt schedule and evict the existing pods 
+
+Kubernetes doesn't stop after finding one unmatched taint. It checks all taints. Every unmatched taint applies.
+
+Another Scenario
+Taint 1 → team=payments:NoSchedule
+Taint 2 → env=prod:NoExecute
+Taint 3 → gpu=true:PreferNoSchedule
+
+All are these defined in pod tolerations 
+then The Pod is allowed to be scheduled on that node and, if already running, it will not be evicted because of these taints.
+or
+If all the node's taints have matching tolerations on the Pod, all those taints are ignored. There is no taint-based restriction, so the Pod is allowed to run on that node.
+
+
+
+Why did you use taints and tolerations?
+We used them when we wanted to dedicate certain nodes for specific workloads. For example, if we had a dedicated node group for a particular application or workload, we applied a taint to those nodes with NoSchedule. Then we configured the corresponding toleration on the application's Deployment through Helm. This prevented unrelated workloads from being scheduled on those nodes.
+
+Does toleration guarantee that the Pod will go to that node?
+No. Toleration only allows the Pod to be scheduled on a tainted node. It doesn't force placement. If we wanted to make sure the Pod ran on the intended node group, we used nodeSelector or node affinity along with the toleration.
+
+
+Troubleshooting scenario
+Your Pod is stuck in Pending state. How would you troubleshoot it?
+First I would check the Pod events using kubectl describe pod. If the node has a taint and the Pod doesn't have the corresponding toleration, the scheduler will show a scheduling-related event. I would also check node labels, node affinity, resource availability and whether the node itself is Ready.
+commands to perform 
+kubectl get pods
+kubectl describe pod <pod-name>
+kubectl get nodes --show-labels
+kubectl describe node <node-name>
+kubectl get node <node-name> -o yaml
+
+Easy memory:
+
+Taint = "Keep out"
+Toleration = "I'm allowed in"
+Affinity = "I want to go here"
+
+| Concept           | Applied to | Purpose                          |
+| ----------------- | ---------- | -------------------------------- |
+| **Taint**         | Node       | Repels Pods                      |
+| **Toleration**    | Pod        | Allows Pod to tolerate the taint |
+| **Node Selector** | Pod        | Selects nodes using labels       |
+| **Node Affinity** | Pod        | Controls/prefer node placement   |
+
+
+
+Taints and tolerations are used to control Pod scheduling. A taint is applied to a node to prevent Pods without the appropriate toleration from being scheduled there. A toleration is added to a Pod to allow it to run on that tainted node. In our EKS environment, we could use this for dedicated node groups where certain workloads needed to run separately from normal application workloads. We configured the tolerations through our Kubernetes Deployment or Helm values, and when strict placement was required, we combined them with node affinity or node selectors.
+
+
+===================================================================================================================================================================
+Taints + Tolerations + Node Affinity together
+
+node selector 
+
