@@ -2140,7 +2140,9 @@ I have create a custom namespace for roboshop proj if i want to majke that as de
 ===================================================================================================================================================================
 
 imagePullPolicy :   imagePullPolicy controls when the container runtime should pull an image from the registry before starting a container.
+
 Types: 
+------
 by default  : 
 
 | Policy         | Meaning                                                |
@@ -2827,7 +2829,7 @@ In Kubernetes, I would use EBS for application-specific or database storage, whi
 
 
 
-Another Part
+Another Part Helm charts 
 
 
 
