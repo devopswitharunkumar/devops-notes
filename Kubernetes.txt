@@ -203,8 +203,8 @@ sudo lvs
 df -T /var
 sudo xfs_growfs /var
 df -h /var
-kubectl describe node ip-172-31-1-85.ec2.internal | grep -E "DiskPressure|Taints"
-kubectl describe node ip-172-31-1-85.ec2.internal | grep -i taint
+kubectl describe node ip-172-31-4-188.ec2.internal | grep -E "DiskPressure|Taints"
+kubectl describe node ip-172-31-4-188.ec2.internal| grep -i taint
 
 
 
@@ -1525,29 +1525,33 @@ In production environments, we integrated Kubernetes with HashiCorp Vault/AWS sy
 
 Services:
 ------------
-A Kubernetes Service is a Kubernetes object that provides a stable IP address/network endpoint such as ClusterIp and DNS name for a group of Pods and distributes incoming traffic and load balancing among pods using labels and selectors.
+Service provides a stable virtual IP endpoint and DNS name for a group of Pods and distributes incoming traffic among them using labels and selectors.
 
 
-1. stable DNS :  Kubernetes runs a cluster-wide DNS service (usually CoreDNS). The moment you create a Service, it receives an internal DNS record structured as:  
-it can use directly :    <service name>  or  <service name>.<namespace name>.svc.cluster.local   (called the full DNS name)     ----> to communicate 
-This name never changes, even if you replace every single backend Pod... So your application doesn't need to know ips of pods and CoreDNS resolves that Service name to the Service's network endpoint.
+1. stable DNS name (service discovery) :  Kubernetes runs a cluster-wide DNS service (usually CoreDNS). when we create a Service Kubernetes provides a DNS name through CoreDNS.
+u can communicate using :    <service name>  or  <service name>.<namespace name>.svc.cluster.local  ----> (called the full DNS name)    
+Inside namespace we usually call via <service name>
+This is called Service Discovery — applications discover and communicate with a service using its DNS name instead of finding individual Pod IPs. and CoreDNS resolves that Service name to the Service's network endpoint.
+
+Service Discovery
+A Pod/application can find another application using its Kubernetes Service DNS name instead of knowing the Pod's IP address.
 	 
-2. Stable IP Endpoint (ClusterIP) : Every Service gets a unique virtual IP address using ClusterIP. This IP is allocated from a dedicated internal network range and remains completely fixed for the entire lifecycle of the Service resource.
-Basically lets say we have 3 pods and 3 ips and pod 2 is crashed and recreated so pod 2 ip changes instead of this we create a service it gets a service ip and even pods ips changes service remains same 
+2. Stable IP Endpoint — (ClusterIP) : Every Service gets a unique stable virtual IP using ClusterIP. 
+Basically lets say we have 3 pods with 3 ips and pod 2 is crashed and recreated so pod 2 ip changes instead of this we create a service it gets a service ip and even pods ips changes service ip remains same 
+If the Service itself is deleted and recreated, it can receive a new ClusterIP. That's another reason applications normally use the Service DNS name rather than hard-coding the ClusterIP.
+i.e., ---> <service name> or <servicename>.<namespacename>.svc.cluster.local
 
 3. Traffic Load Balancing
-The kube-proxy Component: This agent runs on every single worker node in your cluster. It watches the Kubernetes API for new Services and Endpoints.
-Traffic Routing (iptables/IPVS): kube-proxy configures the underlying Linux kernel network stack (using iptables or IPVS) to intercept traffic going to the Service's stable ClusterIP.
+The kube-proxy Component: This agent runs on every single worker node in your cluster. It watches the Kubernetes API for new Services and Endpoints (pod ip's).	
+Traffic Routing : kube-proxy(iptables/IPVS) configures the underlying Linux kernel network stack (using iptables or IPVS) to intercept traffic going to the Service's stable ClusterIP.
 Random Distribution: By default, iptables uses a random, probabilistic distribution to spread incoming connections evenly across all available backend Pod IPs.
 
-Kubernetes continuously maintains the Service's backend endpoints/ip's based on the Pods matching the selector and their readiness.
-If a replacement Pod comes up with new ip and becomes Ready to server then traffic routed to that pod also 
-Kubernetes networking components such as kube-proxy implement the routing behavior on nodes.
 
-Behind the scenes, Kubernetes continuously updates a list of healthy Pod IPs which are matching the selector labels. If a Pod crashes or fails a readiness check, its IP is instantly removed from this tracking list so clients never hit a dead end
+Behind the scenes, Kubernetes continuously updates a list of healthy Pod IPs which are matching the selector labels. If a Pod crashes or fails a readiness check, its IP is instantly removed from this tracking list so clients never hit a dead end this all will be done by kube-proxy 
 
-If service is recreated or deleted and created again it gets the new ClusterIP thats y applications communicate using service dns name  ---> 
- <service name> or <servicename>.<namespacename>.svc.cluster.local
+
+When a request comes to a Kubernetes Service, kube-proxy on the worker node handles the node-level traffic routing from the Service's ClusterIP to one of the available backend Pod IPs. 
+Kubernetes continuously maintains the Service's backend endpoints based on the Pods matching the Service selector and their readiness. If a Pod becomes unhealthy, it is removed from the available endpoints, and when a replacement Pod becomes Ready, it is added back. This allows the Service to distribute traffic only to appropriate healthy backend Pods.
 
 
 Why do we need Kubernetes Services?
@@ -1643,7 +1647,7 @@ Types of Kubernetes Services
 
 Why do we need Services?
 Pods are ephemeral, so their IP addresses change when they are recreated. 
-Services provide a stable endpoint/ip, service discovery, and load balancing, allowing applications to communicate reliably without depending on Pod IPs.
+Services provide a stable endpoint/ip, service discovery(dns name), and load balancing, allowing applications to communicate reliably without depending on Pod IPs.
 
 How does a Service identify Pods?
 Using Labels and Selectors. The Service selector matches Pod labels and automatically routes traffic to the matching Pods.
@@ -1670,16 +1674,20 @@ Types:
 
 1.ClusteIP:
 --------------
-ClusterIP is the default Kubernetes Service type. It provides a stable internal virtual IP (ClusterIP) and DNS name for a group of Pods that are accessible from within the Kubernetes cluster.
-It is mainly used for internal microservice-to-microservice or backend-to-frontend communication.It is not accessible from outside the cluster.
+ClusterIP is the default Service type if no type specified. It provides a stable internal virtual IP (ClusterIP) and DNS name for a group of Pods that are accessible within the Kubernetes cluster.
+It is mainly used for internal microservice-to-microservice or backend-to-database communication.It is not accessible from outside the cluster.
 
 DNS name: <service-name>.<namespace>.svc.cluster.local
+
+or
+A ClusterIP service in Kubernetes exposes a service internally within the cluster using a virtual IP. It allows pods to communicate with each other without exposing the service to the outside world. ClusterIP is the default service type and is ideal for internal communication between microservices.
  
+Exposes a service on internal cluster
 
-Example :  user pod wants to communicate to catalogue pod 
-user ---> request to ---> service(clusterip) ---> it forwards to ---> catalogue pod to container ---> and gives the response back 
+Example :  catalogue pod wants to communicate to database pod 
+catalogue ---> request to ---> service(clusterip/dns name) ---> it forwards to ---> database pod to container ---> and gives the response back 
 
-The User service doesn't care about Pod IPs 
+The catalogue service doesn't care about Pod IPs 
 user calls --> catalogue:8080 --> catalogue port --> that forwards to catalogue -pod 
 
 Real project example: 
@@ -1693,13 +1701,16 @@ We primarily used ClusterIP Services for internal microservices communication. T
 
 Example : path =====>   k8-concept-wise\03-services\01-clusterip.yml
 
+create 1 pod seperately called check-pod and 1 service and 1 pod in 1 yaml file i.e., roboshop-service and roboshop-pod now nginc is running in roboshop-pod 
+from check-pod : kubectl exec -it check-pod -n roboshop -- bash
+	now:   curl <ip of clusterip or service name>: <service port>
 
 2. NodePort
 ----------------
 
 NodePort exposes a Kubernetes Service on a static port on every worker node, allowing clients outside the cluster to access the application using the node's IP and static port.
 
-Even after creating nodeport nodeport service will have cluster ip ---> cluster ip subset of nodeport 
+Even after creating nodeport service will have cluster ip ---> cluster ip subset of nodeport 
 
 Opens a static port (typically between 30000-32767) on every Node's physical IP. Traffic to NodeIP:NodePort routes directly to the Service.
 
@@ -1707,14 +1718,31 @@ Request flow -->
 user ---> node port ---> this forwards to service (which has clisterip )---> forwards to ---> pod 
 or
 External Client  ----> Node-IP:30080 (hits <ip of worker node ec2>:30080) ---> node ---> forwards to ---> services ---> pods 
-And in security groups of cluste u need to open all tcp in inbound rules 
+
+--> And in security groups of cluste u need to open all tcp in inbound rules 
 
 ex: path ----> k8-concept-wise\03-services\02-nodeport.yaml
+
+apiVersion: v1 
+kind: Service 
+metadata:
+  name: nodeportip-service
+  namespace: roboshop
+spec:
+  type: NodePort
+  selector:
+    app: service 
+    type: nodeport  
+  ports:
+  - protocol: TCP 
+    port: 80
+    targetPort: 80 
+    nodePort: 30080                   #if u dont give this port kubernetes automatcally assign the randon port no from the rangr of 30000 - 32767
 
 
 3. LoadBalancer
 ---------------------
-LoadBalancer exposes a Kubernetes Service externally through a cloud provider's load balancer.
+LoadBalancer exposes a Kubernetes Service externally through a cloud provider's load balancer. Gets a stable external ip 
 This is particularly useful in cloud environments such as AWS EKS.
 
 Integrates with your cloud provider (AWS, GCP, Azure). It provisions an external, public cloud load balancer that automatically routes public internet traffic directly into your cluster's Service.
