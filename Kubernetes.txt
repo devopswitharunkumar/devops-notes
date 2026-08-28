@@ -1405,11 +1405,10 @@ In our Kubernetes deployments, we used ConfigMaps to externalize application con
 
 Secrets:
 ----------
-A Secret is a Kubernetes object used to store sensitive information such as passwords, API keys, tokens, credentials, certificates and SSH keys securely instead of hardcoding them in the application or manifest files.
+A Secret is a Kubernetes object used to store sensitive information such as passwords, API keys, tokens, credentials, certificates and SSH keys securely instead of hardcoding them in the application code or manifest files.
 Normally it stores Secret values as Base64 encoded format
 
 Base64 is NOT encryption. It is only encoding. Anyone can decode it. For stronger protection, many organizations integrate Kubernetes with tools like HashiCorp Vault or cloud secret managers such as AWS Secrets Manager.
-for encryption use tools like : hashicorp vault or kns 
 
 Example
 apiVersion: v1
@@ -1429,7 +1428,7 @@ kubernetes.io/dockerconfigjson
 kubernetes.io/tls
 kubernetes.io/service-account-token
 
-Example : Types to access 
+Example : ways to access 
 
 1) Using Secret with env 		--> if u want particular secret instead of importing all keys 
 
@@ -1471,32 +1470,31 @@ spec:
 	- name: secret-volume
 	  mountPath: /etc/secrets
 	  
-volumes:
-- name: secret-volume
-  secret:
-    secretName: catalogue-secret                    #in secret manifest file secret name check above secret manifest file example 
+  volumes:
+  - name: secret-volume
+    secret:
+      secretName: catalogue-secret                    #in secret manifest file secret name check above secret manifest file example 
 
 
 
-/etc/secrets/DB_PASSWORD          ---> application reads this key DB_PASSWORD from secrets file which i spresent in /etc location
+/etc/secrets/DB_PASSWORD          ---> application reads this key DB_PASSWORD from secrets file which is present in /etc/secrets location
 
 
-Process to convert to base64 encoded ------>
-1) echo -n "Admin@123" | base64   ---> give value    ---->  QWRtaW5AMTIz       ---> paste it in secret manifest file DB_PASSWORD value 
-
+Process to convert password to base64 encoded ------>
+1)Encode Value   ----> echo -n "Admin@123" | base64   ---> gives value    ---->  QWRtaW5AMTIz       ---> paste it in secret manifest file DB_PASSWORD value 
+2)Decode Secret ----> echo "QWRtaW5AMTIz" | base64 -d
+-d -- decript 
 
 Commands
 create secret 				:   kubectl apply -f secret.yaml
-View						:   kubectl get secrets
-Describe secrets            :   kubectl describe secret <secret name>
-View yaml                   :   kubectl get secret catalogue-secret -o yaml
-
+View								:   kubectl get secrets
+Describe secrets           :   kubectl describe secret <secret name>
+View yaml                      :   kubectl get secret catalogue-secret -o yaml
 
 Create Secret from Command Line
 kubectl create secret generic catalogue-secret --from-literal=DB_USERNAME=admin --from-literal=DB_PASSWORD=Admin@123
 
-Decode Secret
-echo "QWRtaW5AMTIz" | base64 -d
+
 
 
 The application receives credentials as environment variables.
@@ -1509,75 +1507,91 @@ Difference between ConfigMap and Secret?
 | DB Host       | DB Password    |
 | Environment   | API Key        |
 
-Q4. How can a Pod consume a Secret?
-
-Three ways
-env
-envFrom
-Volume Mount
-
-Exactly the same as ConfigMap.
-
+Q4. How can a Pod consume a Secret ===> we have 3 ways ----> env, envFrom and using volumes ... same as ConfigMap
 
 Interview Answer (5 Years)
 
-In our Kubernetes deployments, we used Secrets to store sensitive configuration such as database passwords, API keys, JWT tokens, and service credentials. The application consumed these Secrets primarily through environment variables using secretKeyRef. For non-sensitive values such as database host, ports, and environment names, we used ConfigMaps. In production environments, we integrated Kubernetes with HashiCorp Vault/AWS system Manager for centralized secret management instead of storing long-lived credentials directly in Kubernetes Secrets.
+In our Kubernetes deployments, we used Secrets to store sensitive configuration such as database passwords, API keys, JWT tokens, and service credentials. The application consumed these Secrets primarily through environment variables using secretKeyRef. 
+For non-sensitive values such as database host, ports, and environment names, we used ConfigMaps. 
+In production environments, we integrated Kubernetes with HashiCorp Vault/AWS system Manager for centralized secret management instead of storing long-lived credentials directly in Kubernetes Secrets.
 
 
 
 ===================================================================================================================================================================
 
+
+
+
+
 Services:
------------
-A Kubernetes Service is a Kubernetes object that provides a stable IP address and DNS name for a group of Pods and distributes traffic among them using labels and selectors.
+------------
+A Kubernetes Service is a Kubernetes object that provides a stable IP address/network endpoint such as ClusterIp and DNS name for a group of Pods and distributes incoming traffic and load balancing among pods using labels and selectors.
+
+
+1. stable DNS :  Kubernetes runs a cluster-wide DNS service (usually CoreDNS). The moment you create a Service, it receives an internal DNS record structured as:  
+it can use directly :    <service name>  or  <service name>.<namespace name>.svc.cluster.local   (called the full DNS name)     ----> to communicate 
+This name never changes, even if you replace every single backend Pod... So your application doesn't need to know ips of pods and CoreDNS resolves that Service name to the Service's network endpoint.
+	 
+2. Stable IP Endpoint (ClusterIP) : Every Service gets a unique virtual IP address using ClusterIP. This IP is allocated from a dedicated internal network range and remains completely fixed for the entire lifecycle of the Service resource.
+Basically lets say we have 3 pods and 3 ips and pod 2 is crashed and recreated so pod 2 ip changes instead of this we create a service it gets a service ip and even pods ips changes service remains same 
+
+3. Traffic Load Balancing
+The kube-proxy Component: This agent runs on every single worker node in your cluster. It watches the Kubernetes API for new Services and Endpoints.
+Traffic Routing (iptables/IPVS): kube-proxy configures the underlying Linux kernel network stack (using iptables or IPVS) to intercept traffic going to the Service's stable ClusterIP.
+Random Distribution: By default, iptables uses a random, probabilistic distribution to spread incoming connections evenly across all available backend Pod IPs.
+
+Kubernetes continuously maintains the Service's backend endpoints/ip's based on the Pods matching the selector and their readiness.
+If a replacement Pod comes up with new ip and becomes Ready to server then traffic routed to that pod also 
+Kubernetes networking components such as kube-proxy implement the routing behavior on nodes.
+
+Behind the scenes, Kubernetes continuously updates a list of healthy Pod IPs which are matching the selector labels. If a Pod crashes or fails a readiness check, its IP is instantly removed from this tracking list so clients never hit a dead end
+
+If service is recreated or deleted and created again it gets the new ClusterIP thats y applications communicate using service dns name  ---> 
+ <service name> or <servicename>.<namespacename>.svc.cluster.local
+
 
 Why do we need Kubernetes Services?
 Suppose we have a Deployment with 3 Pods.
 
-Catalogue Deployment ---> has 3 pods with 3 Ip address
+Catalogue Deployment ---> has 3 pods with 3 Ip address each pod has 1 ip address
 
-        │
+				│
 
- ┌──────┼──────┐
+ ┌──────┼─────┐
 
- │      │      │
+ │     		│      	 │
 
-Pod1   Pod2   Pod3
+Pod1   Pod2    Pod3
 
-10.0.1.1
-10.0.1.2
-10.0.1.3
+pod 1 --> 10.0.1.1
+pod 2 --> 10.0.1.2
+pod 3 --> 10.0.1.3
 
 Each Pod gets its own IP. Now the User microservice wants to call the Catalogue microservice. It calls ----> 10.0.1.1 ---> Everything works.
 
 Problem 1 – Pod IPs are Temporary 
-Pod ip are temporary if pod creashe and recreated then pod ip changes if User Service is still trying to call old pod IP which no longer exists. Application fails.
+Pod ip's are temporary if pod crashes and recreated then pod ip changes if User Service is still trying to call old pod IP which no longer exists. Application fails.
 Problem 2 – Multiple Pods
-Suppode catalogue-deployment has 3 pods --> if user want to call which pod should user call -- pod1 or pod 2 or pod 3 ?
+Suppose catalogue-deployment has 3 pods --> if user want to call which pod should user call -- pod1 or pod 2 or pod 3 ?
 We don't know.
-So 
-We need
-Load Balancing
-Fixed Endpoint
-Service Discovery
+So  We need Load Balancing , Fixed Endpoint , Service Discovery
 
 Docker cannot solve this inside Kubernetes. In this scenario USER taking directly to POD 
 
-
-A Kubernetes Service is an abstraction that provides a stable network endpoint and load balances traffic to one or more Pods using labels and selectors.
-
 With Service
-USER ---> talks to ----> catalogue-dervice ---> pod 1 and pod 2 and pod 3 ------> User always talks to Catalogue Service Never directly to Pods.
+USER ---> talks to ----> catalogue-service ---> service redirects the traffic to pods using labels and selectors --->pod 1 and pod 2 and pod 3 
+User/client always talks to Service Never directly to Pods.
 
 How Service Finds Pods:   Using LABELS
 
 Deployment file
-----------------
+---------------------
+1. deploment defination
 metadata:
   labels:
     app: catalogue
 	
-Service file
+2. Service defination
 
 apiVersion: v1
 kind: Service
@@ -1590,26 +1604,26 @@ spec:
   - port: 8080
     targetPort: 8080
 
-Service automatically finds every Pod having    ------> app: catalogue
+Service automatically finds every Pod having labels such as ------> app: catalogue
 selector: see This is why Labels are important.
 
 Flow: 
-User Service ---> Catalogue Service ---> Selector ---> app=catalogue ---> Pod1 , Pod2 , Pod3
+User Service ---> Service ---> Selector ---> app=catalogue ---> Pod1 , Pod2 , Pod3
 
 The User application never connects directly to a Pod. It always connects to the Catalogue Service. If a Pod is deleted, the Service automatically routes traffic to the remaining healthy Pods.
 
 Load Balancing
 Suppose 3 pods we have  ------>  Catalogue Service ---> Pod1 , Pod2 , Pod3
-we got 10 Requests ---> Traffic gets distributed automatically.
+we got 10 Requests ---> Traffic gets distributed automatically and equally.
 
 If One Pod Crashes EX: pod 2 ---> crashes currently we only have pod1 and pod 3 ---> Service automatically stops sending traffic to Pod2...No manual work.
 
 Service Discovery
-Instead of calling ---> ip 10.0.1.3 ----> Applications call catalogue or catalogue.default.svc.cluster.local
+Instead of calling ---> ip 10.0.1.3 ---> Applications call service name or <service name>.<namespace name>.svc.cluster.local
 Kubernetes DNS resolves :  catalogue ---> Cluster IP ---> Correct Pod
 
 
-Commands:
+Commands using manifest files :
 Create Service        :  kubectl apply -f service.yaml
 View Services 		 :   kubectl get svc
 Describe Service   :   kubectl describe svc catalogue
@@ -1628,13 +1642,14 @@ Types of Kubernetes Services
 
 
 Why do we need Services?
-Pods are ephemeral, so their IP addresses change when they are recreated. Services provide a stable endpoint, service discovery, and load balancing, allowing applications to communicate reliably without depending on Pod IPs.
+Pods are ephemeral, so their IP addresses change when they are recreated. 
+Services provide a stable endpoint/ip, service discovery, and load balancing, allowing applications to communicate reliably without depending on Pod IPs.
 
 How does a Service identify Pods?
 Using Labels and Selectors. The Service selector matches Pod labels and automatically routes traffic to the matching Pods.
 
 Does a Service create Pods?
-No. Deployments create Pods. Services only expose and load balance them.
+No. Deployments manages replicaset and it creates Pods. Services only expose and load balance them.
 
 In our Kubernetes deployments, every microservice was exposed through a Kubernetes Service instead of accessing Pods directly. Since Pods are ephemeral and their IP addresses change after restarts or rollouts, Services provided a stable Cluster IP and DNS name for communication between microservices. Services used label selectors to identify the appropriate Pods and automatically distributed traffic across healthy replicas, ensuring reliable service discovery and load balancing within the cluster.
 
@@ -1643,10 +1658,10 @@ Deployment ----> Creates Pods ----> Labels (app=catalogue) ----> Service ----> S
 
 After creating service resource it will have ----> Service name and ip address and port number 
 
-Kubectl get pods --> take one pod name any pod even it is not attached to service do below 
+Kubectl get pods 	--> take one pod name any pod even it is not attached to service do below 
 kubectl exec -t <podname> --bash 
 now inside pod ----> if u do ---> curl <ip of service> --> u will get response and curl <service-name> --> u will get response --> both ip and service name can works as dns resolver  
-Service ip also not a permanent ip address ---> name is permannent mostly --> even it is recreated 
+Service ip also not a permanent ip address ---> name is permanent mostly --> even it is recreated 
 
 Some random pod ---> we do above curl commands ---> forwards to ---> service ---> service connects with ---> pod which inside running on nginx and get response 
 
@@ -1655,10 +1670,13 @@ Types:
 
 1.ClusteIP:
 --------------
-ClusterIP is the default Kubernetes Service type. It provides a stable internal IP and DNS name that can be accessed only from within the Kubernetes cluster.
-commonly used type for microservice-to-microservice communication.
+ClusterIP is the default Kubernetes Service type. It provides a stable internal virtual IP (ClusterIP) and DNS name for a group of Pods that are accessible from within the Kubernetes cluster.
+It is mainly used for internal microservice-to-microservice or backend-to-frontend communication.It is not accessible from outside the cluster.
 
-Example :  user pod wants to call to catalogue pod 
+DNS name: <service-name>.<namespace>.svc.cluster.local
+ 
+
+Example :  user pod wants to communicate to catalogue pod 
 user ---> request to ---> service(clusterip) ---> it forwards to ---> catalogue pod to container ---> and gives the response back 
 
 The User service doesn't care about Pod IPs 
@@ -1671,7 +1689,7 @@ cart → catalogue
 payment → cart
 These internal communications can use ClusterIP Services.
 
-We primarily used ClusterIP Services for internal microservice communication. They provide a stable virtual IP and DNS name, and the Service routes traffic to the appropriate Pods using label selectors.
+We primarily used ClusterIP Services for internal microservices communication. They provide a stable virtual IP and DNS name, and the Service routes traffic to the appropriate Pods using label selectors.
 
 Example : path =====>   k8-concept-wise\03-services\01-clusterip.yml
 
@@ -1679,9 +1697,11 @@ Example : path =====>   k8-concept-wise\03-services\01-clusterip.yml
 2. NodePort
 ----------------
 
-NodePort exposes a Kubernetes Service on a static port on every worker node, allowing clients outside the cluster to access the application using the node's IP and that port.
+NodePort exposes a Kubernetes Service on a static port on every worker node, allowing clients outside the cluster to access the application using the node's IP and static port.
 
 Even after creating nodeport nodeport service will have cluster ip ---> cluster ip subset of nodeport 
+
+Opens a static port (typically between 30000-32767) on every Node's physical IP. Traffic to NodeIP:NodePort routes directly to the Service.
 
 Request flow --> 
 user ---> node port ---> this forwards to service (which has clisterip )---> forwards to ---> pod 
@@ -1693,8 +1713,12 @@ ex: path ----> k8-concept-wise\03-services\02-nodeport.yaml
 
 
 3. LoadBalancer
+---------------------
 LoadBalancer exposes a Kubernetes Service externally through a cloud provider's load balancer.
 This is particularly useful in cloud environments such as AWS EKS.
+
+Integrates with your cloud provider (AWS, GCP, Azure). It provisions an external, public cloud load balancer that automatically routes public internet traffic directly into your cluster's Service.
+
 
 Nodeport is subset of load balancer --> even if u create load balancer if u see ---> kubectl get svc   ---> u can find lb ip and nodeport number and cluster ip all three
 
@@ -1707,6 +1731,7 @@ Interview answer
 
 
 4. ExternalName
+----------------------
 ExternalName creates a Kubernetes Service that maps a Kubernetes DNS name to an external DNS name using a CNAME record.
 Suppose your application needs an external database: mongodb.company.com
 There is no selector:
@@ -1928,7 +1953,7 @@ I have create a custom namespace for roboshop proj if i want to make that as def
 
 
 K8's roboshop:
--------------
+-------------------
 
 Step 1: 
 create a cluster through manifest file ---> create an ec2 instance and install docker, kubectl and eksctl 
