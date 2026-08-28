@@ -1,8 +1,8 @@
 Controller and node architecture
-
-
 labels vs annotations vs ENV
 ConfigMap vs Secret
+replicaset vs deployment
+
 statefull vs stateless 
 nodeselector 
 deamonset and hostpath --- together how they are using 
@@ -1053,8 +1053,11 @@ managedNodeGroups:
 Spot intsances:
 AWS has unused resources like CPU and memory so instead of keeping them idle AWS will give then for 70% of discount we can use them but user are requesting for the resources aws will give 2 mins notice period time and they can take back those resources .. we can use them only for dev and testing not prod 
 
-To create cluster   :      eksctl create cluster --config-file=eks.yaml
-To delete cluster   :      eksctl delete cluster --config-file=eks.yaml
+3)Open superputty and copy public ip of workstation and open it 
+4)git clone https://github.com/devopswitharunkumar/k8-eksctl.git
+5)cd k8-eksctl
+6)To create cluster   :      eksctl create cluster --config-file=eks.yaml
+7)To delete cluster   :      eksctl delete cluster --config-file=eks.yaml
 
 Explanation:
 
@@ -1704,6 +1707,8 @@ Example : path =====>   k8-concept-wise\03-services\01-clusterip.yml
 create 1 pod seperately called check-pod and 1 service and 1 pod in 1 yaml file i.e., roboshop-service and roboshop-pod now nginc is running in roboshop-pod 
 from check-pod : kubectl exec -it check-pod -n roboshop -- bash
 	now:   curl <ip of clusterip or service name>: <service port>
+	or
+	curl <ip of clusterip or service name>  -----> if u give 80 at service port in manifest file 
 
 2. NodePort
 ----------------
@@ -1747,8 +1752,10 @@ This is particularly useful in cloud environments such as AWS EKS.
 
 Integrates with your cloud provider (AWS, GCP, Azure). It provisions an external, public cloud load balancer that automatically routes public internet traffic directly into your cluster's Service.
 
+By default it will create classic load balancer 
 
-Nodeport is subset of load balancer --> even if u create load balancer if u see ---> kubectl get svc   ---> u can find lb ip and nodeport number and cluster ip all three
+
+Nodeport is subset of load balancer --> even if u create load balancer. if u see ---> kubectl get svc   ---> u can find lb ip and nodeport number and cluster ip all three
 
 Flow :
 user ----> load balacer ---> one f the worker node port ----> service ----> pod 
@@ -1782,16 +1789,18 @@ It does distribute traffic across the matching backend Pods. The difference is t
 
 ReplicaSet:
 --------------
-A ReplicaSet is a Kubernetes controller that ensures the desired number of Pods are running at all times.
+A ReplicaSet is a Kubernetes controller that ensures the desired number of Pods are running at all times.It automatcally creates new pods if Pods crash, fail, or get deleted
+
+It compares the actual number of running Pods and the desired number specified in your configuration.
+Under-provisioned	: If you want 3 Pods but a node crashes and leaves only 2, the ReplicaSet immediately launches a 3rd Pod.
+Over-provisioned	: If you manually spin up an extra identical Pod, the ReplicaSet will delete it to match your target number.
 
 For example:  
 replicas: 3   =====> means Kubernetes should maintain 3 Pods. ReplicaSet continuously maintains the desired number.
 If one Pod dies: ReplicaSet notices that only 2 Pods are running and creates a replacement pod automatically So the desired count becomes 3 again.
 
-ReplicaSet's Main Responsibilities
-Maintain replica count/desired count 
-Replace failed Pods --> if pod fails recreate replacement pod 
-Select Pods using labels
+ReplicaSet's Main Responsibilities:
+Maintain desired replica count always and failed/deleted/creashed Pods will be replaced by new pods 
 
 Example:
 
@@ -1802,12 +1811,13 @@ metadata:
   name: catalogue-rs
 
 spec:
-  replicas: 3
-  selector:
+
+  replicas: 3				# 1. Desired number of pods
+  selector:					 # 2. Selector to identify which pods belong to this ReplicaSet
     matchLabels:
-      app: catalogue           #this labels should match the pod labels then only replica set can manage/control pods  
-											#It tells the ReplicaSet controller: "Go look across the cluster and manage any Pod that has the tag app: catalogue
-  template:										#pod start point
+      app: catalogue           			#this labels should match the pod labels then only replica set can manage/control pods  
+											
+  template:										# 3. The Pod template used to create new pods this is blueprint 
     metadata:
       labels:
         app: catalogue         #pod labels 
@@ -1820,7 +1830,20 @@ spec:
 		
 
 If the labels do not match perfectly, the ReplicaSet will not be able to track or manage those pods		
-		
+
+Three Core Components:
+Replicas: The target number of identical Pods you want running (e.g., replicas: 
+Pod Template: The blueprint used to create new Pods when scaling up or replacing dead ones (defined under template:).
+Selector: A label query (matchLabels) used to find existing Pods. Important: The labels in the template must match the labels specified in the selector.
+
+Name of the pods in replica set :
+--------------------------------
+In replica set if u mention replicas 3 now names of pods will be like 
+catalogue-rs-<random numbers and characters>
+catalogue-rs-<random numbers and characters>
+catalogue-rs-<random numbers and characters> or <random id >
+
+catalogue-rs ---> replicaset name given in manifest file + randon chars and numbers
 		
 Commands:
 kubectl get replicasets   or kubectl get rs        ---> get list if replicasets
@@ -1831,24 +1854,23 @@ kubectl describe rs catalogue-rs                   ---> describe replica means a
 ReplicaSet vs Deployment
 | ReplicaSet                               | Deployment                      |
 | ---------------------------------------- | ------------------------------- |
-| Maintains desired number of Pods         | Manages application releases/lifecycle    |
+| Maintains desired number of Pods alive   | Manages application releases/lifecycle and updates  |
 | Creates/replaces Pods                    | Creates and manages ReplicaSets |
-| Supports scaling                         | Supports scaling                |
 | Self-healing of replica count            | Rolling updates                 |
 | No proper application rollout management | Rolling updates & rollbacks     |
-| Usually managed by Deployment	             | Common production resource      |
+| Usually managed by Deployment	           | Common production resource      |
 
 		
 		
 Then Why Do We Need Deployment?
-Flow --->  Deployment ---> Replica Set ---> pods		
-Deployment manages the Replica Set. Replica Set manages the Pods.
+Flow --->  Deployment manages ---> Replica Set creates ---> pods		
+Deployment manages the Replica Set. Replica Set creates the Pods.
 
 Example: Updating the Application
-Suppose you're applications has running: catalogue:v1  code -------> replica set ---> with 3 Pods:
-Now you want to update code changes version : catalogue:v2
+Suppose you're application is running on catalogue:v1 code -------> replica set ---> with 3 Pods
+Now you want to upgade code changes version to catalogue:v2
 
-U updated the images new version and pushed and u puled in ec2 and ---> u applied replica set manifest file again --> but it will not create anything and update because already pods are 3 running 
+if u updated the image new version to v2 and pushed version to github and u pulled in worker node ec2 and ---> if u apply replica set manifest file again --> it cant recognise the changes made in manifest code ..but it will not create anything and update because already pods are 3 running 
 it won't update the new code 
 
 A Replica Set by itself isn't designed to manage application rollouts the way a Deployment does.
@@ -1861,7 +1883,8 @@ What is a Replica Set and why do we use it?
 
 A ReplicaSet is a Kubernetes controller responsible for maintaining the desired number of identical Pods. 
 For example, if we configure three replicas and one Pod fails, the ReplicaSet detects that the actual number has dropped to two and creates a replacement Pod. 
-It uses label selectors to identify the Pods it manages. In our production deployments, we generally don't create ReplicaSets directly; we use Deployments, which create and manage Replica Sets and provide additional capabilities such as rolling updates and rollbacks.
+It uses label selectors to identify the Pods it manages. 
+In our production deployments, we generally don't create ReplicaSets directly; we use Deployments, which create and manage Replica Sets and provide additional capabilities such as rolling updates and rollbacks.
 
 Deployment = manages releases
 ReplicaSet = maintains replica count
@@ -1872,18 +1895,18 @@ Pod = runs the container
 
 Deployment:
 -----------------
-A Deployment is a Kubernetes resource that manages the desired state and lifecycle of application Pods through ReplicaSets. It provides declarative updates, scaling, rolling updates, rollbacks, and self-healing.
+A Deployment is a Kubernetes resource that manages the desired state and lifecycle of application Pods through ReplicaSets. It provides declarative application updates, scaling, rolling updates, rollbacks, and self-healing.
 
 
-The most important relationship is:   Deployment ---> replicaset ---> Pod ---> containers 
+The most important relationship is:   Deployment manages ---> replicaset manages ---> Pod creates ---> containers 
 
 
 Why do we need Deployment?
-Suppose your Catalogue application is running ----->  catalogue:v1 ------> with 3 replicas: i.e., 3 pods 
-Now u want to release ---> catalogue: v2 ---> You don't want to manually delete the old Pods and create new ones.
-Basically, deployment can detect the code changes, but replica set can't 
+Suppose your Catalogue application is running on version ----->  catalogue:v1 ------> with 3 replicas: i.e., 3 pods 
+Now u want to release new version ---> catalogue: v2 ---> You don't want to manually delete the old Pods and create new ones.
+Basically, deployment can detect the code/application changes, but replica set can't 
 
-Deployment handles the rollout.
+Deployment handles the rollout and that is by default rolling update .
 Deployment
    │
    ├── Old Replica Set → v1
@@ -1891,16 +1914,18 @@ Deployment
    └── New Replica Set → v2
 
 It gradually replaces v1 Pods with v2 Pods. That's a Rolling Update.   
-when u apply the updated image manifest file with ---> catalogue: v1 
+when u apply the updated image manifest file with ---> catalogue: v1 to v2 
 
-kubectl apply -f <filename.yaml >        ---> in this image is updated to ----> catalogue: v1 
-Now deployment do  -------> 
-step : 1 ---->  Create new replicaset and old replica set is there and pods are running 
+kubectl apply -f <filename.yaml >        ---> in this image we updated version to ----> catalogue: v2 
+
+Now deployment do  ===> 
+step : 1 ---->  Create new replicaset and old replica set is there already and pods are running 
 when u apply updated manifest file by default if performs ---> rolling update feature 
 
 step: 2 
 Rolling update :  we mentioned replica : 3 in manifest file 
 It gradually shifts traffic/workload from old Pods to new Pods according to the rollout strategy.
+
 set 1
 in new replicaset it create the new pod 1 with updated image i.e., new version catalogue:v2 
 in old replicaset it down and removes the pod 1 which is running with catalogue:v1 
@@ -1922,18 +1947,24 @@ kind : Deployment
 
 apiVersion: apps/v1   --->  Tells Kubernetes which API version to use.
 kind : Deployment     --->   Tells Kubernetes that we are creating a Deployment.
-replicas: 3 					  --->   We want 3 Pods.
+metadata:
+	name: deployment-ds
 
-selector:
-  matchLabels:
-    app: catalogue            # Deployment identifies the Pods it manages using labels.
-	
-template:                    ---->  This is the Pod template. It tells Kubernetes how the Pods should be created.
+spec:
+  replicas: 3 					  --->   We want 3 Pods.
 
-Container								#This specifies the container image that should run inside each Pod.
-containers:
-- name: catalogue
-  image: catalogue:v1
+  selector:
+	matchLabels:
+	  app: catalogue            # Deployment identifies the Pods it manages using labels.
+		
+  template:                    ---->  This is the Pod template. It tells Kubernetes how the Pods should be created.
+	metadata:
+		labels:
+			app: catalogue
+	spec:								#This specifies the container image that should run inside each Pod.
+	-  containers:
+	   - name: catalogue
+	     image: catalogue:v1
   
 Commands :
 kubectl get deployment
@@ -1947,11 +1978,11 @@ Scaling:
 Suppose traffic increases. 
 You currently have: replicas: 3
 
-You can scale to 5:   kubectl scale deployment catalogue --replicas=5
+You can scale to 5:   kubectl scale deployment catalogue --replicas=5  or u can use hpa 
 
 You can also change replicas: 5 and apply the manifest.
 
-Rollback
+Rollback:
 Suppose v2 has a bug. You can check rollout history:
 
 kubectl rollout history deployment catalogue
@@ -1966,22 +1997,33 @@ Real Production Flow :   Dockerfile ---> Docker Image ---> ECR ---> Deployment Y
 What is a Kubernetes Deployment?
 A Deployment is a Kubernetes resource used to manage the lifecycle and desired state of application Pods. It manages ReplicaSets, which in turn maintain the required number of Pods.
 
-In our projects, we used Deployments for microservices because they provided replica management, self-healing through ReplicaSets, rolling updates, scaling, and rollback capabilities. 
+In our projects, we used Deployments for microservices because it provides replica management, self-healing through ReplicaSets, rolling updates/rollout, scaling, and rollback capabilities. 
 For example, when we released a new version of the Catalogue service, we updated the image version in the Deployment and Kubernetes created a new ReplicaSet and gradually replaced the old Pods with the new version.
 
+
+Even replicaset supports hpa or scaling but it doesnt support the rolling updates and rollouts/rollbacks 
+A rollout deploys a new version of your application, while a rollback reverts your application to a previous, working version.
+
+
+Name of the replicaset like 
+----------------------------
+catalogue-ds-<replicaset random id>
+catalogue-ds-<replicaset random id>
+catalogue-ds-<replicaset random id>
+
+In deployment if u mention replicas 3 now names of pods will be like 
+catalogue-ds-<replicaset random id>-<random numbers and characters>
+catalogue-ds-<replicaset random id>-<random numbers and characters>
+catalogue-ds-<replicaset random id>-<random numbers and characters> or <random id >
 
 ===================================================================================================================================================================
 
 
-I have create a custom namespace for roboshop proj if i want to make that as default namespace for your active terminal session So change your kubectl context configuration.
-1)kubectl config set-context --current --namespace=<custom-namespace>
-2)kubectl config view --minify | grep namespace:            ----> How to Verify the Change
-3)kubens <custom-namespace>
 
 
 
-K8's roboshop:
--------------------
+K8's roboshop Project:
+------------------------
 
 Step 1: 
 create a cluster through manifest file ---> create an ec2 instance and install docker, kubectl and eksctl 
@@ -2075,7 +2117,7 @@ We used secrets concept in mysql component
 
 
 
-
+To set custom namespace as default namespace
 
 # 1. Clone the repository into the /opt directory
 sudo git clone https://github.com/ahmetb/kubectx /opt/kubectx
@@ -2091,7 +2133,7 @@ or
 
 I have create a custom namespace for roboshop proj if i want to majke that as default namespace for your active terminal session So change your kubectl context configuration.
 1)kubectl config set-context --current --namespace=<custom-namespace>
-2)kubectl config view --minify | grep namespace:            ----> How to Verify the Change
+2)kubectl config view --minify | grep namespace:roboshop            ----> How to Verify the Change
 3)kubens <custom-namespace>
 
 
@@ -2149,7 +2191,7 @@ imagePullPolicy: IfNotPresent    -----> and node has already old image So the ru
 ===================================================================================================================================================================
 
 
-Another Part 
+Another Part Storage 
 
 
 ===================================================================================================================================================================
