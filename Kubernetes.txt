@@ -2028,7 +2028,8 @@ K8's roboshop Project:
 Step 1: 
 create a cluster through manifest file ---> create an ec2 instance and install docker, kubectl and eksctl 
 
-To create cluster 
+To create cluster and 3 worker nodes 
+eks.yaml
 apiVersion: eksctl.io/v1alpha5
 kind: ClusterConfig
 metadata:
@@ -2043,14 +2044,14 @@ managedNodeGroups:
       # ssh:  we can give likethis also but we do with aws configure in terminal
       # publicKeyPath: ~/.ssh/ec2_id_rsa.pub
 	  
-Now open ec2 public ip in superputty and pull the repo k8-eksctl repo and go to that folder in ec2 ----> 
+Now open workstation ec2 public ip in superputty and pull the repo k8-eksctl repo and go to that folder in ec2 ----> 
 To create cluster   :      eksctl create cluster --config-file=eks.yaml
 It will create one EKS cluster and 3 worker nodes (desiredCapacity: 3)
 
 when u create a cluster or run above command to create cluster ----> in background it will automatically create ---> 
 ----------------------------------
 1)seperate vpc , subnets , internet gateway, nat gateway and route tables 
-2)it will create a new cluster and security groups  --> Control Plane Security Group and Shared Node Security Group
+2)it will cre	ate a new cluster and security groups  --> Control Plane Security Group and Shared Node Security Group
 3)IAM role  ---> Cluster IAM Role: : Grants the EKS master components permission to manage AWS resources (like EC2 instances and Elastic Load Balancers) on your behalf.
 Node Instance IAM Role: Attached to worker nodes so they can safely pull images from Amazon ECR, log metrics to Amazon CloudWatch, and interface with the EKS API server.
 Service Linked Role: Automatically creates AWSServiceRoleForAmazonEKS if it does not already exist in your account.
@@ -2142,7 +2143,7 @@ I have create a custom namespace for roboshop proj if i want to majke that as de
 imagePullPolicy :   imagePullPolicy controls when the container runtime should pull an image from the registry before starting a container.
 
 Types: 
-------
+---------
 by default  : 
 
 | Policy         | Meaning                                                |
@@ -2200,40 +2201,87 @@ Another Part Storage
 
 
 
-State/data = information that the application needs to remember.
+State/data = information that an application needs to remember between requests or across restarts.
 
-Stateless
-Stateless applications don't keep or depend on critical data stored locally inside the application instance to handle the requests
-Even that instance deleted or recreated or created newly it will automatically serve the requests because data is not stored locally and not dependent on data 
+Stateless = the application server doesn't need to remember important information inside itself between requests.
 
-stateless: applications doesnt store anything 
-Applications which doesnt have any storage are called as stateless applns u can easily create or delete or restart the applicaions it doesnt affect anything
+Stateless : Stateless applications don't keep or depend on critical data stored locally inside the application instance to handle the requests
+Even that instance/pod deleted or recreated or created newly it will automatically serve the requests because data is not stored locally and it is stored externally
+
+Applications which doesnt store any storage locally are called as stateless applns u can easily create or delete or restart the applicaion instances it doesnt affect anything
 ex:
 A Pod can be deleted, recreated, or moved to another node, and the application can continue serving requests because important state is stored outside that Pod.
 
+Suppose your Java application has 3 pods and we dont need to think which pod handles the request lets say if pod 2 crashes kubenetes creates the replacement pod and The application continues serving request.
+Why ===> Because Pod-2 didn't contain the important permanent data. That's why we call it a stateless application.
+
 
 stateful :
-
 A stateful application is an application whose operation depends on data that must survive application/container/Pod restarts, replacement, or rescheduling.
 Ex : mongodb, mysql and postgraceSQL etc...
 
+Suppose you have MongoDB database inside thet u have all the customer details and MongoDB must remember this information.
+If MongoDB restarts, we cannot say its ok but We need the old data so the data Must survive pod restarts
+
 In Kubernetes 
-For stateless applications we use
-Deployment 
-For statefull applications we use
-statefulset
+For stateless applications we use Deployment 
+For statefull applications we use statefulset
 
 
-Storage:
------------
+
+
+
+
+Volumes:
+------------
+First: Why do we need Volumes?
+a container's filesystem is ephemeral. Lets say u have a pod and in that we have container inside container it is writing data to /app/data so If the container is removed/recreated, that data can be lost because it was stored in the container's writable filesystem.
+So Kubernetes provides Volumes to give containers access to storage that can persists pod/container creashes or restarts etc...
+Shared storage: Another problem occurs when multiple containers are running in a Pod and need to share files.
+
+Volume:
+A Kubernetes Volume is a storage mechanism that can be mounted inside a Pod so that containers can share,read and write data.
+or
+In Kubernetes Volume is a directory accessible to containers within a pod. Because containers are ephemeral (their data is wiped if they crash or restart), volumes are used to persist data or share files between containers. 
+
+Kubernetes supports many types of volumes. 
+
+1.Ephemeral volumes 
+1)emptyDir
+2)hostPath
+3)configMap
+4)secret 
+
+2.Persistent Volumes/storage: EBS and EFS using PV,PVC and storageClass 
+1)static provisioning
+2)dynamic provisioning
+
+
+Why is a Volume required?
+If the container crashes and is recreated, the container filesystem may be lost.
+The container can be recreated while the Volume can remain available, depending on the Volume type.
+
+volume types:
+-------------------
 1) emptyDir:
-It is a temporary storage created when a Pod is assigned to a node. It can be shared between containers in the same Pod and remains available as long as the Pod exists. When the Pod is deleted, the emptyDir data is deleted.
+----------------
+emptyDir is temporary Pod-level storage.It is created when a Pod is assigned to a node. It can be shared between containers in the same Pod and remains available as long as the Pod exists even container restarts don't remove the data. When the Pod is deleted, the emptyDir data is deleted.
 
 Important point :  emptyDir is not persistent storage.  And it is pod level storage
 If the application container restarts   ---> emptyDir  remains and data will be present
-If the pod deleted automatically emptyDir deleted
 So it's useful for temporary/shared data between containers in the same Pod, such as this Filebeat sidecar pattern.
 
+Ex:
+----
+volumes:
+- name: app-data
+  emptyDir: {}
+
+Then mount it to the container :
+
+volumeMounts:
+- name: app-data						#volume name
+  mountPath: /data
 
 Ex: Side-Car patterns 
 Imagine a Pod with two containers:
@@ -2245,50 +2293,105 @@ Pod
 ---> Shared emptyDir
 Ex:  path :  k8-concept-wise\05-storage\01-empDir.yml
 
+FileBeat:
+Filebeat is a lightweight, open-source agent installed on servers to collect, monitor, and forward/ship log files to central storage like ELK 
+How it works:
+Input : Search specified file paths or locations for log data.
+Harvesters : Read single log files line by line and send new content forward.
+Outputs: Ship the collected data directly to Elasticsearch or to Logstash for parsing and transformation.
+
+Filebeat is pod level and node level log agent in kubernetes 
+
 2)HostPath:
-hostPath mounts a directory or file from the worker node's filesystem directly into a Pod.
-Storage belongs to the Worker Node..even if Pod deleted → node's files remain
+---------------
+hostPath mounts a directory or file from the worker node's filesystem directly into a Pod. Storage belongs to the Worker Node so even if Pod deleted/recreated → node's files remain.
+
 To ship server logs we use Daemonset
+
+Ex:
+volumes:
+- name: varlog
+  hostPath:
+    path: /var/log
+
+then mount it inside the pod 
+
+volumeMounts:
+- name: varlog
+  mountPath: /var/log
+  
+Why hostPath is dangerous for normal applications?
+Suppose in node 1 pod 1 is running and data is storing there but now pod -1 is crashed and  recreated in another node obviously it cannot access the data stored in node-1 filesystem 
 
 Here : DaemonSet  + Fluentd 
 Run one Fluentd logging agent on every Kubernetes node and give that Fluentd container access to the node's /var/log directory so it can collect logs and send them to Elasticsearch.
 
-Because it is a DaemonSet, Kubernetes creates one Fluentd Pod on every eligible node. Each Fluentd instance reads logs from its own node.
-Because Fluentd is being used as a node-level log collector.  Because Fluentd itself is the logging agent. collect logs from each worker node.
+Kubernetes creates one Fluentd Pod on every eligible node if u use daemonset. Each Fluentd instance read and collect logs from its own node filesystem.
+Fluentd is being used as a node-level log collector so it is an logging agent. 
 Fluentd DaemonSet is deployed in the Kubernetes system(i.e., kube-system) namespace.
 
 That's why the combination makes sense:   DaemonSet + hostPath
 
 DaemonSet : 
-A DaemonSet is a Kubernetes controller that ensures a copy of a specific Pod runs on all or some nodes in a cluster. As new nodes join the cluster, Pods are automatically added to them, and when nodes leave, those Pods are cleaned up.
-Ex using fluentd :
-The DaemonSet ensures one Fluentd Pod runs on every eligible node and if we create a new node DaemonSet automatically create a Fluentd pod in new node, and the Fluentd container mounts that node's /var/log using hostPath, reads the logs, and forwards them to Elasticsearch.
+-----------------
+A DaemonSet is a Kubernetes controller that ensures a copy of a single Pod runs on all or some nodes in a cluster. when new nodes join/created in the cluster, Pods are automatically added to them, and when nodes leave, those Pods are cleaned up.
+They are used for node-level tasks like log collection or monitoring
 
+Ex using fluentd :
+The DaemonSet ensures one Fluentd Pod runs on every eligible node and if we create a new node DaemonSet automatically create a Fluentd pod in new node, and the Fluentd container mounts that node's /var/log using hostPath, reads the logs, and forwards them to Elasticsearch ELK.
+
+deamonset creates in kube-system namespace it is system level resource
+
+
+
+3)configMap : A ConfigMap provides a way to inject configuration data into Pods. The data stored in a ConfigMap can be referenced in a volume of type configMap and then consumed by containerized applications running in a Pod.
+
+4)secret : A secret volume is used to pass sensitive information, such as passwords, to Pods. You can store secrets in the Kubernetes API and mount them as files for use by Pods without coupling to Kubernetes directly.
+
+ConfigMaps and Secrets are mounted as readOnly: true by default because
+ConfigMaps and Secrets are meant to inject configuration data, environment variables, and credentials into your container.
+1. Containers should consume configuration, not change it.
+	If your application needs to write or save data, it should write to a stateful storage volume (like a PersistentVolume), not back into its configuration file.
+2. Kubernetes containers are ephemeral (temporary). If you were allowed to change a file inside a ConfigMap volume, those changes would only exist inside that specific running container.
+	The moment the pod crashes, restarts, or reschedules, all your changes are permanently lost, and it reverts back to the original ConfigMap stored in the cluster.
+3. If you have 5 replicas of an application pod all sharing the same ConfigMap, allowing one pod to modify its local volume would cause that pod's configuration to drift out of sync with the other.This makes debugging errors incredibly difficult.
+4. For sensitive data like API keys, passwords, and TLS certificates, readOnly: true acts as a security guard.
+	It ensures that application process running inside your container cannot accidentally overwrite, corrupt, or erase your active credentials.
+
+Persistent Storage:
+------------------------
+
+Types of Persistent Storage
+
+1.Block Storage: Functions like a raw hard drive/disk attached to a single server. It is highly performant and ideal for databases. 
+	Ex : AWS EBS
+2.File Storage: Shared storage that allows multiple machines/container or pods to read and write data simultaneously using a hierarchical folder structure. 
+	Ex : NFS, AWS EFS, and SMB/CIFS.
+3.Object Storage: Stores data as distinct units (objects) bundled with metadata and a unique identifier. It is highly scalable and accessed via APIs. 
+Ex : AWS S3
 
 
 Static Provisioning :
 -------------------------
-Your main scenario is: AWS EKS + AWS EBS + Kubernetes PV + PVC + Pod
+Your main scenario is : AWS EKS + AWS EBS + Kubernetes PV + PVC + Pod
 
 
-In static provisioning, the EBS volume and PV are created BEFORE the application creates the PVC.
+In static provisioning, the EBS volume and PV are created by administrator manually or using storageclass dynamically but BEFORE the application creates the PVC.
 
 Why do we need persistent storage?
 A Pod is temporary. If we store the data in pod but If the Pod is deleted/crashed..Total data will lost.. Even if Kubernetes creates another Pod the new Pod does not automatically get the old container's local data.we need persistent storage outside the Pod.
 
 Why not store data on the worker node?
-Suppose we have a worker node inside that we have a pod and container and data stored inside that and worker node crashed or deleted kubarnetes may create another node and pod but total data will lost ..We don't want critical application data to depend on temporary worker-node storage.	
+Suppose we have a worker node inside that we have a pod and container and data stored inside that and worker node crashed or deleted kubernetes may create another node and pod but total data will lost ..We don't want critical application data to depend on temporary worker-node storage.	
 
-NOW:
+NOW :
+
 EBS = Elastic Block Store
 --------------------------------
-It is AWS persistent block storage. It is like a virtual hard disk that you can attach to an EC2 instance.
-Your application can store data on it. So EBS volume exists independently of the Pod/node lifecycle 
+It is AWS persistent block storage. It is like a virtual hard disk that you can attach to an single EC2 instance. Your application can store data on it. So EBS volume exists independently of the Pod/node lifecycle 
 
 Important EBS Point — Availability Zone :
-Suppose your EBS volume is created in: us-east-1b But your worker node is in: us-east-1a ... It cannot mount across Availability Zones.
-
-We need to make sure both EBS and Worker Node should be created in same availability Zone 
+Suppose your EBS volume is created in: us-east-1b But your worker node is in: us-east-1a ... It cannot mount across Availability Zones.We need to make sure both EBS and Worker Node should be created in same availability Zone 
 
 Scenario:
 Kubernetes doesn't want the application to directly deal with the EBS volume ID every time. Kubernetes provides a resource called PV
@@ -2298,9 +2401,11 @@ Example for All Flow :  path :   k8-concept-wise\05-storage\03-ebs-static-provis
 
 PersistentVolume — PV
 -------------------------------
-A PersistentVolume is a Kubernetes resource that represents a piece of persistent storage available to the cluster.
+A PersistentVolume is a Kubernetes storage resource that represents a piece of storage available to the cluster.
+It is a cluster wide resource not namespace resource and it is provisioned by admin manually or using storageClass dynamically
+It has capacity , accessMode and reclaimPolicy 
 
-PV is not the actual EBS disk. PV tells the kubenetes ----> This storage is available and this is how you can use it. It Shows Storage Available 
+PV is not the actual EBS disk. PV tells the kubenetes ----> This storage is available and this is how much you can use it. It Shows Storage Available 
 
 
 Static provisioning:
@@ -2316,7 +2421,7 @@ Commands:
 kubectl apply -f pv.yaml
 kubectl get pv
 
-If u see Volumes in aws console if Volume is in Available state the volume not used Because no PVC has claimed it yet. but if it is in-use state already it is used by pod 
+If u see Volumes in aws console if Volume is in Available state the volume not used/bond to using PVC Because no PVC has claimed it yet. but if it is in-use state already it is used by pod 
 
 PersistentVolumeClaim — PVC
 ----------------------------------------
@@ -2370,7 +2475,7 @@ In Pod level we use like to mount the volume
         claimName: ebs-static
 		
 Complete Flow: 
-AWS Console create a EBS (capacity and availability zone )  ---> Volume Handle in PV says ---> Use this create EBS ---> Create PVC to request the storage from PV --> PVC attached to Pod ---> Containers uses it at some location 
+In AWS Console administrator create a EBS (capacity and availability zone )  ---> Volume Handle in PV says ---> Use this create EBS ---> Create PVC to request the storage from PV --> PVC attached to Pod ---> Containers uses it at some location 
 
 
 What happens when the Pod starts?
@@ -2392,18 +2497,21 @@ Now delete the pod and create new pod it will automaticaly display the data --->
 Access Modes:
 -------------------
 1. ReadWriteOnce — RWO
-		Read + Write ----> into Single Node 
+		Read + Write ----> The volume can be mounted read-write by a single node at a time.
 
-The volume can be mounted read-write by a single node at a time.
+ReadWriteOnce access mode still can allow multiple pods to access (read from or write to) that volume when the pods are running on the same node.
 
 2. ReadOnlyMany — ROX
-		Read Only  ----> Many Nodes 
+		Read Only  ----> the volume can be mounted as read-only by many nodes.
 
 Multiple nodes can read the storage, but they cannot write to it.
 
 3.	 ReadWriteMany — RWX
-		Read + Write ----> into multiple nodes
-	
+		Read + Write ----> the volume can be mounted as read-write by many nodes.
+		
+4.  ReadWriteOncePod
+				volume can be mounted as read-write by a single Pod. Use ReadWriteOncePod access mode if you want to ensure that only one pod across the whole cluster can read that PVC or write to it.
+
 Multiple nodes can read/write. This is commonly associated with shared filesystems such as EFS rather than EBS.
 
 For AWS:
@@ -2421,10 +2529,10 @@ mountPath	        ---> Directory inside container
 
 Details :
 ----------
-EBS is the actual storage created in AWS . 
-PV object represents actual storage in Kubernetes and it is Cluster Scoped not namespace level
-PVC requests/claims through requesting it and PVC is namespace-scoped.
-Pod consumes it and Pod and PVC must be in the same namespace because the Pod references the PVC by name.
+--> EBS is the actual storage created in AWS . 
+--> PV object represents actual storage in Kubernetes and it is Cluster Scoped not namespace level
+--> PVC requests/claims through requesting it and PVC is namespace-scoped.
+--> Pod consumes it and Pod and PVC must be in the same namespace because the Pod references the PVC by name.
 
 Check all together :  kubectl get pv,pvc,pods
 
@@ -2440,14 +2548,14 @@ How to troubleshoot if PVC is not Bound:
 Static provisioning in your interview :
 In static provisioning, we create the storage before/first and then make it available to Kubernetes through a PersistentVolume(PV). 
 For example, in AWS EKS, 
-1)we can manually create an EBS volume and configure a PersistentVolume using the AWS EBS CSI driver and the EBS volume ID Given in PV manifest. 
-2)The application then creates a PersistentVolumeClaim requesting a specific amount of storage and access mode. 
+1)we manually create an EBS volume in aws console and configure a PersistentVolume using the AWS EBS CSI driver and the EBS volume ID Given in PV manifest. 
+2)The application then creates a PersistentVolumeClaim requesting a specific amount of storage and access mode to PV. 
 3)Kubernetes binds the PVC to a matching PV. The Pod references the PVC in its volume configuration and mounts it into the required container path. 
 This separates the application's storage request from the underlying storage implementation. Since the data is stored on the persistent EBS volume rather than the Pod's temporary filesystem, the data can survive Pod recreation, subject to the volume lifecycle and reclaim policy
 
-Static provisioning = storage is manually created first → PV represents that storage → PVC claims the PV → Pod uses the PVC.
+Static provisioning = storage is manually created first → PV represents that storage → PVC claims storage through PV → Pod uses the storage through PVC.
 
-Pod directly connects to EBS :  Pod ---> PVC ---> PV ---> CSI Driver ---> EBS (actual in aws)
+Pod does not directly connects to EBS it connects through  :  Pod ---> PVC ---> PV ---> CSI Driver ---> EBS (actual in aws)
 
 
 How did you handle persistent storage in Kubernetes?
@@ -2459,14 +2567,16 @@ For applications that required persistent data, we used external persistent stor
 
 
 Kubernetes Storage — EBS + PV + PVC + Pod
-In our AWS EKS environment, we should not store important application data directly inside the worker node because worker nodes and Pods are temporary. If the Pod or node is deleted, local data can be lost. So we use external persistent storage such as AWS EBS. First, we create an EBS volume in the same Availability Zone where the worker node can access it. Then Kubernetes uses a PersistentVolume (PV) as the Kubernetes representation of that external storage. The application does not directly request the EBS volume; instead, it creates a PersistentVolumeClaim (PVC), which is basically a request for storage. Kubernetes binds the PVC to a suitable PV, and the Pod uses the PVC in its volume definition. So the overall flow is AWS EBS → PV → PVC → Pod → Container.
+In our AWS EKS environment, we should not store important application data directly inside the worker node because worker nodes and Pods are temporary. If the Pod or node is deleted, local data can be lost. 
+So we use external persistent storage such as AWS EBS. First, we create an EBS volume in the same Availability Zone where the worker node can access it. Then Kubernetes uses a PersistentVolume (PV) as the Kubernetes representation of that external storage. The application does not directly request the EBS volume; instead, it creates a PersistentVolumeClaim (PVC), which is basically a request for storage. Kubernetes binds the PVC to a suitable PV, and the Pod uses the PVC in its volume definition. 
+So the overall flow is AWS EBS → PV → PVC → Pod → Container.
 
 1. Create EBS volume in AWS console ---> EBS is the actual physical/cloud storage
 2. Install the EBS CSI Driver                   ---> Kubernetes needs a storage driver to communicate with AWS EBS. In cluster we need to install driver The CSI driver allows Kubernetes to create, attach, mount and manage EBS volumes for Pods.
-3. IAM permissions   ---> The EBS CSI Driver needs permission to perform operations on EBS. Attach proper role which has permision to perfoem operations like CreateVolume , DeleteVolume , AttachVolume , DetachVolume , DescribeVolume
+3. IAM permissions   ---> The EBS CSI Driver needs permission to perform operations on EBS. Attach proper role which has permision to perform operations like CreateVolume , DeleteVolume , AttachVolume , DetachVolume , DescribeVolume
 4. PV represents storage that is available to Kubernetes ---> means the PV provides 10 GB of storage. 
 In PV manifest file ---> volumeHandle ---> identifies the actual EBS volume in AWS using EBS volume id 
-5. PersistentVolumeClaim — PVC   :   PVC is created by the application/team when it needs storage. liek I need 5 GB of persistent storage. It is a request for storage.
+5. PersistentVolumeClaim — PVC   :   PVC is created by the application/team when it needs storage. like I need 5 GB of persistent storage. It is a request for storage.
 6. Pod uses PVC ---. Now the Pod doesn't directly use the EBS volume. we need to specify as volume and volumemounts blocks code in manifest file......Mount the storage requested through this PVC into the Pod.
 
 EBS is generally used with ReadWriteOnce because an EBS volume is attached for read/write access to one node at a time.
@@ -2482,7 +2592,7 @@ metadata:
   name: ebs-static
 spec:
   accessModes:
-  - ReadWriteOnce #EBS volume should have readwriteonce, because it HD.
+  - ReadWriteOnce 												#EBS volume should have readwriteonce, because it HD.
   capacity:
     storage: 10Gi
   csi:
@@ -2495,7 +2605,7 @@ kind: PersistentVolumeClaim
 metadata:
   name: ebs-static
 spec:
-  storageClassName: "" # Empty string must be explicitly set otherwise default StorageClass will be set. for static provisioning this is empty
+  storageClassName: "" 								# Empty string must be explicitly set otherwise default StorageClass will be set. for static provisioning this is empty
   volumeName: ebs-static
   accessModes:
     - ReadWriteOnce
@@ -2523,19 +2633,41 @@ spec:
     persistentVolumeClaim:
       claimName: ebs-static
 	  
-	  
-	  
-	  
-	  
+To work application 	  
+In this link -----> https://github.com/kubernetes-sigs/aws-ebs-csi-driver/blob/master/docs/install.md
+
+1. Go to AWS console --> click on any worker node --> search for IAM role --> Click that role --> Attach Polocies --> AmazonEBSCSIDriverPolicy --> Add 
+2. Go to AWS console --> click on any worker node --> search for SG --> Click that Sg name --> Add inbound --> all traffic --> 0.0.0.0/0 --> Add 
+
+3. AWS EBS driver install :
+	through Kustomize : 
+		kubectl apply -k "github.com/kubernetes-sigs/aws-ebs-csi-driver/deploy/kubernetes/overlays/stable/?ref=release-1.65"
+	Once the driver has been deployed, verify the driver pods are running:
+		kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-ebs-csi-driver
+if u get any error after attaching IAM do this 
+kubectl rollout restart deployment/ebs-csi-controller -n kube-system
+
+4. EBS and PV in static we need to delete manually
+
+
+For Static provision
+After applying enter into pod ----> kubectl exec -it <podname> -n roboshop -- bash or sh 
+echo "<h1> Hello this is from EBS static </h1>" > index.html 
+now do -----> kubectl get svc -n roboshop
+	take the load balancer arn and in google browser paste it 
+now delete the pod ---> kubectl delete <pod name> -n roboshop
+create a pod again ---> kubectl apply -f 04-ebs-dynamic-storage.yaml
+now do take the load balancer arn and in google browser paste it  u need to ge tthe same response 
+
+
 	  
 
-Dynamic Provisioning
-----------------------------
-In dynamic provisioning, we don't manually create the EBS volume or PV. Kubernetes will create automaticall EBS Volume and PV .There is a object called  StorageClass that will create storage dynamically based on the storage request(ex: 10Gi etc..) mentioned in PVC defination.. 
+Dynamic Provisioning :
+----------------------------- 
+In dynamic provisioning, we don't manually create the EBS volume or PV. Kubernetes will create automatically EBS Volume and PV when u request using PVC .There is a object called  StorageClass that will create storage dynamically based on the storage request (ex: 10Gi etc..) mentioned in PVC defination..  StorageClass is cluster level resource 
 When u do provisioning using StorageClass ----> it will automatically create both ----> External Volume + PV 
 
-By default in kubernetes there will be one storage class and driver -----> Do ----> kubectl get sc
-StorageClass is cluster level resource and EBS will have one storageclass cluster wide and admin should create this 
+By default in kubernetes there will be one storage class and driver -----> Do ----> kubectl get sc and EBS will have one storageclass cluster wide and admin should create this 
 
 ---> U can see which are namespace level and non namespace/cluster level resources using 	----> kubectl api-resources 
 
@@ -2544,8 +2676,10 @@ Imagine your company has 50 applications ---> to create 50 EBS volumes and pv it
 
 Flow : PVC ---> StorageClass ---> CSI Driver ---> EBS + PV created automatically 
 
-StorageClass :  StorageClass defines how Kubernetes should dynamically provision storage.StorageClass is basically the template/instructions for provisioning.
--------------------
+StorageClass : 
+------------------
+StorageClass defines how Kubernetes should dynamically provision storage.StorageClass is basically the template/instructions for provisioning.
+ or
 StorageClass is a template that tells Kubernetes what type of storage to dynamically create when a PVC requests storage.
 or
 StorageClass acts as a template for dynamic provisioning. In EKS, we configure the AWS EBS CSI driver as the provisioner, and when a PVC requests storage, Kubernetes automatically provisions the required EBS volume and creates the corresponding PV
@@ -2553,14 +2687,12 @@ StorageClass acts as a template for dynamic provisioning. In EKS, we configure t
 Static
 You manually prepare everything: AWS EBS ---> PV ---> PVC ---> Pod
 
-Dynamic : You only request storage through PVC how much storage u want ...The EBS and PV creation are automated using storage class .
+Dynamic : You only request storage through PVC how much storage u want ...The EBS and PV creation are automated using storageclass object .
 PVC ---> StorageClass ---> CSI Driver ---> AWS EBS ---> PV ---> Pod
 
 AWS EBS CSI Driver: 
 -------------------------
-It will create a bridge i.e., communication bw kubernetes and AWS EBS 
-The CSI driver handles storage operations such as provisioning and attaching/mounting volumes to nodes
-
+It will create a bridge i.e., communication bw kubernetes and AWS EBS  and CSI driver handles storage operations such as creating and attaching/mounting volumes to nodes.
 The Kubernetes storage workflow uses the AWS EBS CSI driver to provision and attach EBS volumes.
 
 
@@ -2569,13 +2701,30 @@ Ex:
 apiVersion: storage.k8s.io/v1
 kind: StorageClass
 metadata:
-  name: ebs-gp3								#name of the StorageClass.
+  name: ebs-static 								#name of the StorageClass.
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"           
+																										
 provisioner: ebs.csi.aws.com    		#Use the AWS EBS CSI driver to provision the volume
 parameters:
   type: gp3											#This tells the provisioner what kind of EBS volume to create.	gp3 -- General Purpose SSD volume type.
 reclaimPolicy: Delete						
-volumeBindingMode: WaitForFirstConsumer			#
+volumeBindingMode: WaitForFirstConsumer			
 
+
+storageclass.kubernetes.io/is-default-class: "true"  ---->   This marks StorageClass as the default StorageClass. So if we doesn't specify storageClassName in PVC manifest file, Kubernetes can use the default StorageClass for dynamic provisioning
+
+storageclass.kubernetes.io/is-default-class: "false"  ----> This StorageClass is NOT the default StorageClass.So if we doesn't specify storageClassName in PVC manifest file, this StorageClass will not be automatically selected as the default.
+
+allowVolumeExpansion: true ----> This allows you to resize the volume by editing the corresponding PVC object, requesting a new larger amount of storage. or allows you to increase the PVC/storage size later without creating a new PVC.
+
+allowedTopologies:														#allowedTopologies → controls where the EBS volume can be created/used.
+- matchLabelExpressions:
+  - key: topology.ebs.csi.aws.com/zone
+    values:
+    - us-east-1a
+
+commands:
 kubectl get storageclass or sc
 
 reclaimPolicy: Delete			#by default it is Delete
@@ -2584,8 +2733,13 @@ reclaimPolicy: Delete			#by default it is Delete
 2)Retain --> underlying storage is retained for manual recovery/cleanup.
 
 
-volumeBindingMode: WaitForFirstConsumer			
+volumeBindingMode: 
+WaitForFirstConsumer
+when you apply your PVC, Kubernetes pauses. The PVC status will stay Pending on purpose. Once the scheduler decides where the pod is scheduled Kubernetes passes that exact zone topology hint to the EBS CSI Driver	 The driver then creates the EBS volume in that exact same zone as pod zone 
+or
 Instead of immediately creating the EBS volume when the PVC is created, Kubernetes waits until a Pod actually uses the PVC then provisions the EBS volume considering the Pod's scheduling/AZ.
+Immediate 
+the moment you apply a PersistentVolumeClaim (PVC) manifest, Kubernetes instantly instructs AWS to create the EBS volume. It does not wait for a pod to exist
 
 
 Imagine your EKS cluster has: 3 nodes in 3 different AZ zones 1a,1b and 1c 
@@ -2628,14 +2782,13 @@ and check ebs volume in aws console ------ all three will be present
 
 3) Create a pod and attach using volume code in manifest files 
 
-
 Complete Dynamic Provisioning Flow:
 
 Developer  ---> writes PVC with required storage (Ex: 10gi etc...) ---> In PVC code we mentioned StorageClass name ---> it will go there ---> check all the details we mentioned drivaer also in storageclass manifest file ---> EBS driver create the Volime in EBS section in aws ---> PV also automatically created by kubernetes ---> attached to Pod automatically
 
 
 Static:
-Admin creates storage before handi.e., Admin creates PV and EBS storage should be created manually and PV yaml file is required and PVC claims existing PV and more manual work.Suitable when specific existing storage must be used
+Admin creates storage before hand i.e., Admin creates PV and EBS storage should be created manually and PV yaml file is required and PVC claims existing PV and more manual work.Suitable when specific existing storage must be used
 EBS → PV → PVC → Pod
 
 Dynamic:
@@ -2654,13 +2807,13 @@ Static approach:  You as the administrator:
 1. Create 10Gi EBS manually
 2. Get EBS volume ID
 3. Create PV using manifest files
-4. Configure CSI
+4. Configure/install CSI and IAM role policy AmazonEBSCSIDriverPolicy attach
 5. Create PVC using manifest files
 6. Deploy application
 
 Dynamic approach:
 Developer/application team:
-1. Create PVC requesting 10Gi
+1. Create PVC requesting storage 10Gi
 2. Deploy application
 
 Kubernetes handles:
@@ -2711,35 +2864,134 @@ In dynamic provisioning, the application creates a PVC referencing a StorageClas
 ===================================================================================================================================================================
 
 
-EFS:
+EFS:		 Elastic File System
 -----
-static provisioning
+EFS is a shared network file system that can be mounted by multiple Pods/nodes and is commonly used to read and write the data at same folder ny multiple nodes and shared file access is required.
+
+
+EFS (Elastic File System) is a shared network file system that allows multiple Pods on different worker nodes to access the same files and directories. We use this when multiple Pods need to read and write the data.
+Ex: Lets say if pod 1 got request t upload a file it is performed the task now even pod 2 can see the uploaded file because both are using the same EFS filesystem.
+RWX — ReadWriteMany  ---> read and write the volume by multiple nodes 
+EFS is useful when your Pods are spread across different nodes so Pods don't need to be on the same worker node to access the same files.
+Pods running in different Availability Zones can access the same EFS filesystem. so it is Cross-AZ
+You don't have to manually increase the filesystem size when files are added. EFS automatically scales its storage capacity based on the amount of data stored
+
+AWS currently documents 25,000 connections per EFS file system, and a single file can be up to 47.9 TiB. and it is based on NFSv4 protocol
+
+static provisioning :
+-------------------------
 EFS is shared file storage.
 Flow
 AWS EFS ---> PV ---> PVC ---> Pod ---> Container
 
-1)create a EFS file sysytem in aws console 
+1)create a EFS file system in aws console manually
 2)Edit the attched security group which is attached to EFS --> to accept nfs --> edit inbound rules --> NFS --> port 2049 --> add the security group which is attched to worker nodes 
-3)Download the EFS Drivers 
+3)install the EFS Drivers 
 4)Create PV and PVC and use that pvc in the pod 
 
 NFS port no ---> 2049
 
+
+
+
+
+To work application 	  
+In this link -----> https://github.com/kubernetes-sigs/aws-efs-csi-driver/blob/master/docs/install.md
+
+1. Go to AWS console --> click on any worker node --> search for IAM role --> Click that role --> Attach Polocies --> AmazonEFSCSIDriverPolicy --> Add 
+2. Go to AWS console --> click on any worker node --> search for SG --> Click that Sg name --> Add inbound --> all traffic --> 0.0.0.0/0 --> Add 
+Go to manually created EFS --> network tab --> u can find SG --> copy that sg and search it in SG --> open it --> inbound --> in type section --> NFS --> paste the copied worker node (click on anyworker node and security tab --> seach for SG and copy) instance SG 
+
+3. AWS EFS driver install :
+Install helm First :
+		curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
+		chmod 700 get_helm.sh
+		./get_helm.sh
+Then EFS driver install
+		helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver/
+		helm repo update aws-efs-csi-driver
+		helm upgrade --install aws-efs-csi-driver --namespace kube-system aws-efs-csi-driver/aws-efs-csi-driver
+if u get any error after attaching IAM do this 
+kubectl rollout restart deployment/ebs-csi-controller -n kube-system
+
+or
+kubectl kustomize "github.com/kubernetes-sigs/aws-efs-csi-driver/deploy/kubernetes/overlays/stable/ecr/?ref=release-3.4" > private-ecr-driver.yaml
+Now it will create one file --->  private-ecr-driver.yaml
+now --> kubectl apply -f private-ecr-driver.yaml
+
+=release-3.4--> replace this based on version  
+
+4. EFS and PV in static we need to delete manually
+
+
+For Static provision
+After applying enter into pod ----> kubectl exec -it <podname> -n roboshop -- bash or sh 
+echo "<h1> Hello this is from EBS static </h1>" > index.html 
+now do -----> kubectl get svc -n roboshop
+	take the load balancer arn and in google browser paste it 
+now delete the pod ---> kubectl delete <pod name> -n roboshop
+create a pod again ---> kubectl apply -f 04-ebs-dynamic-storage.yaml
+now do take the load balancer arn and in google browser paste it  u need to ge tthe same response 
+
+
 For EFS static provisioning, we first create the EFS filesystem manually in AWS. Then we create a Kubernetes PersistentVolume using the AWS EFS CSI driver and specify the EFS filesystem ID. We create a PersistentVolumeClaim with ReadWriteMany access and bind it to the PV. Pods then mount the PVC and can share the same EFS filesystem across multiple nodes. This is useful when multiple Pods require shared persistent file storage.
 
-Dynamic Provisioning
-1) We need to create EFS in aws console even for dynamic 
-2) Write a StorageClass manifest file and give the above created EFS name in that yaml file it will create the access point in the EFS u can see that in aws console
-3)give ec2 efs full access role for the  attached to ec2 
+Dynamic Provisioning :
+-----------------------------
+1) We need to create EFS in aws console manually even for dynamic 
+2) Write a StorageClass manifest file and give the above created EFS name and EFS volume id in that yaml file then it will create the access point in the EFS u can see that in aws console
+			when we deploy the PVC EFS CSI driver will not create the EFS disk instead it will automatcally create access point in mentioned EFS volume 
+			An Access Point functions like a dedicated subdirectory on the shared drive
+			The PersistentVolume (PV) object created by storageclass points directly to that dynamically created subdirectory path (i.e., access point path).
+3)give ec2 efs full access role for the  attached to ec2  i.e., ---> AmazonEC2FullAccess
 4) if ur un the storage class it will create the Access point in efs can see in aws console so like the u can create n no of access points for multiple projects.
 
 we can write one storageClass manifest file and multiple PVC definations so that it will create multiple acccess points for diff projects 
 one StorageClass can serve many PVCs
 
 
+Ex
+
+apiVersion: storage.k8s.io/v1
+kind: StorageClass
+metadata:
+  name: efs-dynamic  #any name storage class name 
+  annotations:
+    storageclass.kubernetes.io/is-default-class: "false"
+provisioner: efs.csi.aws.com
+parameters:
+  provisioningMode: efs-ap
+  fileSystemId: fs-0fed6c8e985b846fd    ##we create EFS manually that efs id 
+  directoryPerms: "700"
+  gidRangeStart: "1000" # optional
+  gidRangeEnd: "2000" # optional
+  basePath: "/roboshop" # optional it is the root directory created in efs volume under this we will have seperate access points 
+
+provisioningMode: efs-ap ---> This tells the AWS EFS CSI driver to use Access Points for synamic provisioning 
+Access point name will be created based out of pvc id and name 
+
+In PVC we are give required storage this we cant ryt because EFS is unlimited 
+apiVersion: v1 
+kind: PersistentVolumeClaim 
+metadata: 
+  name: efs-dynamic-pvc 
+  namespace: roboshop 
+spec:
+  storageClassName: efs-dynamic
+  accessModes:
+  - ReadWriteMany
+  resources:
+    requests:
+      storage: 10Gi 
+
+REASON:
+-----------
+Mentioning resource block is a strict Kubernetes API generic requirement it is desined to create thousand of resources so if we dont give that in file it will reject the file with a validation error. so must we need to enter the capacity but AWS EFS CSI Driver completely ignores the 10Gi value when provisioning your Access Point.
+If you write 10Gi in your manifest, your container can still easily write 50Gi or 100Gi of data to that EFS mount without hitting a wall or getting a "disk full" error.
+
 EFS Static Provisioning — Yes
-                 EFS File System
-                       |
+								EFS File System
+									   | 
           ┌────────────┼──────────────-─┐
           ↓            			 ↓           				      ↓
         PV-1                  PV-2         						PV-3
@@ -2761,8 +3013,6 @@ EBS vs EFS
 EBS(Elastic Block Store) = a hard disk for a server/application.
 EFS(Elastic File System) = a shared network filesystem that multiple servers/Pods can access.
 
-EBS:
-EBS is block storage. it is like hard disk we are attaching it to ec2 instance 
 
 When do we use EBS?
 Use EBS when your application needs:
@@ -2795,7 +3045,7 @@ Good for:
 Good when multiple Pods/nodes need to access the same/shared files simultaneously.
 
 When do we use EFS?
-Use EFS when multiple Pods/servers need to access the same files simultaneously.
+Use EFS when multiple Pods/serversor nodes need to access the same files simultaneously.
 
 | EBS                                							  |                        EFS                                          |
 | ------------------------------------------------- | -----------------------------------------------------|
@@ -2840,6 +3090,7 @@ Helm Charts:
 -----------------
 
 Install Helm:
+----------------
 curl -fsSL -o get_helm.sh https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4
 chmod 700 get_helm.sh
 ./get_helm.sh
@@ -5657,3 +5908,283 @@ u can announe a create/update of application, no release or changes
 7. untaint green nodes to schedule pods ---- we tainted at point 3 
 	
 8. cordon/drain the blue nodes 
+
+
+
+===================================================================================================================================================================
+
+
+Kubernetes Probes:
+-------------------------
+
+What is a Probe?
+A probe is a health check performed by the Kubernetes kubelet to determine the condition of a container.
+
+Probe = Kubernetes checking whether my application/container is healthy and ready to handle traffic.
+
+Lets say u have a Java application  : Pod -----> Java Application ----->  "Are you healthy?" -----> Probe
+Based on the result kubernetes can decide :
+Should traffic be sent to this Pod?
+Should the container be restarted?
+Is the application ready yet?
+
+Why do we need Probes?
+A container being Running doesn't necessarily mean the application inside it is actually working.
+Ex:  Pod -----> Java application -----> Process is running ✅
+But the application may facing 
+		Database connection stuck ❌
+		Application initialization incomplete ❌
+		Deadlock ❌
+		HTTP endpoint not responding ❌
+
+Kubernetes might still see the container as Running. that y we configure probes 
+
+
+Types of Probes:
+1. Liveness Probe
+2. Readiness Probe
+3. Startup Probe
+
+Startup   → "Has my application started?"
+Liveness  → "Is my application still alive?"
+Readiness → "Can my application handle traffic?"
+
+
+1. Liveness Probe : Liveness probe checks whether the application is still alive and functioning. If the liveness probe repeatedly fails, Kubernetes restarts the container.
+Ex:
+Think ---> Is the application stuck/dead?
+If healthy 									---> it will continue running 
+If repeatedly unhealthy			---> Kubelet restarts container
+
+Suppose your Java application exposes: /healthy endpoint 
+You can configure:
+
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  initialDelaySeconds: 30
+  periodSeconds: 10
+  
+Kubernetes checks:  GET http://PodIP:8080/health
+If the application continuously fails the liveness check, Kubernetes restarts the container.
+
+
+Why Liveness is useful? 
+Imagine: Java application -----> Process still running -----> But application is stuck
+Without liveness: Kubernetes: "Container process exists → Running"
+With liveness: Kubernetes ---> Health check ❌ ---> Restart container ---> Application recovers ....This is called self-healing.
+
+
+
+2. Readiness Probe
+Readiness probe checks whether the application is ready to receive traffic. If it fails, Kubernetes removes the Pod from the Service's ready endpoints, but does not restart the container just because of that readiness failure.
+
+Think: Can I send traffic to this Pod right now?
+
+Ex: Your application has just started ---> pod ---> java application ---> it may have diff issues Loading configuration, Connecting to database, Loading cache, Initializing
+But Application process is running But it isn't ready to server the traffic... So Kubernetes doesn't send Service traffic to it yet. Once initialization completes Ready The Pod becomes eligible for Service traffic.
+It only sends the traffic to only pods which are ready to server the request/traffic so it doesnt send the traffic to pods which are in not ready state 
+
+|                     					| Liveness                     				| Readiness                                  |
+| ------------------- 			| ---------------------------- 			| ------------------------------------------ |
+| Question            			| Is application alive?        		| Can application receive traffic?           |
+| Failure action      		| Container can be restarted | Pod removed from Service endpoints         |
+| Restarts container? | Yes, after failure threshold   | No                                         |
+| Main purpose           | Detect stuck/dead app         | Control traffic                            |
+| Example                     | Application deadlocked        | App starting / temporarily unable to serve |
+
+
+
+3. Startup Probe
+Startup probe checks whether an application has successfully started. While the startup probe is running, Kubernetes does not run the liveness and readiness probes.
+
+Ex: Imagine your Java application takes 3 minutes to start 
+
+But in liveness probe scenario it starts checking immediately before start the application 
+
+Application still starting -----> Liveness ❌-----> Kubernetes thinks application is unhealthy -----> Restart container❌ again same repeat -----> Application starts again-----> Liveness ❌ -----> Restart again
+You can get a restart loop.
+
+So Startup probe solves this.
+Pod starts -----> Startup Probe -----> Application initializing -----> Startup ❌ -----> Give it more time -----> Application finally starts -----> Startup ✅ -----> Liveness + Readiness begin working 
+
+Why Startup Probe is important?
+Suppose Java application startup = 2 minutes
+You configure:
+
+startupProbe:
+  httpGet:
+    path: /health
+    port: 8080
+  periodSeconds: 10
+  failureThreshold: 18
+
+That gives the application roughly: 18 × 10 = 180 seconds = 2 min to successfully start, assuming the checks occur at that interval.
+Once startup succeeds : Startup Probe ✅ -----> Liveness starts and Readiness starts
+
+
+Probe mechanisms: Probes can check the application in different ways.
+
+1. HTTP		---> above examples 
+2. TCP
+3. Command
+
+1. HTTP Probe : Kubernetes sends an HTTP request.
+Ex: 
+livenessProbe:
+  httpGet:
+    path: /health
+    port: 8080
+	
+Kubernetes calls: GET /health  ----> If successful: 200 OK → Healthy
+
+2. TCP Probe : Kubernetes checks whether it can establish a TCP connection to the specified port.
+Ex:
+readinessProbe:
+  tcpSocket:
+    port: 8080
+	
+Meaning: "Can I establish a TCP connection to port 8080?" Useful when you don't have an HTTP health endpoint.
+
+3. Exec Probe : Kubernetes executes a command inside the container.
+Ex:
+livenessProbe:
+  exec:
+    command:
+    - cat
+    - /tmp/healthy
+
+If the command succeeds: Healthy ✅ otherwise unhealthy
+
+Probe timing settings :
+
+1. initialDelaySeconds ---> How long Kubernetes waits before starting the probe.
+		Ex: initialDelaySeconds: 30 ---->  Wait approximately 30 seconds before starting checks.
+2. periodSeconds ---> How frequently Kubernetes performs the check.
+		Ex: periodSeconds: 10   ----> Check every 10 seconds.
+3. timeoutSeconds : How long Kubernetes waits for a probe response before considering that individual check failed.
+		Ex: timeoutSeconds: 2
+4. failureThreshold : How many consecutive failures are needed before Kubernetes considers the probe failed.
+		Ex: failureThreshold: 3  --> 3 times probe checks 
+5. successThreshold : How many consecutive successful checks are required for the probe to be considered successful.
+		Ex: successThreshold: 1
+		
+		
+Practical example — Java application 
+Suppose your Java application runs on: 8080 and has /actuator/health API endpoint
+
+You can write like 
+startupProbe:
+  httpGet:
+    path: /actuator/health
+    port: 8080
+  periodSeconds: 10
+  failureThreshold: 30
+
+livenessProbe:
+  httpGet:
+    path: /actuator/health
+    port: 8080
+  periodSeconds: 10
+  failureThreshold: 3
+
+readinessProbe:
+  httpGet:
+    path: /actuator/health
+    port: 8080
+  periodSeconds: 10
+  failureThreshold: 3
+  
+                 Pod starts
+                     |
+                     ↓
+              Startup Probe
+                     |
+             Application started?
+                /          \
+              NO            YES
+              |              |
+           Wait          Liveness
+									+
+							Readiness
+									|
+                    ┌───────┴───────┐
+                    ↓               					↓
+                 Alive?          				Ready?
+                    |               					|
+                  Restart         			Traffic
+                  if failed       				if ready
+				  
+				  
+why you used them.
+In our Kubernetes deployments, we configured health probes for our microservices so Kubernetes could distinguish between a container that was running and an application that was actually healthy and ready to serve traffic. We used readiness probes to ensure traffic was sent only to Pods that were ready, and liveness probes to detect applications that became stuck or unhealthy and needed a container restart. For applications with longer startup times, we used startup probes so Kubernetes would give the application enough time to initialize before applying the liveness and readiness checks. For our HTTP-based services, we generally used HTTP health endpoints for these probes.
+
+
+Scenario Based Questions:
+
+Your Pod is running, but users are getting errors. What would you check?
+First I would check the Pod status and events, then verify the readiness probe. 
+A Pod can be in Running state but not be ready to receive traffic. 
+I would check whether the readiness endpoint is failing, whether the application is listening on the expected port, and whether there are application or dependency issues. 
+I would also check the Service endpoints to verify whether the Pod is being included as a ready backend.
+
+Your Pod keeps restarting. What could be the reason?
+I would check whether the liveness probe is repeatedly failing. 
+I would use kubectl describe pod to check the events and probe failures, and check the application logs. 
+If the application takes a long time to start, I would also verify whether a startup probe is required or whether the probe timings are too aggressive.
+
+
+
+kubectl logs <pod-name> --previous --------> Previous container logs after a restart
+kubectl get endpoints or kubectl get endpointslices  --------> check endpoints
+
+
+
+For our shipping Application
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: shipping-ds
+  namespace: roboshop
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: shipping
+      project: roboshop
+      tier: app
+  template:
+    metadata:
+      labels:
+        app: shipping
+        project: roboshop
+        tier: app
+    spec:
+      containers:
+      - name: shipping
+        image: narupallearun/shipping:v1
+        envFrom:
+        - configMapRef:
+            name: shipping-config
+			
+        startupProbe:
+          httpGet:
+            path: /health													#go and check in shipping source code this endpoint should be there in controller class 
+            port: 8080
+          periodSeconds: 10
+          failureThreshold: 18
+
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          periodSeconds: 10
+          failureThreshold: 3
+
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 8080
+          periodSeconds: 10
+          failureThreshold: 3
