@@ -3106,11 +3106,14 @@ if u have 20 applications 100's of yml files and may need diff values for diff e
 
 
 What is Helm?
-Helm is a package manager for Kubernetes that allows us to package, template, configure, install, upgrade, and roll back Kubernetes applications.
+Helm is a package manager for Kubernetes that allows us to package, define, install, upgrade, and roll back Kubernetes applications.
 
+Without helm there will be seperate manifest files which has to be manually managed and u need to apply each file to run but in helm we Group all files into single folder we can run using single command
+Instead of hardcoding the values helm uses template files which gets values from seperate file and We can use same Confiuration to diff env like dev, prod etc.. 
+If an application update fails, Helm lets you instantly rollback to a previous working version.
 
 What is a Helm Chart?
-A Helm Chart is a collection of files and templated YAML manifests that describe a related set of Kubernetes resources.
+A Helm Chart is a collection of files and templated YAML manifests files that describe a related set of Kubernetes resources. It is like a blueprint	
 
 Flow : Helm Chart ---> kubernetes yml files ---> configuration files ---> kubernetes resources 
 
@@ -3174,6 +3177,7 @@ templates folder 	----> This folder contains Kubernetes YAML templates.
 charts folder 		----> used to store subcharts (dependent charts) that the main parent chart relies 
 
 Flow with values.yml file : values.yaml ---> Helm Template ---> Rendered Kubernetes YAML ---> Kubernetes API
+
 if u have different env's we can define like multiple files 
 values-dev.yaml
 values-sit.yaml
@@ -3189,10 +3193,7 @@ mongodb ---> release name also
 chart 		  ---> ./payment 
 
 What is a Helm Release?
-A Helm release is an installed instance of a Helm chart in a Kubernetes cluster.
-
-When you run ---->  helm install mongodb ./payment or . 
-mongodb ---> is the release name 
+A Helm release is an installedrunning instance of a Helm chart in a Kubernetes cluster.
 
 You can install the same mongodb chart multiple times using different release names :
 helm install mongodb-dev . 
@@ -3201,36 +3202,38 @@ helm install mongodb-prod .
 
 2) Check releases list 
 
-command : helm list    ---> list all te release charts 
+command : helm list    ---> list all the release charts 
 For a namespace          ---> helm list -n payment
 
 3) Helm upgrade : Helm updates the release.
 Suppose your application image changes: from 1.0.5 to 1.0.6  ---> just update the image version in values.yaml and run 
 
 command : helm upgrade payment ./payment 
+payment ---> release name
 
 Flow:  Old Release ---> helm upgrade ---> New configuration ---> Kubernetes resources updated
 
 4) Helm Rollback
 Suppose version 1.0.6 has a production problem.
+	hel rollback <release name> <release version>
 
-5)you can check history :
+you can check history for release version of a chart :
 command : helm history <release name>     ---> list of releases done using payment release name 
 And 
-6)Rollback to old version using revision version(if u do helm history <chart name> u will get revision version) 
+Rollback to old version using revision version(if u do helm history <chart name> u will get revision version) 
 
 command  : helm rollback payment 1
 
 helm rollback <release-name> <revision version>
 Now Helm returns the release to revision 1.
 
-7) Helm uninstall : This removes the Helm release and the Kubernetes resources managed by that release
+5) Helm uninstall : This removes the Helm release and the Kubernetes resources managed by that release
 command:  helm uninstall <release-name>
 
 
 important commands : suppose assume payment is our application service 
 
-helm create payment    		---> create a chart means create folder structure 
+helm create payment    		---> create a chart means create folder structure of chart 
 helm install payment .  		---> install the chart 
 helm list 						  		---> list releases 
 helm upgrade payment .    ---> Upgrade release.
@@ -3240,13 +3243,26 @@ helm uninstall payment      ---> Uninstall release.
 helm status payment 			--->  Check release status.
 helm get values payment	---> u can see values used by release while installing .
 
-Suppose something isn't working. Instead of directly installing: helm install payment ./payment
-we can do first : helm template payment ./payment  -------> This shows you the Kubernetes YAML that Helm will generate. u can inspect deployment,service,configmap,secrets etc... useful for troubleshoot the templates
+payment ---> release name
+
+Suppose something isn't working. Instead of directly installing using: helm install payment ./payment
+we can do first : 
+		helm template payment ./payment  -------> It renders the Helm chart locally (renders with values) and shows the final Kubernetes YAML manifests that Helm would generate, without actually installing anything in the cluster.
+		or
+		Helm takes the templates + values.yaml → substitutes the values → prints the resulting Kubernetes YAML.
 
 helm template payment ./payment		---> Render templates locally without installing.
 
-6)Helm lint : This checks the chart for common structural/template issues.
+6)Helm lint : This checks the chart for common structural errors/template issues before you install or deploy it.
 helm lint <path of  the chart>
+
+It checks things like:
+Chart structure
+YAML/template syntax
+Missing or incorrect values
+Common Helm configuration issues
+
+
 
 Passing values from command line
 ---------------------------------------------
@@ -3314,7 +3330,10 @@ Helm ---> Kubernetes manifests ---> Kubernetes ---> Pods ---> Containers
 
 
 Interview : How have you used Helm?
-In our Kubernetes environment, we used Helm to package and manage the deployment of our microservices. Instead of maintaining separate Kubernetes manifests for each environment, we created reusable Helm charts containing templates for Deployments, Services, ConfigMaps, Secrets, Ingress and HPA. We kept environment-specific configurations such as replica counts, image tags, resource requests and limits in separate values files for DEV, SIT and PROD. During CI/CD, after building and pushing the Docker image to the container registry, we used Helm upgrade/install to deploy the required image version to the EKS cluster. We also used Helm history and rollback to manage release versions and quickly revert a problematic deployment.
+In our Kubernetes environment, we used Helm to package and manage the deployment of our microservices. 
+Instead of maintaining separate Kubernetes manifests for each environment, we created reusable Helm charts containing templates for Deployments, Services, ConfigMaps, Secrets, Ingress and HPA. We kept environment-specific configurations such as replica counts, image tags, resource requests and limits in separate values files for DEV, SIT and PROD. 
+During CI/CD, after building and pushing the Docker image to the container registry, we used Helm upgrade/install to deploy the required image version to the EKS cluster. 
+We also used Helm history and rollback to manage release versions and quickly revert a problematic deployment.
 
 
 Memorize these 6 things:
@@ -3360,7 +3379,7 @@ From Notes:
 ---------------
 Helm charts:
 
-1. templatize the kubernetes manifest files
+1. templatise the kubernetes manifest files
 2. package manager for kubernetes
 
 1. build the image and pull the image from public registry
@@ -3380,14 +3399,16 @@ deploment:
 	replicas:2 
 	
 lets say i have given some values already in values.yaml but i want to override from command line 
-helm upgrade <chartname> --set deploment.replicas=3 .
+helm upgrade <release name> --set deploment.replicas=3 . 
 
-To uninstall or delete every resource in that chart ---> helm uninstall <chartname> . 
+.  ---> refers to current directory 
+
+To uninstall or delete every resource in that chart ---> helm uninstall <release name> . 
 	
 main files: Chart.yaml, templates folder and values.yaml
 	
 Lets say we are going for the new release so we dont touch the manifest files that are present in templates folder we do changes in values.yaml and deploy
-helm upgrade <chartname> .   --> whatever changes we made so just we update so new changes will be deployed insted of install command 
+helm upgrade <release name> .   --> whatever changes we made so just we update so new changes will be deployed insted of install command 
 
 use:
 helm is used to parameterise the kubernetes manifest files 
@@ -3417,20 +3438,18 @@ helm history <chart name> ---> u will get how many versions u deployed u get and
 helm rollback <chartname> <REVISION VERSION no> ----> to roll back
 Ex: helm rollback nginx 2 
 
-nginx --> chart name
+nginx --> release name
 2 --> revision number if u do helm history u will get 
 
 helm show values .or path 
 
-
-
-
+===================================================================================================================================================================
 
 Stateful Set :
 --------------
 
-StatefulSet   ---> used to create stateful applications in k8's (Ex: mongodb,redis,mysql etc..) 
-DeploymentSet ---> used to create stateless applications in k8's (Ex: cart,catalogue,user etc.. basically which does not have own database)
+StatefulSet          ---> used to create stateful applications in k8's (Ex: mongodb,redis,mysql etc..) 
+DeploymentSet  ---> used to create stateless applications in k8's (Ex: cart,catalogue,user etc.. basically which does not have own database)
 
 How stateful set/databases works 
 
@@ -3442,7 +3461,7 @@ How stateful set/databases works
 													│
 													│
 ┌─────────┐                 	    	│
-│ master  │──────────── ┌─────────┐                   						  ┌──────┐
+│ master     │─────────── ┌─────────┐                   						  ┌──────┐
 └─────────┘  						│ NODE-2     │───────────────────▶│ DB-2 │
 												└─────────┘                   						  └──────┘
 													 │
@@ -3453,23 +3472,24 @@ How stateful set/databases works
 										   └─────────┘                    						 	 └──────┘
 					
 Now lets say user has requested to create user ---> now request went to node-1 to create user so in DB-1 new user will be created
-Now lets say user want to login --> now request may gi any of the worker node we cannot guaratee that it will go to node-1 it may go node-2 or node-3 also but user is created in DB-1 database for DB-2 and DB-3 there is no new user info 
-These Database cluster will work like when node-1 got request to create user this node responsibility is to create new user and inform to node-2 and node-3 that i got create user request update this info in ur databases same like if request got to node-2 to create user it should infor to node-1 and node-3 same like node 3 also ... in that cluster what ever nodes present that node should inform automatically all the nodes that i got this request update that in ur databases  
+Now lets say user want to login --> now request may go any of the worker node we cannot guaratee that it may go to node-1 it may go node-2 or node-3 also but user is created in DB-1 database for DB-2 and DB-3 there is no new user info 
+
+These Database cluster will work like when node-1 got request to create user this node responsibility is to create new user and inform to node-2 and node-3 that i got create user request update this info in ur databases same like if request got to node-2 to create user it should inform to node-1 and node-3 same like node 3 also ... in that cluster what ever nodes present that node should inform automatically all the nodes that i got this request update that in ur databases  
+
 How they will send the information means those nodes should be completely aware of cluster and host names of the worker nodes not be changes we need to take elastic ip 
 --> nodes inside stateful applications should have static hostnames(i.e., elastic ip's) to communicate to other nodes 
 --> And stateful set work like if we give replicas 
-	1) it will create pod replica in node-1 first after complition and running state only then it will go and create in pod replica 2 in node-2 and in node-3 it doesnt create randomly pod replicas like deploymentset(it will create rendomly at a time)....pod name should be fixed 
+	1) it will create pod replica in node-1 first after complition and running state only then it will go and create replica 2 pod in node-2 and in node-3 it doesnt create randomly pod replicas like deploymentset(it will create randomly at a time)....pod name should be fixed 
 	2)y it is following orderly creation/provisioning means if one node replica fails entire database cluster will get issue/disturbed and all nodes should be run
 ---> stateful applications should follow orderly provisioning and terminate from backward 
 ---> storage of each pod we should create using pv and pvc 
----> Stateful set applications will have applications
 
 stateful:
 1.Used to deploy stateful applications
 2.Pods created by StatefulSets have unique names which remain constant across application rescheduling.
-3.Its Pods are created in sequential order and deleted in reverse, sequential order.
+3.Its Pods are created in sequential order and deleted in reverse sequential order.
 4.Its Pods are not interchangeable and maintain their identities after restarts.
-5.It does not allow shared volume. Thus, each Pod replica ls its own stick Volume and PersistentVolumeClaim.
+5.It does not allow shared volume. so each Pod replica has seperate Volume and PersistentVolumeClaim(i.e., volumeClaimTemplates)
 6.Replication is complex
 7.Stateful set applications will have applications
 
@@ -3495,7 +3515,7 @@ k8-concept-wise\07-stateful-set\statefulset.yml  ---> after applying if u see
 --> in aws console volumes sections if u see it will create if there is 3 pods it will create 3 volumes i.e., seperate volume for each pod
 
 k8-concept-wise\04-sets\02-deployment.yml ---> create them also 
-1)IF u see ---> kubectl get svc ---> for statefulset ClusteIP will be none why 
+1)If u see ---> kubectl get svc ---> for statefulset ClusteIP will be none why 
 2)login to debug pod ---> just created for testing and 
 3)kubectl exec -it <pod name> -- bash
 4)nslookup <service name of stateful set>   ---> it will list all the ip's 
@@ -3513,12 +3533,6 @@ it will not delete the volumes but all remaining pods all are deleted except vol
 
 
 Create k8s-roboshop-databases ---> this we are doing for roboshop proj
-
-
-
-
-
-
 
 
 diff bw deployment vs statefulset
@@ -3625,12 +3639,15 @@ kubectl get sts mysql -o yaml								---> Check StatefulSet YAML
 ===================================================================================================================================================================
 
 
+K8-roboshop-project-databases
+-----------------------------------------
+
 If u get any errors in cluster ex: couldnt get the server ip etc...
 aws sts get-caller-identity 
 aws eks update-kubeconfig --region us-east-1 --name roboshop-cluster 
 
 cluster name --> roboshop-cluster 
-region 
+
 
 1.Create k8s-roboshop-databases ---> this we are doing for roboshop proj
 2.create mongodb and redis charts 
@@ -3660,6 +3677,8 @@ CrashLoopBackOff come at the time of after image pulled and that image it is try
 
 
 imagePullBackOff ---> get at the time of pulling image but some thing is wrong 
+
+===================================================================================================================================================================
 
 
 
@@ -4709,7 +4728,7 @@ Flow :
 
 
 K8-Architecture notes:
-----------------
+-----------------------------
 		 
 Control plane objects 
 1)kubectl  ---> command line t connect to k8 cluster
@@ -4737,7 +4756,7 @@ container runtime(mostly containerd) --> responsible for running the containers 
 
 
 Kubernetes Architecture: 
-------------------------
+---------------------------------
 
 Kubernetes cluster has two major parts:
 Control Plane ---> Control Plane makes decisions and manages the overall Kubernetes cluster.
@@ -4900,10 +4919,7 @@ In my project, developers commit the application code to Git. Jenkins triggers t
 
 
 
-======================================================================================================================================================================
-
-
-
+===================================================================================================================================================================
 
 
 
@@ -5029,9 +5045,6 @@ The idea is to deploy the new version to a small percentage of traffic first, mo
 For high-risk releases, we can use Canary deployment. Instead of moving all traffic to the new version, we initially expose a small percentage of traffic to V2, monitor application and infrastructure metrics, and gradually increase traffic if everything is healthy. If we observe errors or performance degradation, we stop the rollout and route traffic back to V1.
 
 
-
-
-
 4)Recreate :	
 ---------- 
 In this version A terminated/shutdown first and then version B is rolled out and routes the traffic to pods through service and there will be downtime(will announce downtime at particular time and do this process) depends on shoutdown of old version A and boot/start time of version B duration of the application. 	
@@ -5064,7 +5077,7 @@ For our regular Kubernetes deployments, we primarily used Rolling Updates. Our a
 
 For our cluster we will do blue - green 
 EKS upgrade:
------------
+-----------------
 Currently we have 3 nodes in old node group and running the applications on version 1.27 (i.e., blue )
 we upgrade the master node(control plane) ---> u can't deploy new applications but existing applications running in worker nodes will continue to run
 this is platform upgrade so we need to announce downtime ..if application upgrade means no need downtime 
@@ -5852,27 +5865,6 @@ At the Pod level, pod affinity allows us to place Pods in the same topology doma
 
 We can also combine taints, tolerations and node affinity for dedicated workloads. 
 The taint prevents unwanted Pods from being scheduled, the toleration allows the intended workload to enter the node, and node affinity ensures that the workload is actually placed on the intended node group.
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
