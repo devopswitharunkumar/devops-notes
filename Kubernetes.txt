@@ -3105,19 +3105,23 @@ suppose you have a microservice: we have payment service in that we have deploym
 if u have 20 applications 100's of yml files and may need diff values for diff env's it will be heavy to manage and if u don't want to maintain completely separate YAML files for every environment.
 
 
-What is Helm?
-Helm is a package manager for Kubernetes that allows us to package, define, install, upgrade, and roll back Kubernetes applications.
+Helm :
+--------
+Helm is a package manager for Kubernetes that allows us to package, define, install(i.e., deploy), upgrade(i.e., rollout), and roll back Kubernetes applications.
 
 Without helm there will be seperate manifest files which has to be manually managed and u need to apply each file to run but in helm we Group all files into single folder we can run using single command
 Instead of hardcoding the values helm uses template files which gets values from seperate file and We can use same Confiuration to diff env like dev, prod etc.. 
-If an application update fails, Helm lets you instantly rollback to a previous working version.
+If an application update fails/get issue with new version, Helm lets you instantly rollback to a previous working version.
 
 What is a Helm Chart?
-A Helm Chart is a collection of files and templated YAML manifests files that describe a related set of Kubernetes resources. It is like a blueprint	
+A Helm Chart is a collection of templated YAML manifests files that contains all the resource defination and configurations required to run an application on a Kubernetes cluster. It is like a blueprint	
+Instead of writing and managing lots of separate raw YAML configuration files manually, you use a single chart to define, install, and upgrade even complex applications.
 
 Flow : Helm Chart ---> kubernetes yml files ---> configuration files ---> kubernetes resources 
 
 A chart can contain:  deployment,service,hpa,secrets,configMap,ingress,ServiceAccount etc..
+
+Adv: Reusability, simple to deploy,update install etc.., version contro and rollback and sharing(Charts can be easily packaged and shared publicly or privately via container registries and repositories) 
 
 
 Helm architecture	
@@ -3171,18 +3175,18 @@ payment/
 │   └── tests/
 └── .helmignore
 
-Chart.yml  				----> This file contains information about the chart.
+Chart.yml  				----> This file contains information/metadata about the chart, such as its name, version, description, and application version.
 values.yml 			----> this file contains the default configuration values used by the templates.
-templates folder 	----> This folder contains Kubernetes YAML templates.
-charts folder 		----> used to store subcharts (dependent charts) that the main parent chart relies 
+templates folder 	----> This folder contains Kubernetes resource defination YAML templates.
+charts folder 		----> used to Store any dependency charts required by the main application
 
 Flow with values.yml file : values.yaml ---> Helm Template ---> Rendered Kubernetes YAML ---> Kubernetes API
 
-if u have different env's we can define like multiple files 
-values-dev.yaml
-values-sit.yaml
-values-prod.yaml
-Same template but diff configuration files This avoids duplicating Kubernetes manifests.
+if u have different env's we can define like multiple values files for diff env
+	values-dev.yaml
+	values-sit.yaml
+	values-prod.yaml
+Same template but diff configuration/values files This avoids duplicating Kubernetes manifests.
 
 
 Commands :
@@ -3193,7 +3197,7 @@ mongodb ---> release name also
 chart 		  ---> ./payment 
 
 What is a Helm Release?
-A Helm release is an installedrunning instance of a Helm chart in a Kubernetes cluster.
+A Helm release is an installed running instance of a Helm chart in a Kubernetes cluster.
 
 You can install the same mongodb chart multiple times using different release names :
 helm install mongodb-dev . 
@@ -3233,15 +3237,16 @@ command:  helm uninstall <release-name>
 
 important commands : suppose assume payment is our application service 
 
-helm create payment    		---> create a chart means create folder structure of chart 
-helm install payment .  		---> install the chart 
-helm list 						  		---> list releases 
-helm upgrade payment .    ---> Upgrade release.
-helm rollback payment 1    ---> rollback to the previous version 
-helm history payment 		---> View release history of payment
-helm uninstall payment      ---> Uninstall release.
-helm status payment 			--->  Check release status.
-helm get values payment	---> u can see values used by release while installing .
+1. helm create <chart name> ---> create a chart means create folder structure of chart 
+2. helm install payment .  		---> install the chart 
+3. helm list 						  		---> list releases 
+4. helm upgrade payment .    ---> Upgrade release.
+5. helm rollback payment 1    ---> rollback to the previous version 
+
+6. helm history payment 		---> View release history of payment
+7. helm uninstall payment      ---> Uninstall release.
+8. helm status payment 			--->  Check release status.
+9. helm get values payment	---> u can see values used by release while installing .
 
 payment ---> release name
 
@@ -3269,9 +3274,11 @@ Passing values from command line
 You don't always have to modify values.yaml. you can override values at runtime/command line 
 
 helm install payment ./payment --set replicaCount=5          ----> this overrides the values.yml file value 
+or
+helm install payment --set replicaCount=5 ./payment          ----> this overrides the values.yml file value 
 
-Using environment-specific values from command line
------------------------------------------------------------------------
+Using environment-specific value files from command line
+-----------------------------------------------------------------------------
 For prod:
 helm upgrade --install payment ./payment -f values-prod.yaml
 For dev:
@@ -3338,41 +3345,12 @@ We also used Helm history and rollback to manage release versions and quickly re
 
 Memorize these 6 things:
 
-Chart → Package of Kubernetes resources
-Chart.yaml → Chart metadata/version
-values.yaml → Configurable values
-templates/ → Kubernetes YAML templates
-Release → Installed instance of a chart
-Helm → Installs, upgrades, manages and rolls back those releases
-
-Docker builds the image → Registry stores it → Helm packages/configures deployment → Kubernetes/EKS runs it.
-
-The Whole Concept
-                 HELM CHART
-                     |
-        +------------+------------+
-        |                        			 |
-   templates/                 values.yaml
-        |                         			 |
-        +------------+------------+
-                     ↓
-              Helm rendering
-                     ↓
-          Kubernetes YAML manifests
-                     ↓
-                  EKS
-                     |
-        +------------+------------+
-        |            |            |
-    Deployment    Service      ConfigMap
-        |
-       Pods
-        |
-    Containers
-
-
-
-
+Chart 				→ Package of Kubernetes resources
+Chart.yaml     → Chart metadata/version
+values.yaml   → Configurable values
+templates/    → Kubernetes YAML templates
+Release 		    → Installed instance of a chart
+Helm              → Installs, upgrades, manages and rolls back those releases
 
 
 From Notes:
@@ -3386,24 +3364,24 @@ Helm charts:
 2. configure image through manifest files to run pods 
 
 
-helm install <chartname> . ---> when u do this in background helm will search for the yaml files in templates folder and it will automatically apply cmd i.e., kubectl apply ..
+1. helm install <chart name> . ---> when u do this in background helm will search for the yaml files in templates folder and it will automatically apply cmd i.e., kubectl apply ..
 we can templatise the values ..we can pass values from the separate file called values.yaml and this file should be in root module
 Ex: 
 We declare like this in manifest files --->  {{ Values.<somename>.<variablename> }}
 we declare values in values.yaml like 
 
 somename:
-	variablename: <value>	#yaml file will pick values dynamically from this file 
+	variablename: <value>					#yaml file will pick values dynamically from this file 
 Ex: 
 deploment:
 	replicas:2 
 	
-lets say i have given some values already in values.yaml but i want to override from command line 
-helm upgrade <release name> --set deploment.replicas=3 . 
+2. lets say i have given some values already in values.yaml but i want to override from command line 
+helm upgrade <release name> --set deploment.replicas=3 .
 
 .  ---> refers to current directory 
 
-To uninstall or delete every resource in that chart ---> helm uninstall <release name> . 
+3. To uninstall or delete every resource in that chart ---> helm uninstall <release name> . 
 	
 main files: Chart.yaml, templates folder and values.yaml
 	
@@ -3434,8 +3412,8 @@ next :
 There is a hub for helm charts repo to insta' into kubernetes ----> Artifact hub 
 
 
-helm history <chart name> ---> u will get how many versions u deployed u get and u will also get REVISION VERSION number 
-helm rollback <chartname> <REVISION VERSION no> ----> to roll back
+helm history <release name> ---> u will get how many versions u deployed u get and u will also get REVISION VERSION number 
+helm rollback <release name> <REVISION VERSION no> ----> to roll back
 Ex: helm rollback nginx 2 
 
 nginx --> release name
@@ -3477,7 +3455,7 @@ Now lets say user want to login --> now request may go any of the worker node we
 These Database cluster will work like when node-1 got request to create user this node responsibility is to create new user and inform to node-2 and node-3 that i got create user request update this info in ur databases same like if request got to node-2 to create user it should inform to node-1 and node-3 same like node 3 also ... in that cluster what ever nodes present that node should inform automatically all the nodes that i got this request update that in ur databases  
 
 How they will send the information means those nodes should be completely aware of cluster and host names of the worker nodes not be changes we need to take elastic ip 
---> nodes inside stateful applications should have static hostnames(i.e., elastic ip's) to communicate to other nodes 
+--> nodes inside stateful applications should have static hostnames(i.e., like elastic ip's) to communicate to other nodes 
 --> And stateful set work like if we give replicas 
 	1) it will create pod replica in node-1 first after complition and running state only then it will go and create replica 2 pod in node-2 and in node-3 it doesnt create randomly pod replicas like deploymentset(it will create randomly at a time)....pod name should be fixed 
 	2)y it is following orderly creation/provisioning means if one node replica fails entire database cluster will get issue/disturbed and all nodes should be run
@@ -3503,6 +3481,7 @@ Deployment
 
 
 --> Headless service means in statefulset manifest file we mention ----->  ClusteIP: None     
+Headless Service is a standard Kubernetes Service that has clusterIP: None defined in its configuration.
 
 k8-concept-wise\07-stateful-set\statefulset.yml 
 To create PV and PVC ---> 
@@ -3540,7 +3519,9 @@ Deployment is mainly for stateless applications; StatefulSet is for applications
 
 StatefulSet:
 ---------------
-StatefulSet is a Kubernetes workload controller used to run stateful applications that need stable Pod identity/name, stable network identity, and persistent storage.
+StatefulSet is a Kubernetes workload controller used to run stateful applications that need stable Pod identity/name or network identity, and persistent storage.
+
+Each pod will have unique and stable name which persist across pod restarts and each pod will have seperate persistent storage
 
 Ex: Mysql, mongodb, postgraceSQL , Elasticsearch, Zookeeper, Kafka etc....
 
@@ -3556,10 +3537,11 @@ You want Kubernetes to recreate: mysql-0 with its associated storage. That's whe
 
 
 Main features of StatefulSet:
-1. Stable Pod identity/names ---> Pods get predictable names like mysql-0, mysql-1 etc...
-2. Stable network identity ---> Each Pod can have a stable DNS identity.
-3. Stable persistent storage ---> Each Pod can get its own persistent volume.
-4. Ordered deployment/scaling ---> Pods are generally created and managed in an ordered manner.
+1. Stable Pod identity/names 		---> Pods get predictable names like mysql-0, mysql-1 etc...
+2. Stable network identity 				---> Each Pod can have a stable DNS identity.
+3. Stable persistent storage 			---> Each Pod can get its own persistent volume.
+4. Ordered deployment/scaling 	---> Pods are generally created and managed in an ordered manner.
+5. If we delete the statefulset using kubectl delete command it will delete the statefulset resources but volumes will not be deleted we need to delete them manually 
 
 
 | Deployment                           | StatefulSet                            |
@@ -3581,10 +3563,16 @@ What is a Headless Service?
 Normally a Kubernetes Service gives you one stable virtual IP: service ---> clusterIP  ---> Pods
 But With a Headless Service: clusterIP: None.... Kubernetes doesn't provide a normal virtual ClusterIP. 	
 Instead, DNS can resolve individual StatefulSet Pods Like 
-mysql-0.mysql
-mysql-1.mysql
-mysql-2.mysql
+	mysql-0.<service name>
+	mysql-1.<service name>
+	mysql-2.<service name>
 So applications can address individual database instances.
+
+
+What it Does (The Core Mechanics)
+1. Disables Load Balancing: A regular service gets a single internal IP address (ClusterIP). A Headless Service does not get an IP address at all.
+2. Returns Direct Pod IPs: When an application queries a Headless Service's DNS name, the cluster's DNS server (CoreDNS) returns a direct list of all individual IP addresses of the backend pods instead of a single routing target.
+3. Creates Stable DNS Names for StatefulSets: When paired with a StatefulSet, it generates an explicit, unchanging DNS record for each specific pod index (e.g., mysql-0.mysql, mysql-1.mysql), mapping each directly to its current IP.
 
 
 1)Stable Pod names :
@@ -3592,30 +3580,34 @@ Lets say i have a 3 replicas created using StatefulSet
 mysql-0
 mysql-1
 mysql-2
-lets say if mysql-2 deleted... StatefulSet recreates new replica with same name mysql-2 and it can reconnect to same PVC and PV which already exists i.e., mysql-2 not randomly 
+lets say if mysql-2 deleted... StatefulSet recreates new replica with same name mysql-2 and it can reconnect to same PVC and PV which already exists 
 
 2)Stable network identity
 Because of the Headless Service, the Pod can have a predictable DNS name.
-mysql-0.mysql
-mysql-1.mysql
-mysql-2.mysql
+	mysql-0.<service name>
+	mysql-1.<service name>
+	mysql-2.<service name>
 This is useful for distributed systems where nodes need to discover and communicate with specific members.
 
+The standard internal format for a pod's network identity follows this rule
+		<pod name>.<service name>.<namespace>.svc.cluster.local
+
 3)Stable persistent storage
-We use volumeClaimTemplates.......This automatically creates a PVC for each StatefulSet Pod.
+We use volumeClaimTemplates in statefulset.......This automatically creates a PVC for each StatefulSet Pod.
 lets say we have 3 replicas for each pod get its own PVC and we create storage using storageclass which also create pv automatically
 
-volumeClaimTemplates :  Create a PVC for each StatefulSet Pod based on this template.
+volumeClaimTemplates :  Create a PVC for each StatefulSet Pod based on this template. basically create the storage
 Ex: 
 volumeClaimTemplates:
   - metadata:
       name: mysql-data
 
-And name of the storage would be :  mysql-data-mysql-0
+And name of the storage in aws console would be :  mysql-data-mysql-0
 mysql-data ---> volume template name
-mysql-0  --> pod name both combines 
+mysql-0  	---> pod name both combines 
 
 Why separate storage?
+Separate storage prevents replicas from overwriting each other's data and causing immediate corruption. It ensures that when a specific pod restarts, it cleanly recovers its own unique history and role without data loss.
 
 StatefulSet creation order
 By default, StatefulSet uses ordered Pod management. Ex: mysql-0,mysql-1,etc...
@@ -3634,6 +3626,50 @@ kubectl describe statefulset mysql 					---> describe
 kubectl scale statefulset mysql --replicas=3 	---> to scale 
 kubectl get sts mysql -o yaml								---> Check StatefulSet YAML
 
+
+Parallel Pod Management
+Parallel pod management tells the StatefulSet controller to launch or terminate all Pods in parallel, and to not wait for Pods to become Running and Ready or completely terminated prior to launching or terminating another Pod.
+
+
+Update strategies
+.spec.updateStrategy.type   for pods or containers 
+
+OnDelete ---> .spec.updateStrategy.type: OnDelete
+the StatefulSet controller will not automatically update the Pods in a StatefulSet if we have new version of applicaion. 
+Users must manually delete Pods to so the controller will create new Pods that reflect modifications/updated version made to a StatefulSet's .spec.template.
+
+RollingUpdate
+The RollingUpdate update strategy implements automated, rolling updates for the Pods in a StatefulSet. This is the default update strategy
+when u applu command automatcally perform the rolling update strategy 
+
+Recreate : the StatefulSet controller deletes all of the StatefulSet's Pods at once and waits for them to terminate completely before creating any new Pods from the updated version of code 
+
+Revision history: in pod template defination 	
+spec:
+  revisionHistoryLimit: 5				# Keep last 5 revisions
+  
+Default: 10 revisions retained if unspecified
+Cleanup: Oldest revisions are garbage-collected when exceeding the limit
+
+
+You can revert to a previous configuration using:
+# View revision history
+kubectl rollout history statefulset/webapp
+
+# Rollback to a specific revision
+kubectl rollout undo statefulset/webapp --to-revision=3
+
+
+PersistentVolumeClaim retention : controls what happens to your automated PVC storage disks when a StatefulSet is scaled down or deleted.
+.spec.persistentVolumeClaimRetentionPolicy 
+
+The 2 Policy Settings
+whenDeleted: Controls what happens to the storage disks when the entire StatefulSet is deleted.
+whenScaledDown: Controls what happens to a storage disk when you decrease the replica count (for example, scaling down from 3 pods to 1 pod).
+
+Types 
+Retain (The Default): The storage disks are safely kept in your cloud provider, even if the pods or the StatefulSet are completely wiped out.
+Delete: The storage disks are automatically destroyed and cleaned up to save cloud costs the moment the pod is scaled down or deleted.
 
 
 ===================================================================================================================================================================
@@ -3682,15 +3718,15 @@ imagePullBackOff ---> get at the time of pulling image but some thing is wrong
 
 
 
-RBAC:
---------
+RBAC (Role Based Access Control):
+---------------------------------------------
 namespace level resources 
-Role
-RoleBinding
+1. Role
+2. RoleBinding
 
 cluster level resources 
-ClusterRole 
-ClusterRoleBinding
+1. ClusterRole 
+2. ClusterRoleBinding
 
 authentiction
 authorization
@@ -3705,9 +3741,9 @@ means he can only describe the particular cluster that its above access
 3)How EKS will understand or integrate with IAM ---> there is a aws authentication configmap we have for this 
 
 
-kubectl get configmap aws-auth -n kube-system -o yaml 
+4)kubectl get configmap aws-auth -n kube-system -o yaml 
 
-$)apply both roboshop.yaml and aws-auth.yaml in admin folder 
+5)apply both roboshop.yaml and aws-auth.yaml in admin folder 
 
 6) create an ec2 --> and open it in superputty 
    aws configure --> create an access key for kubernetes-ramesh user and add them in ec2 console in superputty 
@@ -3745,43 +3781,61 @@ test:
 	kubectl get nodes ---> eror because we didnt gave access in roboshop-admin.yaml in resources section 
 	
 	
+	
+Authentication (AuthN) verifies who you are ---> Authentication checks your identity credentials who ever is making a request.
+Authorization (AuthZ) determines what you are allowed to do.
+
+Every request that hits the Kubernetes API server must clear both hurdles before it is executed.
+
+Authentication established the identity of the user, typically through AWS IAM. Once the identity was established, 
+Kubernetes RBAC handled authorization. We created Role or ClusterRole manifests to define permissions and RoleBindings or ClusterRoleBindings to associate those permissions with users, groups, or service accounts."
+
+Authentication : We manually created the IAM users/groups/serviceAccount in aws console
+Authorization : we used RBAC to define the what permisiion they have to do 
+	
+	
 ChatGpt Version:
 ----------------------
-RBAC --> Role-Based Access Control.
-RBAC controls who can perform what actions on which Kubernetes resources.
+RBAC --> Role-Based Access Control. Basically part of authorization
+Kubernetes RBAC (Role‑Based Access Control) is used to manage permissions and control access to resources within a Kubernetes cluster. RBAC controls who can perform and what actions they can perform on which Kubernetes resources.
 
 Kubernetes RBAC controls who can perform , what actions on which resources, using Roles/ClusterRoles for permissions and RoleBindings/ClusterRoleBindings to assign those permissions.
 
 So RBAC answers three questions: WHO can perform ? ----> WHAT actions can they do? ----> ON WHICH resources?
+
+
+Authentication : This verifies who is making a request.Kubernetes verifies identity through Iam, Client Certificates, Tokens, OIDC Tokens etc...
+Authorization : This stage determines what the authenticated user is allowed to do it will check what actions he has and on which resource
 
 Why do we need RBAC?
 Imagine everyone in your Kubernetes cluster has full access. A developer could accidentally run --->  kubectl delete deployment payment ==> and production could go down. Instead, we give only the permissions they need like get pods or get deployments or other resources etcc...
 
 This follows the security principle: Least privilege — give users only the permissions they actually need.
 
-
 The 4 main RBAC objects --> Kubernetes RBAC mainly uses:
 
-Role
-ClusterRole
-RoleBinding
-ClusterRoleBinding
+1. Role
+2. ClusterRole
+3. RoleBinding
+4. ClusterRoleBinding
 
 Role / ClusterRole   							 ===> defines permissions 
-RoleBinding / ClusterRoleBinding  ===>  assigns PERMISSIONS to a USER / GROUP / SERVICE ACCOUNT
+RoleBinding / ClusterRoleBinding  ===>  assigns permissions to USER/GROUP/SERVICE ACCOUNT
 
 1)Role
 --------
-A Role defines permissions inside a particular namespace
+A Role defines set of permissions with a single namespace
+we define like apigroup and resorces and verbs (i.e., actions type )
 
 Ex: we have a namespace called roboshop 
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: Role
 metadata:
   name: pod-reader
   namespace: roboshop
 rules:
-  - apiGroups: [""]	
+  - apiGroups: [""]						## "" indicates the core API group ---> which resources has apiversion v1 
     resources:												#  this defines what Kubernetes resource the user can access.   - pods ---> means the rule applies to Pods. 
       - pods
     verbs:														#Verbs define what actions are allowed.
@@ -3792,18 +3846,10 @@ rules:
 We want a developer to view Pods only in roboshop namespace.
 
 - apiGroups: [""]	 ----> related 
--------------------------------------------
-For core Kubernetes resources such as: v1 
-Pods
-Services
-ConfigMaps
-Secrets
-
-the API group is:   - apiGroups: [""]	
+For core Kubernetes resources such as: v1  ----> Pods , Services , ConfigMaps , Secrets
 
 For Deployments:
-apiGroups:
-  - apps
+apiGroups: ["apps"]   ---> deployment,statefulset,daemonset etcc....
  
 Because Deployment belongs to the apps API group.
 
@@ -3830,43 +3876,39 @@ Role alone doesn't give access.. RoleBinding give access
 
 2)RoleBinding
 ------------------
+A RoleBinding grants the permissions defined in a Role to a Subject (a user, a group, or a ServiceAccount) within a specific namespace. And both should be in same namespace 
+
 RoleBinding connects: WHO ----> TO ----> WHICH ROLE
 
 The binding determines how the permissions are applied.
 
---> gives a Role's permissions to a User/Group/ServiceAccount
-
 Ex:
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
-
 metadata:
   name: arun-pod-reader
   namespace: payment
-
 subjects:
-  - kind: User												
-    name: arun							#create user along with policies in aws iam 
+  - kind: User													#type of subject either user,group ir service account				
+    name: arun																#create user along with policies in aws iam 
     apiGroup: rbac.authorization.k8s.io
-
 roleRef:
   kind: Role
-  name: pod-reader             #above given role name 
+  name: pod-reader            										 #above given role name 
   apiGroup: rbac.authorization.k8s.io
 
 Role ---> namespace-scoped
 ClusterRole ---> cluster-wide permissions
 
-3)ClusterRole
------------------
+3)ClusterRole : 
+------------------
+Defines permissions for cluster-scoped resources (Nodes, PVs and namespaces themselves) and namespaced resources (like pods,deployments etc..) across all namespaces(to all pods across all namespaces present in cluster can access).
 
-Ex:
+Ex:	across all namespaces in cluster it applies 
 apiVersion: rbac.authorization.k8s.io/v1
 kind: ClusterRole
-
 metadata:
   name: pod-reader
-
 rules:
   - apiGroups: [""]
     resources:
@@ -3881,15 +3923,18 @@ A ClusterRole can also be bound with a RoleBinding to grant its permissions with
 	
 4)ClusterRoleBinding:
 ----------------------------	
-ClusterRoleBinding assigns a ClusterRole cluster-wide.
+A ClusterRoleBinding grants the permissions of a ClusterRole to a subject(user,group and service account) across the entire cluster.
 	
 	Ex: same like RoleBinding 
 
 --> gives a ClusterRole's permissions cluster-wide
 
 
-RBAC can grant permissions to: Users and Groups and ServiceAccount
 
+Service Account:
+
+In Kubernetes, a ServiceAccount provides an identity for processes running inside a Pod.
+ServiceAccount is meant for machines, software, and applications (like a Jenkins CI/CD pipeline, a monitoring tool like Prometheus, or a microservice) that need to talk directly to the Kubernetes API server.
 
 Why does a Pod need a ServiceAccount?
 Suppose your application running inside a Pod needs to talk to the Kubernetes API.
@@ -3920,19 +3965,18 @@ rules:
       - get
       - list
       - watch
+	  
 Then RoleBinding
+
 apiVersion: rbac.authorization.k8s.io/v1
 kind: RoleBinding
-
 metadata:
   name: payment-pod-reader
   namespace: payment
-
 subjects:
   - kind: ServiceAccount									#mentioning service account 
     name: payment-sa
     namespace: payment
-
 roleRef:
   kind: Role
   name: payment-pod-reader
@@ -3984,37 +4028,26 @@ Authentication : Who are you?
 User ---> Authentication ---> Identity verified
 Ex: AWS IAM, Certificates and OIDC
 
-Authorization : What are you allowed to do?	
+Authorization : What are you allowed to do on which resources?	
 Authenticated user ---> RBAC ---> Allowed / Denied
 	
 RBAC is primarily about authorization.
 	
-In EKS, conceptually: Flow 
-User
- ↓
-AWS/IAM/OIDC authentication
- ↓
-Kubernetes identity
- ↓
-RBAC authorization
- ↓
-API Server
- ↓
-Resource
+In EKS, conceptually: Flow  ===> User ---> AWS/IAM/OIDC authentication ---> Kubernetes identity ---> RBAC authorization ---> API Server ---> Resource
 	
 So don't say: "RBAC authenticates users." Say: "Authentication establishes the identity, while RBAC controls what that identity is authorized to do."
 	
 Commands:
 ---------------
-kubectl get roles -n payment					---> view roles in particular namespace
-kubectl get clusterroles							---> view cluster roles 
-kubectl get rolebindings -n payment   ---> View RoleBindings
-kubectl get clusterrolebindings			   ---> View ClusterRoleBindings
-kubectl describe role <role name> -n payment  ---> describe role 
-kubectl describe rolebinding  <rolebinding name> -n payment ---> describe role binding
+kubectl get roles -n <namespace name>					---> view roles in particular namespace
+kubectl get clusterroles												---> view cluster roles 
+kubectl get rolebindings -n <namespace name>   ---> View RoleBindings
+kubectl get clusterrolebindings			   						---> View ClusterRoleBindings
+kubectl describe role <role name> -n <namespace name>  									---> describe role 
+kubectl describe rolebinding  <rolebinding name> -n <namespace name> 			---> describe role binding
 
-kubectl get role -n payment
-kubectl get rolebinding -n payment
+kubectl get role -n <namespace name>
+kubectl get rolebinding -n <namespace name>
 	
 Can my current identity perform this action?
 kubectl auth can-i get pods -n payment        ---> if u have access/permissions it will show yes , if u dont have access it will show no 
@@ -4034,11 +4067,11 @@ We used Kubernetes RBAC to control access based on team responsibilities and app
 	
 ===================================================================================================================================================================
 
-
-	
+From Notes:
+----------------	
 Horizontal Pod Auto-Scaler(HPA):
 -------------------------------------------
-AutoScaling ---> it will check CPU utilization if crosses 80% it will create more new VM 
+AutoScaling ---> it will check CPU utilization if crosses max cpu utilization percentage it will create more new VM
 Same in Kubernetes Based on the traffic we need to invcrease pods for that we have HPA 
 
 Conditions:
@@ -4046,14 +4079,15 @@ Conditions:
 For servre ---> we do top command we get statistics 
 when u do --> kubectl top pods ---> it shows metric api not available 
 So we need to install metrics server ---> it measures pod resources dynamically 
-kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
 
-it is a pods created in kube-system ---> kubectl get pods -n kube-system 
+Install metric server:
+	kubectl apply -f https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml
+
+it is a pods created in kube-system namespace ---> kubectl get pods -n kube-system 
 now:
 	kubectl top pods 
 
-2)your deployment should have resources implemented i.e., means we need to mention resources section/block in deployment manifest file and 
-to hpa we need to write HPA defination 
+2)your deployment should have resources block implemented i.e., means we need to mention resources section/block in deployment manifest file and hpa we need to write HPA defination 
 if we mention resources then it can measure --> 5/100 or 67/100 based in the limit  
 
 3) create web folder in k8s-roboshop-databases --> add manifest and HPA defination and mention averageUtilization: 80 as 5 in manifest file 
@@ -4075,9 +4109,12 @@ To check version :  helm version
 2)Install k9's tools for UI --->  curl -sS https://webinstall.dev/k9s | bash
 3)EBS Drivers:
 	1. add helm repo -- kubernetes resource files
-		helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+				helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
 	2.	helm repo update 
 	3.	helm upgrade --install aws-ebs-csi-driver --namespace kube-system aws-ebs-csi-driver/aws-ebs-csi-driver
+	
+--> this is also a pod if u want to see ---> kubectl get pods -n kube-system -l app.kubernetes.io/name=aws-ebs-csi-driver
+		
 	4.	Go to AWS console --> EC2 (any worker node) --> security --> search for iam role --> click on --> Add permisions --> Attach policy --> AmazonEBSCSIDriverPolicy --> add 
 	5.	Install storage class --> go to this folder k8s-roboshop-proj-databases and clone and run 
 		kubectl apply -f namespace.yaml 
@@ -4096,12 +4133,11 @@ Horizontal scaling vs vertical scaling :
 ------------------------------------------------
 
 vertical scaling 
-i have server and that server has CPU, RAM and Hard Disk/storage and resource were not sufficient because of more load.. So add more CPU, RAM and Hard Disk/storage 
+i have server and that server has CPU, RAM and current resource were not sufficient to server because of more load/traffic.. So add more CPU, RAM 
 but if once server crashes whole application will go down..
-vertical scaling means adding more resources 
+vertical scaling means adding more resources like CPU and RAM 
 
-Horizontal scaling 
-Instead of scaling the CPU, RAM, Hard Disk/storage we add more server with same capacity mentioned in manifest files..Even if one server creashes another server will server/handle the requests so no business/application down 
+Horizontal scaling : Instead of scaling the CPU, RAM we add more servers with same capacity mentioned in manifest files..Even if one server creashes another server will server/handle the requests so no business/application down 
 
 
 
@@ -4142,28 +4178,26 @@ In kubernetes everything is a pod
 	
 	
 
-OOM(Out of Memory Killed) Error:
----------------------------------------------
+OOMKilled(Out of Memory Killed) Error:
+-----------------------------------------------------
 OOMKilled error --> the system completely ran out of available memory if system resources not enough
 
-1)Pod memory limit exceeded ---> An exceeded pod memory limit causes (OOMKilled) termination
+1)Pod memory limit exceeded ---> An exceeded pod memory limit causes (OOMKilled) termination and it is terminated by kernel OOM killer
 2)Node out of memory		---> Node out of memory causes a (MemoryPressure) and pod eviction.
 
 OOM kill happens when Pod is out of memory and it gets killed because you've provided resource limits to it.
 When Node itself is out of memory or resource, it evicts the Pod from the node and it gets rescheduled on another node. Evicted pod would be available on the node for further troubleshooting.
 
-OOMKilled will only for containers that have been terminated by the kernel OOM killer.container that exceeds its memory limit that gets terminated (and by default restarted) as opposed to the whole pod (which can very well have other containers).
-
-
-
+OOMKilled will only for containers that have been terminated by the kernel OOM killer.
+container that exceeds its memory limit that gets terminated (and by default restarted) as opposed to the whole pod (which can very well have other containers).
 
 9)For web component before we used classic load balancer and it is already depricated because it has only load balancing thats it no features like it is not scalable and etc..
 
 We have 
 
 
-Ingrss Controller:
------------------------
+Ingress Controller:
+------------------------
 
 ALB is preferred ...
 So you can route based on:
@@ -4252,25 +4286,22 @@ Now if u delete app2 folder -->kubectl delete -f manifest.yaml ===> load balance
 10)we have already web folder so just add routing urls of all components in manifest files 	
 	write ingrss for we and run that manifest files 
 	
-	
-	
-	
-	
-	
-	
+
 ChatGpt Version:
 -----------------------
 
 Scaling : Scaling means adjusting application resources/capacity based on workload/traffic.
-Ex: Suppose your application normally has: 2 pods but But traffic suddenly increases to 100 users → 10,000 users
+Ex: Suppose your application normally has 2 pods but traffic suddenly increases from 100 users → 10,000 users
 
 Two common approaches are:
-Horizontal Scaling → increase number of Pods
-Vertical Scaling   → increase CPU/memory of existing Pods
+Horizontal Scaling 	→ increase number of Pods
+Vertical Scaling   		→ increase CPU/memory of existing Pods
 
-Horizontal Scaling: Horizontal scaling means increasing or decreasing the number of servers/application instances(pods).
--------------------------
-Ex: we have 2 pods currently serving the request but traffic increases so increase the pods...The application gets more capacity by running more replicas.
+Horizontal Scaling: 
+------------------------
+Horizontal scaling means increasing or decreasing the number of servers/application instances(pods).
+
+Ex: we have 2 pods currently serving the requests but traffic increases suddenly so it will increase the pods based on cpu/other utilization...The application gets more capacity by running more replicas.
 
 To increase we have two ways 
 1)manually scale servers/application instances==> Command :  kubectl scale deployment payment --replicas=5
@@ -4281,8 +4312,11 @@ Adds/removes Pods i.e., creating more instances
 Good for stateless applications
 Better for handling increased traffic
 
-Vertical Scaling : Vertical scaling means increasing or decreasing the CPU/memory resources allocated to an existing Pod/container.
---------------------
+Vertical Scaling :
+---------------------
+Vertical scaling means increasing or decreasing the CPU and memory resources allocated to an existing Pod/container.
+Requires restarting the Pod to change CPU/Memory after updating resource 
+ 
 Example:
 Before: Pod resources
 CPU    → 500m
@@ -4300,12 +4334,56 @@ Increases/decreases Pod resources like CPU and memory and these are Bigger insta
 Useful when application needs more resources per instance
 Useful for resource-intensive workloads
 
+In Kubernetes we have HPA for doing horizontal scaling
 
 HPA (Horizontal Pod Auto-scaler):
 --------------------------------------------
-HPA automatically increases or decreases the number of Pods based on resource utilization or other configured metrics. So HPA performs horizontal scaling.
+HPA automatically increases or decreases the number of Pods(pods created by deployment or repliaset or statefulset) based on resource utilization or other configured metrics. So HPA performs horizontal scaling.
+
+HPA will not increase the pods it instructs the deployment or statefuleset or replicaset that we have a reached the threashold limit configured so pls increase the pods like that even for decreasing also 
+We cant apply hpa for daemon set because it is not for increasing the pod it just maintains the single pod on each worker node 
+
+HPA is a built-in Kubernetes API resource managed by a core system component called the kube-controller-manager. 
+The kube-controller-manager runs continuously as part of the Kubernetes Control Plane and handles many built-in control loops, including the HPA logic
+
+Conditions :
+1. We need to install metric server then only it can retrieve the pods resource utilization and decides increase or decrease the pods 
+2. we need mention the resource block based on this limits only it will caluculate if u forgot to mention hpa completely fails 
+
+Hpa run continues loop usually checks every 15 seconds it follows simple 3 steps formula 
+
+1. [ 1. Monitor ] ──► Queries Metrics Server (e.g., CPU/Memory usage)
+2. [ 2. Calculate ] ─► Compares current load against target threshold
+3. [ 3. Scale ] ────► Updates the Deployment replica count (Up or Down)
+
+It calculates using formula :    desired replicas = current replicas * current metric value/desired metric value 
+
+Ex : if you have 2 replicas, your current CPU usage is 80%, and your target is 40%, the HPA will scale you up to 4 replicas 
+			(2 * 80/40 = 4 ).
+
+HPA decides how many pods to create 
+It calculates exactly how many Pods are needed to handle the load/traffic based on formula and then directly instructs the Deployment, ReplicaSet, or StatefulSet to change its replicas number.
+
+It calculates that your CPU usage is too high and determines, for example, that you need 5 Pods instead of 2.
+The HPA automatically reaches out to the Kubernetes API and overwrites the replicas: 2 setting in your Deployment (or ReplicaSet/StatefulSet) to replicas: 5
+The Deployment controller notices its configuration just changed to 5. It immediately spins up 3 brand-new Pods to match the new target.
+
+It works same way for scaling down scenario also
+
+
+(Note: To prevent your cluster from constantly creating and destroying pods over minor traffic ripples, the HPA deliberately waits a few minutes—usually 5 minutes by default—before scaling back down. This is called a stabilization window).
+
+stabilizationWindowSeconds: 0 ---> this u can mention for both scale up and down 
+
+Hpa basically check the cpu utilization every 15 seconds if u want to configure this seconds 
+1.   You run a self-hosted cluster (e.g., Kubeadm, Minikube, Bare Metal) so u will have access to master nodes 
+so u can mention that  =====>   --horizontal-pod-autoscaler-sync-period=10s 
+
+2. If u are using AWS EKS or other cloud providers that is managed service we cant because cloud providers block the access for master nodes and they will manage the kube-controller-manager for you. 
+They permanently lock this setting to the default 15 seconds to ensure cluster stability
+
 Ex: 
-Normal traffic ---> 2 Pods ---> CPU increases ---> HPA detects high CPU ---> 4 Pods
+Normal traffic ---> 2 Pods ---> CPU increases and reached limit ---> HPA detects high CPU ---> 4 Pods
 When traffic decreases: CPU decreases ---> HPA detects lower utilization ---> 4 Pods → 2 Pods
 
 HPA architecture : Metrics ---> Metrics Server ---> HPA ---> Deployment / ReplicaSet ---> Pods increase or decrease
@@ -4335,7 +4413,7 @@ spec:
   scaleTargetRef:
     apiVersion: apps/v1
     kind: Deployment
-    name: payment					# it is refering to payment deployment above 
+    name: payment					# it is refering to deployment name above 
   minReplicas: 2
   maxReplicas: 10
   metrics:
@@ -4357,11 +4435,12 @@ HPA sees that the average CPU is above the configured target. It increases the d
 When traffic decreases it reduces the pods to : 10 → 8 → 5 → 2 .... subject to HPA's scaling behavior and stabilization rules.
 
 Questions: 
-1)Important: HPA does NOT directly create Pods..It generally changes the desired replica count of the target workload.  The Deployment/ReplicaSet handles creation and removal of Pods.
+1)Important: HPA does NOT directly create Pods..It generally changes the desired replica count of the target workload in kube-API server.  
+The Deployment/ReplicaSet handles creation and removal of Pods.
 HPA → Deployment → ReplicaSet → Pods...
-In HPA manifest code we reefer the deployment so it will inform to replica set and replicaset will create the pods based on template defined 
+In HPA manifest code we refer the deployment so it will inform to replica set and replicaset will create the pods based on template defined 
 
-2)What does HPA monitor?
+2)What does HPA monitor ?
 HPA can use different metrics like 
 1)CPU utilization
 2)Memory utilization
@@ -4380,31 +4459,128 @@ resources:
 and HPA says: averageUtilization: 70							means :   350/70 
 CPU utilization is evaluated relative to the configured CPU request. 
 So if CPU request = 500m and the Pod is using 350m
-then: 350 / 500 = 70% 
+then: 350 / 500 = 70%                       i.e., current metric vaue/target metric value
 Therefore the HPA sees approximately: 70% CPU utilization.
 
 
 Can we use HPA and VPA together?
-Technically they can be used together in certain designs, but you need to configure them carefully because they can make conflicting decisions if both are trying to respond to the same resource utilization signals.
+Technically they can be used together in certain designs, but you need to configure them carefully because they can make conflicting decisions if both are trying to respond to the same resource utilization signals then those will be in pending loop 
+
+If CPU load spikes, the HPA will start trying to add more Pods. At the exact same time, the VPA will see the high CPU and try to restart the existing Pods to give them more CPU. They will fight, get stuck in a loop, and your entire application will crash.
 
 
 
 HPA + Cluster Autoscaler : 
-Suppose HPA wants to increase: 2 Pods → 10 Pods.. But your cluster doesn't have enough CPU/memory to schedule those Pods. Pods remain Pending
+----------------------------------
+Suppose HPA wants to increase: 2 Pods → 10 Pods.. But your cluster doesn't have enough CPU/memory to schedule those Pods then Pods remain Pending
 Then Cluster Autoscaler ---> Adds node capacity ---> Pending Pods get scheduled
 
 So you can have two levels of scaling:
 Application scaling ---> HPA ---> More Pods ---> Cluster capacity scaling ---> Cluster Autoscaler / Karpenter ---> More Nodes
 
 
+there is two ways :
+Method : 1 :   Karpenter it is the new modern way 
+	---> Karpenter watches for Pending pods, calculates exactly how much CPU/Memory they need, and tells AWS to launch the perfect EC2 instance immediately
+
+Step 1: Install Karpenter via Helm
+helm upgrade --install karpenter oci://public.ecr.aws/karpenter/karpenter \
+  --namespace kube-system \
+  --set serviceAccount.annotations."eks\.amazonaws\.com/role-arn"=${KARPENTER_IAM_ROLE_ARN} \
+  --set settings.clusterName=${CLUSTER_NAME}
+  
+Step 2: Configure a NodePool (CRD) --> it is a resource defination file 
+This file tells Karpenter what kind of EC2 instances it is allowed to create
+
+Ex:  
+apiVersion: karpenter.sh/v1beta1
+kind: NodePool
+metadata:
+  name: default
+spec:
+  template:
+    spec:
+      requirements:
+        - key: kubernetes.io/arch
+          operator: In
+          values: ["amd64", "arm64"]
+        - key: karpenter.sh/capacity-type
+          operator: In
+          values: ["spot", "on-demand"] 						# Uses cheap spot instances first!
+        - key: karpenter.k8s.aws/instance-category
+          operator: In
+          values: ["c", "m", "r"]
+      nodeClassRef:
+        name: default
+  limits:
+    cpu: 1000 											# Maximum total CPUs this cluster can scale up to
+  disruption:
+    consolidationPolicy: WhenUnderutilized # Automatically deletes/shrinks nodes to save money
+
+
+Method 2: The Traditional Way (Using Cluster Autoscaler) 
+The legacy Cluster Autoscaler works by watching for Pending pods and then changing the Desired Capacity on your existing AWS EC2 Auto Scaling Groups (ASG).
+
+Step 1: Tag your AWS Auto Scaling Groups
+
+AWS needs to know which ASG belongs to your Kubernetes cluster. You must add these tags to your EC2 Auto Scaling Group in the AWS Console:
+k8s.io/cluster-autoscaler/enabled = true
+k8s.io/cluster-autoscaler/<your-cluster-name> = owned
+
+Step 2: Deploy the Cluster Autoscaler Manifest
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cluster-autoscaler
+  namespace: kube-system
+spec:
+  replicas: 1
+  template:
+    spec:
+      containers:
+        - name: cluster-autoscaler
+          image: registry.k8s.io/autoscaling/cluster-autoscaler:v1.30.0							 # Match your K8s version
+          command:
+            - ./cluster-autoscaler
+            - --v=4
+            - --stderrthreshold=info
+            - --cloud-provider=aws
+            - --skip-nodes-with-local-storage=false
+            - --expander=least-waste
+            - --node-group-auto-discovery=asg:tag=k8s.io/cluster-autoscaler/enabled,k8s.io/cluster-autoscaler/your-cluster-name
+
+
+
+Karpenter
+create ec2 instance in 10 to 30 seconds (Super fast)
+Directly spins up raw EC2 instances
+Evaluates pending pod requests and creates a perfectly sized node
+Actively consolidates and replaces expensive nodes with cheaper ones
+
+
+Cluster Autoscaler 
+2 to 5 minutes (Slow, waits for AWS ASG loops)
+Changes the "Desired Replicas" count on an ASG
+Forces pods onto whatever instance types are pre-configured in the ASG template
+Only scales down if a node is completely empty for a long time
+
+
+To test the cluster auto scaler 
+kubectl create deployment scale-test --image=nginx
+kubectl scale deployment scale-test --replicas=100
+
+---------------
+
 Real production example : 
-Imagine we have a Java Spring Boot application: payment-service we normally have 3 pods regularly During peak banking traffic: CPU increases to 80–90%..HPA detects the increased CPU utilization and deploment/replicaset create more pods then Kubernetes Service distributes traffic across the available Pods.
+Imagine we have a Java Spring Boot application that is payment-service we normally have 3 pods regularly during peak banking traffic CPU increases to 80–90%..HPA detects the increased CPU utilization and deploment/replicaset create more pods then Kubernetes Service distributes traffic across the available Pods.
 If the EKS cluster doesn't have enough capacity: HPA ---> More Pods ---> Pods Pending ---> Cluster Autoscaler/Karpenter ---> More EC2 worker capacity ---> Pods scheduled
 
 
-HPA interview answer 
+HPA interview answer :
+
 HPA stands for Horizontal Pod Autoscaler. It automatically adjusts the number of replicas of a Kubernetes workload based on metrics such as CPU, memory, or custom application metrics.
-Ex: if our application normally runs with three Pods and CPU utilization increases beyond the configured target, HPA increases the desired replica count up to the configured maximum. When the workload decreases, it scales the replicas back down to the minimum.
+		Ex: if our application normally runs with three Pods and CPU utilization increases beyond the configured target, HPA increases the desired replica count up to the configured maximum. When the workload decreases, it scales the replicas back down to the minimum.
 In our EKS environment, HPA handled application-level scaling, while cluster-level scaling was handled separately through the node autoscaling mechanism.
 
 Horizontal vs Vertical
@@ -4434,7 +4610,7 @@ Pods scheduled
 
 
 Question:
-i have defined max replicas 10 in hpa but traffice is increased more even 10 pods also nit able to handle then how to do and what is the solution
+i have defined max replicas 10 in hpa but traffice is increased more even 10 pods also not able to handle then how to do and what is the solution
 Solution:
 Imagine your application has:
 minReplicas: 2
@@ -4444,17 +4620,18 @@ Traffic increases and HPA reaches to 10 Pods....But even 10 Pods cannot handle t
 What happens ---> HPA will not create an 11th Pod, because you explicitly configured ---> maxReplicas: 10
 
 
-Step 1: First, don't blindly increase maxReplicas..You would first identify the bottleneck means what is causing the issue .
+Step 1: First, I will nott blindly increase maxReplicas count..i would first check what is causing the issue .
 check using :
-kubectl top pods
-kubectl get hpa
-kubectl describe hpa <hpa-name>
-kubectl get pods
+	kubectl top pods
+	kubectl get hpa
+	kubectl describe hpa <hpa-name>
+	kubectl get pods
 Then check application and infrastructure metrics in Prometheus/Grafana/CloudWatch.
 or
 So the application can start experiencing:
 Possible issue 
-High CPU , High latency , 5xx errors , Request timeouts , Queue buildup
+			High CPU , High latency , 5xx errors , Request timeouts , Queue buildup
+			
 You check and find:
 Application Pods → Healthy
 CPU → Normal
@@ -4496,7 +4673,7 @@ Suppose your application is: Users ---> payment service ---> Database
 Initally we have ---> Payment Pods = 2 ---> Traffic increases ---> pods increased to 2 --- 10... But the database can handle only 10,000 requests/minute.
 Your 10 Pods together are sending: 20,000 requests/minute.. So the database cannot keep up. here database is the issue ... Adding more Pods won't solve the problem
 
-
+Each database connection will consume some amoutn of RAM 
 
 
 Ingress controller:
@@ -4515,17 +4692,23 @@ Instead, we can use Ingress:
 Users/Clients ---> load Balancer ---> Ingress Controller ---> diff components like catalogue , cart , user etc... ---> diff service for each component catalogue, cart etc.... ---> pods 
 One external entry point can route traffic to multiple internal Services.
 
-Ingress: Ingress is a Kubernetes API resource that defines HTTP/HTTPS routing rules for external traffic going to Services inside the cluster.
+
+
+Ingress: 
+----------
+Ingress is a Kubernetes API resource that defines HTTP/HTTPS routing rules for external traffic going to Services inside the cluster.
 
 For example:
 example.com/catalogue  → catalogue-service
 example.com/cart   → cart-service   etc.........
 But there is an important point: Ingress itself does not process traffic. This is where Ingress Controller comes in.
 
-Ingress Controller : An Ingress Controller is the component that actually watches Ingress resources and configures a load balancer/proxy to route incoming HTTP/HTTPS traffic to the appropriate Kubernetes Services
+Ingress Controller : 
+------------------------
+An Ingress Controller is the component that actually watches Ingress resources defined in ingress yaml file and configures a load balancer/proxy to route incoming HTTP/HTTPS traffic to the appropriate Kubernetes Services
 
 Ex:
-NGINX Ingress Controller , AWS Load Balancer Controller , Traefik , HAProxy
+NGINX Ingress Controller , AWS Load Balancer Controller(we use ALB) , Traefik , HAProxy
 
 For AWS EKS = AWS Load Balancer Controller
 It can provision and configure AWS load balancers based on Kubernetes resources.
@@ -4537,12 +4720,15 @@ Example:
 /payment → payment-service
 /orders  → order-service
 
-Ingress Controller  : Actually implements those rules ===> Receives request -----> Reads Ingress rules -----> Routes request -----> to Correct Service
+Ingress Controller  : Actually implements those rules ===> Receives request -----> Reads Ingress rules -----> Routes request -----> to Correct kubernetes Service
 
 
 ==> How does it know where to send the request?
 Ingress rules contain things So you can route based on: Host and Path 
-1) Host-based routing
+
+Two types of routing :
+
+1) Host-based routing			---> multiple domains 
 		catalogue.example.com → catalogue-service
 		mongodb.example.com   → mongodb-service
 
@@ -4572,7 +4758,7 @@ spec:
 
 
 
-2) Context/Path-based routing
+2) Context/Path-based routing						---> single domain but multiple services.applications 
 		example.com/catalogue → catalogue-service
 		example.com/mongodb  → mongodb-service
 
@@ -4581,6 +4767,7 @@ spec:
 
 ==> Ingress Controllers can also handle TLS/HTTPS.
 Ex : User ---> HTTPS :443 ---> LB ---> Ingress Controller ---> service ---> pod 
+
 Ingress can reference a Kubernetes TLS Secret:
 Ex: 
 tls:
@@ -4591,6 +4778,7 @@ tls:
 --> The certificate can then be used for HTTPS termination depending on the controller/configuration.
 
 ==> Ingress vs LoadBalancer Service
+
 LoadBalancer Service --> one service -- one external Load Balancer 
 Ex: we have catalogue , user, mongodb so we need to create 3 load balancers for 3 diff components 
 catalogue.example.com
@@ -4689,7 +4877,7 @@ TLS error --> check TLS Secret, Certificate, Hostname, Ingress TLS configuration
 Questions
 1)Ingress vs Ingress Controller — interview answer
 Ingress is a Kubernetes API resource that defines HTTP/HTTPS routing rules, such as host-based or path-based routing to Kubernetes Services.
-The Ingress Controller is the actual component that watches those Ingress resources and implements the routing using a proxy or load balancer.
+Ingress Controller is the actual component that watches those Ingress resources and implements the routing using a proxy or load balancer.
 For example, in an EKS environment we can use the AWS Load Balancer Controller, which can provision and configure an AWS Application Load Balancer based on Kubernetes configuration.
 
 or
