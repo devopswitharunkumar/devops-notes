@@ -5112,7 +5112,7 @@ In my project, developers commit the application code to Git. Jenkins triggers t
 
 
 Deployment startegies:
-------------------------------
+-------------------------------
 Deployment strategy means how we release a new application version into an environment while maintaining application availability and minimizing deployment risk. 
 We mainly used Kubernetes Rolling Updates for regular releases, and for critical or higher-risk releases we followed a Blue-Green deployment approach.
 
@@ -5186,7 +5186,7 @@ kubectl rollout undo deployment/payment-service    --> if anything wrong we can 
 or
 through our deployment process we can redeploy the previous Helm/image version.
 
-2) Blue - Green 
+2) Blue - Green :
 --------------------
 Blue -- old version code (currently running version)
 Green -- new version of code (new version)
@@ -5217,7 +5217,7 @@ We used labels to distinguish the versions and controlled which version received
 For major releases where we wanted a safer deployment and fast rollback, we used the Blue-Green approach. Blue represented the currently running version and Green represented the new version. We deployed the new version separately, validated application health and functionality, and then switched traffic to the Green environment. If issues were detected after the switch, we could route traffic back to Blue.
 	
 3)Canary deployment :
-----------------------------
+------------------------------
 Canary means --> Don't send everyone to the new version immediately.
 lets say we have version A (old version) and version B (new version)
 now they will release the some percentage of traffic to new version like 
@@ -5234,15 +5234,15 @@ For high-risk releases, we can use Canary deployment. Instead of moving all traf
 
 
 4)Recreate :	
----------- 
+----------------
 In this version A terminated/shutdown first and then version B is rolled out and routes the traffic to pods through service and there will be downtime(will announce downtime at particular time and do this process) depends on shoutdown of old version A and boot/start time of version B duration of the application. 	
 
 5)A/B testing : 
---------------
+-------------------
 A/B testing exposes different application versions to different user groups so that we can compare functionality or business behavior between the versions. Means Compare behavior/business results between two versions.
 
 6)Shadow
---------
+-------------
 In Shadow deployment, production traffic is duplicated to the new version, but the response from the new version is not returned to the user. This allows us to test V2 with realistic production traffic without affecting users.
 
 Real User
@@ -5320,10 +5320,6 @@ I have worked on Kubernetes-based deployments in EKS, mainly around application 
 
 
 
-
-
-
-
 ===================================================================================================================================================================
 
 
@@ -5336,7 +5332,7 @@ K8s terraform aws EKS
 EKS is vpc based resource
 
 
-
+===================================================================================================================================================================
 
 
 
@@ -6099,6 +6095,8 @@ Kubernetes Probes:
 
 What is a Probe?
 A probe is a health check performed by the Kubernetes kubelet to determine the condition of a container.
+or
+A probe is health checks for your containers. They are executed periodically by the kubelet to determine if a container is running/healthy, ready to accept traffic, or completely stuck and needs to be restarted.
 
 Probe = Kubernetes checking whether my application/container is healthy and ready to handle traffic.
 
@@ -6121,6 +6119,7 @@ Kubernetes might still see the container as Running. that y we configure probes
 
 
 Types of Probes:
+
 1. Liveness Probe
 2. Readiness Probe
 3. Startup Probe
@@ -6143,7 +6142,7 @@ livenessProbe:
   httpGet:
     path: /health
     port: 8080
-  initialDelaySeconds: 30
+  initialDelaySeconds: 30			# delay needed because Startup Probe already handles boot time
   periodSeconds: 10
   
 Kubernetes checks:  GET http://PodIP:8080/health
@@ -6158,7 +6157,11 @@ With liveness: Kubernetes ---> Health check ❌ ---> Restart container ---> Appl
 
 
 2. Readiness Probe
-Readiness probe checks whether the application is ready to receive traffic. If it fails, Kubernetes removes the Pod from the Service's ready endpoints, but does not restart the container just because of that readiness failure.
+Readiness probe checks whether the application is ready to receive traffic. If it fails, Kubernetes removes the Pod from the Service's active endpoints routing list , but does not restart the container just because of that readiness failure.
+
+If readyness probe fails Kubernetes removes the Pod from the Service's active endpoints routing list   ---> means pod is still running but Kubernetes simply removes the pod from the Service's active endpoint routing list at this time service send the traffic to only healthy pods it doesnt send traffic to this pod. if that pod becomes healthy again it will be added back to Service's active endpoint routing list so that traffic will be routed to that traffic
+
+Service's active endpoint routing list ----> means It adds the internal IP addresses of Pods of that particular service .
 
 Think: Can I send traffic to this Pod right now?
 
@@ -6200,7 +6203,7 @@ startupProbe:
   periodSeconds: 10
   failureThreshold: 18
 
-That gives the application roughly: 18 × 10 = 180 seconds = 2 min to successfully start, assuming the checks occur at that interval.
+That gives the application roughly: 18 × 10 = 180 seconds = 3 min to successfully start, assuming the checks occur at that interval.
 Once startup succeeds : Startup Probe ✅ -----> Liveness starts and Readiness starts
 
 
@@ -6244,15 +6247,16 @@ Probe timing settings :
 2. periodSeconds ---> How frequently Kubernetes performs the check.
 		Ex: periodSeconds: 10   ----> Check every 10 seconds.
 3. timeoutSeconds : How long Kubernetes waits for a probe response before considering that individual check failed.
-		Ex: timeoutSeconds: 2
-4. failureThreshold : How many consecutive failures are needed before Kubernetes considers the probe failed.
-		Ex: failureThreshold: 3  --> 3 times probe checks 
-5. successThreshold : How many consecutive successful checks are required for the probe to be considered successful.
-		Ex: successThreshold: 1
+		Ex: timeoutSeconds: 2			---> # Must respond within 2 seconds
+4. successThreshold : How many consecutive successful checks are required for the probe to be considered successful.
+		Ex: successThreshold: 1			# Must pass 1 time to be considered ready
+5. failureThreshold : How many consecutive failures are needed before Kubernetes considers the probe failed.
+		Ex: failureThreshold: 3  --> if 3 times probe checks fails 	----> # Allow it to fail 3 times
+
 		
 		
 Practical example — Java application 
-Suppose your Java application runs on: 8080 and has /actuator/health API endpoint
+Suppose your Java application runs on: 8080 and has /actuator/health is ur API endpoint
 
 You can write like 
 startupProbe:
@@ -6298,7 +6302,10 @@ readinessProbe:
 				  
 				  
 why you used them.
-In our Kubernetes deployments, we configured health probes for our microservices so Kubernetes could distinguish between a container that was running and an application that was actually healthy and ready to serve traffic. We used readiness probes to ensure traffic was sent only to Pods that were ready, and liveness probes to detect applications that became stuck or unhealthy and needed a container restart. For applications with longer startup times, we used startup probes so Kubernetes would give the application enough time to initialize before applying the liveness and readiness checks. For our HTTP-based services, we generally used HTTP health endpoints for these probes.
+In our Kubernetes deployments, we configured health probes for our microservices.so Kubernetes could distinguish between a container that was running and an application that was actually healthy and ready to serve traffic. 
+We used readiness probes to ensure traffic was sent only to Pods that were ready
+and liveness probes to detect applications that became stuck or unhealthy and needed a container restart. 
+For applications with longer startup times, we used startup probes so Kubernetes would give the application enough time to initialize before applying the liveness and readiness checks. For our HTTP-based services, we generally used HTTP health endpoints for these probes.
 
 
 Scenario Based Questions:
