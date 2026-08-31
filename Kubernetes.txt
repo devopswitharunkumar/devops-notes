@@ -6375,3 +6375,39 @@ spec:
             port: 8080
           periodSeconds: 10
           failureThreshold: 3
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+		  
+Pod-to-Pod Communication  ---> Pods can communicate directly using each other's Pod IPs, assuming networking/policies allow it (if we dont define network policies ).	But Pod IPs are ephemeral (temporary). If Pod-B is deleted/recreated ip changes so application will not depend on podip basically 
+
+this makes pod to service communication 
+It uses the service  (that makes pod 1 ---> service 2---> pod 2) --> not included pod-1 service because pod 1 is making direct request
+		If both applications are in the same namespace, you can simply use service name : payment-service
+		ex: http://<service-name>:<port>
+		
+		If the Service is in another namespace, you can use: 
+					payment-service.production 
+					or 
+					the full DNS name: payment-service.production.svc.cluster.local
+							---> CoreDNS resolves that Service name to the Backend Service's ClusterIP
+			Pod-to-Pod communication using a service name if we implement a Headless Service paired with a StatefulSet."
+							
+request flows --> container-1 ---> pod -1 --> pod-2 service (pod-2 service.namespace.svc.cluster.local) --> pod -2 --> one of the container 
+pod-1 service will not be involvded here 
+who ever is making request those pods service will not be involved 
+
+Pod-to-Service Communication
+service to service communication 
+
+
+DNS/CoreDNS: CoreDNS resolves Kubernetes Service names such as payment-service to their corresponding Service endpoint.
+EndpointSlice: EndpointSlices maintain the list of backend Pod endpoints associated with a Service and update them as Pods become available or unavailable.
+CNI: CNI provides and configures Pod networking and assigns Pod IP addresses; in EKS, Amazon VPC CNI is commonly used.
+NetworkPolicy: NetworkPolicy controls which Pods are allowed to communicate with other Pods, namespaces, or IP ranges.
