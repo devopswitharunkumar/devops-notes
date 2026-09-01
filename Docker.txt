@@ -7,9 +7,10 @@
 
 
 
-
+Explain the difference between RUN, CMD, and ENTRYPOINT.
 Container vs VM
 Image vs Container
+RUN vs CMD 
 CMD vs ENTRYPOINT
 COPY vs ADD
 ARG vs ENV
@@ -25,69 +26,63 @@ Docker
 Physical servers, Virtualization, Containerization
 
 1. Physical Servers
-A physical server is an actual hardware machine consisting of CPU, RAM, Disk, Network Card, Motherboard, etc., on which an operating system is installed.
+A physical server is an actual hardware machine consisting of CPU, RAM, Disk, Network etc., on which an operating system and applications are directly installed.
 U need to install linux os and java for application the deploy application
 
 Real Example :   Suppose a bank wants to host
+Suppose if u have 3 Appications  ----> Internet Banking , Payment Service , Authentication Service
 
-Internet Banking
-Payment Service
-Authentication Service
-
-They purchased 3 Physical Servers One server for each application.
+we purchase 3 Physical Servers One server for each application.
 Problems  : 
 1. Huge Cost  :  One server costs thousands of dollars. if u want to do it for 20 applications need 20 servers 
-2. Low Resource Utilization --> 
-if server has  ----> 64 GB RAM and 16 CPU ------> if our Application only uses   : 10 GB RAM and 2 CPU  ---> Remaining 54 GB RAM and 14 CPU are idle. Company is wasting money.
+2. Low Resource Utilization --> if server has  ----> 64 GB RAM and 16 CPU ------> but if our Application only uses   : 10 GB RAM and 2 CPU  ---> Remaining 54 GB RAM and 14 CPU are idle. Company is wasting money.
 3. Maintenance : Every server needs OS updates , Security patches , Hardware maintenance , UPS , Cooling
-
 4. Scaling ----> Need more capacity ---> Buy another server -----> Delivery may take weeks.
 5. Hardware Failure : If motherboard fails Entire application goes down.
 
 
 An organization wants to deploy an application. they have by a physical server
-Example:
+Example: Dell Server ---> with 128 GB RAM , 32 CPU and 2 TB SSD
 
-Dell Server ---> with 128 GB RAM , 32 CPU and 2 TB SSD
+Then they has to do:
 
-Then they:
-
-Install Linux
-Configure networking
-Configure firewall
-Install Java
-Install Tomcat
-Deploy the application
+Install Linux  ,  Configure networking and firewall , Install Java , Install Tomcat , Deploy the application
 
 This entire process can take hours or days.
 Now imagine there are 20 applications. What will they do? Buy 20 physical servers. Very expensive.
-Suppose your application only needs: 2 CPU and 8 GB RAM But the server has: 32 CPU and 128 GB RAM
-Most resources remain unused. This is called poor resource utilization.
-This was one of the biggest problems with physical servers.
+Suppose your application only needs: 2 CPU and 8 GB RAM But the server has: 32 CPU and 128 GB RAM.Most resources remain unused. This is called poor resource utilization.This was one of the biggest problems with physical servers.
 Problem : Companies asked: "Why should we buy one complete server for every application?" There must be a better solution.
 
 That solution was Virtualization.
 
 
 2. Virtualization 
-"Can one physical server divide inot multiple operating systems ---------> Yes. Using Hypervisor
+Can one physical server divide inot multiple operating systems ---------> Yes. Using Hypervisor
 
-Hypervisor : A Hypervisor creates multiple Virtual Machines on one physical server.
+Hypervisor : A Hypervisor sits directly on the physical hardware and creates multiple Virtual Machines on single physical server.
+Each VM has its own OS , binaries, and libraries and application
+We install same Guest OS multi times on multiple vm's so it consumes more CPU and RAM and storage \
+
+
+How it will divide the resource for multiple VM's
+CPU is divided using time-slicing, where the hypervisor's scheduler rapidly rotates milliseconds of physical processor time among different Virtual Machines.
+RAM is divided by mapping virtual addresses to physical hardware blocks, allowing the hypervisor to dynamically allocate, reclaim, or share memory chunks based on actual demand.
+
 
 Examples : VMware ESXi , Hyper-V , KVM , VirtualBox
 
 IN ONE Physical Server we can divide inot vm's
 
-Architecture
+Architecture :
 VM 1
 Application
-Java
+Java bins/lib
 Linux
 ----------------
 
 VM 2
 Application
-Java
+Java nins/lib
 Linux
 ----------------
 
@@ -103,11 +98,7 @@ Hypervisor
 
 Hardware
 
-Notice Each VM has its own : OS , Kernel , Libraries
-
-
-Example: Assume if One physical server has 64 GB and 16 CPU server
-Instead of hosting one application we can do 
+Notice Each VM has its own : OS , Kernel , Libraries and application
 
 Advantages
 Better Utilization : Instead of 15% server utilization Now 80%
@@ -127,7 +118,7 @@ OS Maintenance Need to update 10 Linux servers instead of one.
 
 Interview Point
 
-Virtualization solved hardware utilization problems but every Virtual Machine still carried its own operating system, making it heavy and slower to start.
+Virtualization solved hardware utilization problems but every Virtual Machine still carried its own OS, making it heavy and slower to start.
 
 
 Suppose we buy one powerful server with ---->  256 GB RAM and 64 CPU
@@ -148,95 +139,81 @@ Suppose you create 20 VMs. You install Linux 20 times. that consumes Mre RAM, CP
 A VM may take 1–3 minutes to boot.
 
 3. Containerization
-Containers share the host OS kernel.
+A container contains only the application code and its explicit dependencies (libraries, configuration files). It Completely skips the Guest OS layer and all containers shares the same Host OS kernel.
 
-Architecture
+
+Architecture :
+
 Container 1
-
 Application
-
 Libraries
-
 --------------------
 
 Container 2
-
 Application
-
 Libraries
-
 --------------------
 
 Container 3
-
 Application
-
 Libraries
-
 --------------------
 
 Docker Engine
-
 ↓
-
 Linux/Host OS
-
 ↓
-
 Hardware
 
 
 Notice : No separate OS inside every container.
 
 Everyone is isolated, but common resources are shared. This is exactly how containers work.
-
 Instead of creating multiple operating systems, we keep one host operating system. Then Docker creates multiple containers.	
-
 Each container has: Application Required libraries But all containers share the same Linux kernel. There is no need to install Linux again and again.
 
-
-
 Why is Containerization Faster?
-
 Imagine a VM. It needs: OS Boot , Kernel Boot , Services Start , Application Start
 Now imagine a container. The host operating system is already running. Docker only starts the application process. That's why a container starts in a few seconds.
 
 Real-Time Example (Your Project)
-
 Suppose your RoboShop project has these services : Catalogue , User , Cart , Shipping , Payment
 if we want to take Five separate servers. Very expensive.
 
 Virtualization : One physical server. Five VMs. Each VM has Ubuntu installed separately.
 
 Containerization : One EC2 instance. Docker installed.
-Run five containers:
-Catalogue Container
-User Container
-Cart Container
-Shipping Container
-Payment Container
+Run five containers: Catalogue Container , User Container , Cart Container , Shipping Container , Payment Container
 All share the host Linux kernel. Memory usage is lower, startup is faster, and scaling is much easier.
 
 
 1. Physical Server
-A Physical Server is an actual hardware machine with CPU, RAM, storage, and network resources on which an operating system and applications are installed directly.
-it offers complete control and high security and isolation but results in higher cost, lower resource utilization, and slower provisioning.
+A Physical Server is an actual hardware machine with CPU, RAM, storage disk, and network resources on which an operating system installed and deploy applications directly.
+it offers complete control and high security and full isolation but results in higher cost, lower resource utilization, and slower provisioning and need to maintain.
 Only One application is deployed directly on one physical hardware machine.
 
 2. Virtualization
-Virtualization is the process of creating multiple isolated Virtual Machines on a single Physical Server using a Hypervisor. Each Virtual Machine has its own operating system, applications, and dedicated virtual resources, enabling better hardware utilization, isolation, and faster provisioning compared to Physical Servers.
+Virtualization is the process of creating multiple isolated Virtual Machines on a single Physical Server using a Hypervisor. 
+Each Virtual Machine has its own Guest OS , bin's and dependencies and lib's ,application running, and dedicated virtual resources
+enabling better hardware utilization, isolation(each vm is isolated), and faster provisioning(1-3 mins) compared to Physical Servers.
 
-One Physical Server is divided into multiple Virtual Machines.
+multiple Virtual Machines on single Physical Server via Hypervisor
 
-3. Hypervisor
+Hypervisor (used ESXi/KVM/Hyper-V)
 A Hypervisor is the virtualization layer that abstracts the underlying physical hardware and allocates CPU, memory, storage, and network resources equally to multiple Virtual Machines while ensuring isolation between them.
 or
 A Hypervisor is software that creates, manages, and runs multiple Virtual Machines on a Physical Server.
 
-4. Containerization
-Containerization is an operating system-level virtualization technology in which applications and their dependencies are packaged into isolated containers. Unlike Virtual Machines, containers share the host operating system's kernel, making them lightweight, portable, faster to start, and more resource-efficient.
+3. Containerization
+Containerization is an operating system-level virtualization technology in which applications and their dependencies are packaged into isolated containers. 
+Unlike Virtual Machines, containers share the host operating system's kernel, making them lightweight, portable, faster to start, and more resource-efficient.
 or
-Containerization is a technology that packages an application along with its dependencies into a lightweight container that shares the host operating system's kernel.
+Containerization is a technology that packages an application along with its dependencies into a lightweight container that shares the same host OS kernel.
+
+
+Initially applications were deployed directly on physical servers, but this caused high cost and poor resource utilization. 
+Virtualization solved this by allowing multiple VMs to run on the same physical server using a hypervisor. However, each VM still required its own operating system, so VMs were relatively heavy. Containerization solved this by packaging the application and dependencies into lightweight containers that share the same host OS kernel. 
+In my DevOps projects, we use Docker to containerize microservices and Kubernetes/EKS to deploy, scale and manage those containers.
 
 ====================================================================================================================================================================
 
@@ -244,15 +221,15 @@ Install Docker:
 ------------------
 create an ec2 --> devops-practice ami ---> t2.micro ---> proceed without keypair --> allow-all sg --> 30 gb --> create 
 
-Steps inside after ec2 login
+Steps inside after ec2 login in superputty:
 
-sudo dnf -y install dnf-plugins-core
-sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
-sudo dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
+1. sudo dnf -y install dnf-plugins-core
+2. sudo dnf config-manager --add-repo https://download.docker.com/linux/rhel/docker-ce.repo
+3. sudo dnf install docker-ce docker-ce-cli containerd.io docker-buildx-plugin docker-compose-plugin
 
-systemctl start docker
-systemctl enable docker
-systemctl status docker
+4. systemctl start docker
+5. systemctl enable docker
+6. systemctl status docker
 
 ====================================================================================================================================================================
 
@@ -265,31 +242,32 @@ Docker Commands:
 ps ---> process status
 					
 internal working
------------------------
+----------------------
 when you type docker ps 
-The Docker Client receives the command u typed. 
-The Docker Client sends a request to the Docker Daemon through the Docker socket it is channel or communication API bw client and daemon:
-The Docker Daemon checks its metadata.
-It looks for:
-Running containers :   Container IDs , Names , Status , Images , Ports
-The Docker Daemon sends this information back to the Docker Client through same docker socket.
-The Docker Client formats and displays the data on your terminal.
+Step : 1 ---> Docker Client receives the command u typed 
+Step : 2 ---> Docker Client sends a request to the Docker Daemon through the Docker socket it is channel or communication REST API bw client and daemon  (/var/run/docker.sock)
+Step : 3 ---> Docker Daemon checks its metadata and queries the containerd (the low-level container runtime component) to fetch the real-time lifecycle status of the processes(like Running containers :   Container IDs , Names , Status , Images , Ports)
+Step 4 : ---> Docker Daemon sends this information back to the Docker Client through same docker socket Rest API 
+Step : 5 ---> Docker Client formats and displays the data on your terminal
 
-notes
-If u run this command as a normal user after installing docker u willl get error because --> docker command access docker ane group lo vunna users ki matrame access vuntadi 
-When u install docker at that time docker create (docker) group will be created, u need to add our user to that docker group so then u can run docker commands as a normal user  
+From notes:
 
-to add to group 
-usermod -aG docker ec2-user  ---> after running this command ---> do login and  logout in so the new group membership is applied -----or----->  u can run --->  cmd :  newgrp docker 
+If u run first docker command as a normal user after installing docker in ec2 u willl get error because --> docker command access docker ane group lo vunna users ki matrame access vuntadi 
+When u install docker at that time docker create (docker) group will be created in root level, u need to add our user to that docker group so then u can run docker commands as a normal user  and if u run with root user dont need to do below commands 
 
-"Add the ec2-user username to the docker group without removing its existing group memberships."
-till this 
+to add user to group 
+		Cmd :  sudo usermod -aG docker ec2-user  ---> after running this command ---> do login and  logout of ec2 so the new group membership is applied -----or----->  u can run --->  cmd :  newgrp docker 
+
+It will Add the username(ec2-user) to the docker group without removing its existing group memberships.
+
 
 Why do we get an error?
 Suppose you install Docker on an EC2 instance. using a normal user like: ec2-user without root access  You may get an error like: permission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock
 
 Why?
-"When Docker is installed, it creates a Docker Daemon and a Linux group called docker. The Docker socket (/var/run/docker.sock) is owned by the root user and the docker group. A normal user who is not part of this group cannot communicate with the Docker Daemon and gets a permission denied error. To allow a non-root user to execute Docker commands, we add the user to the docker group using sudo usermod -aG docker <username>, and then refresh the user's group membership by logging out and logging in or by using newgrp docker."
+When Docker is installed, it creates a Docker Daemon and a Linux group called docker. The Docker socket (/var/run/docker.sock)  and the docker group is owned by the root user. 
+A normal user who is not part of this group cannot communicate with the Docker Daemon and gets a permission denied error. 
+To allow a non-root user to execute Docker commands, we add the user to the docker group using sudo usermod -aG docker <username>, and then refresh the user's group membership by logging out and logging in or by using newgrp docker.
 
 Example:
 ls -l /var/run/docker.sock
@@ -314,8 +292,8 @@ all will be in /var/lib/docker/
 buildkit ,containers , engine-id , image  , network  , plugins , runtimes  , swarm , tmp , volumes
 
 
-3) docker pull nginx            --> used to download a Docker image from a Docker Registry (such as Docker Hub) to the local machine and it will download by default latest image 
-    docker pull nginx:latest --> used to download a Docker image from a Docker Registry (such as Docker Hub) to the local machine with particular version 
+3) docker pull nginx            									--> used to download a Docker image from a Docker Registry (such as Docker Hub) to the local machine and it will download by default latest image 
+    docker pull nginx:<mention version/tag >  --> used to download a Docker image from a Docker Registry (such as Docker Hub) to the local machine with particular version 
 	
 	nginx AMI    ---> any os + install nginx == nginx ami 
 	nginx image ---> base os + nginx installed 
@@ -326,19 +304,19 @@ buildkit ,containers , engine-id , image  , network  , plugins , runtimes  , swa
  The Docker Client sends the request to the Docker Daemon. 
  The Docker Daemon checks the local system.if Image already exists internally. it says image already exists No download happens u can use that. if not exists Docker contacts the registry. i.e., Docker Hub and downloads image(by default latest version will be downloaded) and Docker stores the image locally.
 
- Docker Hub ----> create an account 
- Other option : is Amazon ECR 
+Docker Hub ----> create an account 
+
+Other option : is Amazon ECR 
 Authentication using credential helper ---> sudo apt-get install amazon-ecr-credential-helper
 it will generate the  --> ~/.docker/config.json  --- we need to replace the amazon credentials inside the file 
 once configured --> run docker pull and push 
  
 4) docker create <image name>                ---> used to create a new container from a Docker image, but it does not start the container.
- or docker create nginx:latest    --->  used to create a new container from a Docker image with particular version , but it does not start the container.
+ or docker create nginx:latest    				--->  used to create a new container from a Docker image with particular version , but it does not start the container.
    
+if u dont want run directly just to create container below one 
+				docker create <image name/or image id > --> we can give    
  
-  docker create <image name/or image id > --> we can give    
- 
-if u dont want run directily just to create container below one 
 5) docker start <container id/name>      ---> Starts an existing created or stopped container. container must be created 
 
 6) docker run -d <imagename/imageid>   ---> Docker performs two operations: Creates the container + Start the container. 
@@ -348,17 +326,17 @@ When u run this command it will first check images exists or not if image exist 
 
 Imp : if u run docker run <imagename/imageid> like this without background run container (i.e., withot using -d option ) will go to exited status because 
 
-docker run -d <image name>  ---> If images not exists it automatically pulls from the docker hub and creates a new container from the nginx image and starts container in detached mode, which means it runs in the background instead of occupying the terminal.
+docker run -d <image name>  ---> If images not exists it automatically pulls from the docker hub and creates a new container from the nginx image and starts container in detached mode, which means it runs in the background instead of occupying the live terminal.
 
 
-7) docker rm <container id/name>      ----> used to permanently remove/delete only Docker container from the Docker host not docker image, images will exists and a running container cannot be removed. only stoped containers 
+7) docker rm <container id/name>      ----> used to permanently remove/delete the stopped containers but it will not remove running containers 
 
 8)docker stop <container id/name>   ---> used to stop the running container
 
 9)To remove running container directly without using stop command 
 
 docker rm -f <container id/name>     --->  If you want to remove a running container directly
--f == force in this case docker stops the container and delete/remove it ... Once removed, Docker deletes the container's metadata and writable layer.
+-f == force ---> in this case docker stops the container and delete/remove it ... Once removed, Docker deletes the container's metadata and writable layer.
 
 --------> To remove running containers first stop container and then remove container 
 
@@ -370,10 +348,9 @@ docker rmi -f <image id/image name>  --> it will remove images forcefully even i
 docker images -a -q  ---> get all images 
 docker rmi 'docker images -a -q'        --------> remove all images 
 
-i have nginx image and one container using it and if i do docker image -f nginx then what will happen to container ?
+i have nginx image and one container using it and if i do docker rmi -f nginx then what will happen to container ?
 Docker will:
-Remove the image reference (tag). and Force removal of the image metadata. but
-The running container continues running.
+Remove the image reference (tag). and Force removal of the image metadata. but running container continues running.
 Because the container already has everything it needs in memory and still references the image layers it was created from. image only should be present at the time of running/starting the container 
 
 11)
@@ -391,18 +368,18 @@ The container's port 80 is inside the container only.
 The EC2 host doesn't automatically expose it. So Docker needs to create a bridge between host machine and Container. That's exactly what -p does.
 
 notes problem
-Now I have a Vm and inside Vm we are creating and running a docker container for acccesing the containner if we do  <public ip of vm>:80 (fo nginx generally opens port 80 so we installed nginx) --> if we do we dont get any response because it maps like vm port but inside vm we have  docker container even for that container also we will have 0-63535 ports and container also have port number so now to access the container we need to map the host port to container port  (here vm has port number and container has port number)
+Now I have a Vm and inside Vm we are creating and running a docker container for acccesing the containner. if we do  <public ip of vm>:80 (fo nginx generally opens port 80 so we installed nginx) --> if we do we dont get any response because it maps like vm port but inside vm we have  docker container even for that container also we will have 0-63535 ports and container also have port number so now to access the container we need to map the host port to container port  (here vm has port number and container has port number)
 
 <public ip of vm>:80  --> if u do this request reaches only vm not container to reach container also we need to do port mapping
 
-docker run -p <vm/host port>:<container port i.e., nginx port> <image name>
+command  :  docker run -p <host port>:<container port> <image name>
 
 "-p ----> is used for port mapping."
 
 docker run -p 8080:80 nginx    ----> when u do this 8080 mapped with container port 80 and u will get reponse from container
 Whenever someone accesses ---->  http://EC2-IP:8080 ---->  Docker forwards the request to Container Port 80 where Nginx is listening.
 
-if we want to create multiple container with single image now VM port number must have to change Host has only one Port 80. if not change it will give error allocated error but even if u created multiple container in vm all those can have same port number and we cannot change the container port 
+if we want to create multiple container with single image now host port number must have to change Host has only one Port 80. if not change it will give error allocated error but even if u created multiple container in vm all those can have same port number and we cannot change the container port 
 examples:
 docker run -p 8080:80 nginx 
 docker run -p 9090:80 nginx 
@@ -435,7 +412,7 @@ But we cannot give same name to other container names should be unique for each 
 Interviewer: Why do we use --name instead of the Container ID?
 
 Answer:
-"Container IDs are long and difficult to remember. By assigning a meaningful name using --name, we can easily manage containers using commands like 
+Container IDs are long and difficult to remember. By assigning a meaningful name using --name, we can easily manage containers using commands like 
 docker stop catalogue, docker logs catalogue, or docker exec -it catalogue bash. 
 This improves readability and operational efficiency, especially when managing multiple application containers."
 
@@ -447,11 +424,10 @@ docker create --name nginx-container nginx:latest
 docker start --name nginx-container nginx:latest    --> will not wor it has only options like -a attach mode and -i -- interactive mode 
 
 
-13)
-Topic: How do we login into a running Docker container?
---------------------------------------------------------------------------
+13) How do we login/enter into a running Docker container?
+-----------------------------------------------------------------------
 
-docker exec -it <container-name/id> /bin/bash         ------------> we can use : /bin/sh or sh and /bin/bash or bash 
+docker exec -it <container-name/id> /bin/bash         ------------> we can use : /bin/sh or sh and /bin/bash or bash or sh
 
 docker exec ---->  is used to execute a command inside an already running container and 
  -it                 ----> "Open an interactive terminal inside the running container."
@@ -464,7 +440,11 @@ Why do we login into a container?
 In real projects, after deploying an application, we may need to: Verify application files , Check logs , Verify environment variables , Test network connectivity , Run Linux commands , Troubleshoot issues
 
 Interview Answer (5 Years)
-"To access a running container, we use docker exec -it <container-name> /bin/bash. The exec command starts a new process inside the running container. The -i option keeps the session interactive, while -t allocates a terminal. This allows us to execute Linux commands, inspect application files, verify logs, troubleshoot issues, or check environment variables without affecting the main application process. If Bash is not available, such as in Alpine-based images, we use /bin/sh instead."
+To access a running container, we use docker exec -it <container-name> /bin/bash. 
+The exec command starts a new process inside the running container. 
+The -i option keeps the session interactive, while -t allocates a terminal. 
+This allows us to execute Linux commands, inspect application files, verify logs, troubleshoot issues, or check environment variables without affecting the main application process. 
+If Bash is not available, such as in Alpine-based images, we use /bin/sh instead.
 
 Q1. Can you log in to a stopped container?
 No. docker exec works only on running containers. if u want to run first start container and then run exec
@@ -481,8 +461,8 @@ Difference between docker exec and docker attach
 | Most commonly used in production                        | Rarely used in production                                     |
 
 
-14)Inspect:
----------------
+14)	Inspect:
+----------------
 
 docker inspect is used to display detailed low-level information about Docker objects such as containers, images, volumes, networks, and services in JSON format.
 or
@@ -495,7 +475,7 @@ For image
 Ex:   docker inspect <image-name/ID>
 
 Why do we use docker inspect? Suppose your application is not accessible.
-You need to check: Container IP , Port Mapping , Environment Variables , Mounted Volumes , Container Status , Network Details , Image Used
+You need to check : Container IP , Port Mapping , Environment Variables , Mounted Volumes , Container Status , Network Details , Image Used
 
 Instead of checking multiple commands use ------->  docker inspect nginx-container
 
@@ -519,7 +499,8 @@ docker inspect -f '{{.Config.Image}}' nginx-container
 
 Interview Answer (5 Years)
 
-"docker inspect is used to retrieve detailed metadata about Docker objects such as containers, images, volumes, and networks. It returns the information in JSON format, including container state, IP address, port mappings, mounted volumes, environment variables, network configuration, and image details. 
+docker inspect is used to retrieve detailed metadata/info about Docker objects such as containers, images, volumes, and networks. 
+It returns the information in JSON format, including container state, IP address, port mappings, mounted volumes, environment variables, network configuration, and image details. 
 In production, we commonly use it for trouble shooting deployment issues, verifying runtime configuration, and confirming networking or storage settings."
 
 Q2. Can docker inspect be used only for containers?
@@ -535,7 +516,7 @@ Then I would use docker inspect to validate the container's IP address, port map
 Based on that, I would continue troubleshooting with docker logs if needed."
 
 
-15)Create Own images:
+15) Create Own images:
 -------------------------------
 Dockerfiles --> is a declarative way 
 
@@ -553,7 +534,8 @@ or
 A Dockerfile is a declarative way of creating Docker images.
 
 What does "Declarative" and imperative means?
-Imperative Approach :  You tell Docker how to do each step and what we want
+Imperative Approach :  You tell Docker step-by-step commands to execute immediately
+docker run,docker image etc.. You execute each command manually.
 Ex: 
 docker run ubuntu
 apt install java
@@ -561,12 +543,12 @@ mkdir /app
 cp application.jar /app
 java -jar application.jar
 
-You execute each command manually.
+
 
 Declarative Approach : Instead of executing commands one by one, you write all the instructions in a file.
-Because we only describe: What we want. We don't tell Docker how to create image layers internally. Docker decides that itself. We simply declare the desired state.
-Example 
+Because we only describe: What we want i.e desired state. We don't tell Docker how to create image layers internally. Docker decides that itself. We simply declare the desired state.
 
+Ex : 
 FROM ubuntu
 RUN apt update
 RUN apt install openjdk-17-jdk -y
@@ -578,7 +560,6 @@ Now Docker reads the file and executes everything automatically. This file is ca
 
 
 Why do we use Dockerfile?
-
 Imagine your project has 20 developers.
 Without Dockerfile   : every developer must manually install: Java , Maven , Dependencies , Copy application , Start application ....Everyone might do it differently.
 With Dockerfile         : everyone executes: docker build -t catalogue:v1 .  ---> Every developer gets exactly the same image.
@@ -587,48 +568,69 @@ With Dockerfile         : everyone executes: docker build -t catalogue:v1 .  ---
 Real-Time Project Example (RoboShop)
 ********************************
 Suppose your Catalogue application/folder has:  package.json , server.js , Dockerfile all these files 
+
 Dockerfile:
+
 FROM node:18
-WORKDIR /ap
+WORKDIR /app
 COPY . .
 RUN npm install
 EXPOSE 8080
 CMD ["node","server.js"]
 
-Build : docker build -t catalogue:v1 .     ---> build an images based on all instructions given in Docker file 
-Run : docker run -d --name catalogue -p 8080:8080 catalogue:v1.0.0
+Build : docker build -t catalogue:v1 .    			 ---> build an images based on all instructions given in Docker file 
+Run	  : docker run -d --name catalogue -p 8080:8080 catalogue:v1.0.0
 Now your own application is running inside Docker.
 
 Interview Answer (5 Years)
 
-"A Dockerfile is a text file that contains a sequence of instructions used to build a Docker image. It is called a declarative approach because we define the desired configuration, such as the base image, dependencies, application files, startup command, and exposed ports, while Docker handles the execution. In our project, every microservice had its own Dockerfile. Jenkins used the Dockerfile during the CI pipeline to build a versioned image, which was then pushed to the image registry and deployed to the target environment."
+A Dockerfile is a text file that contains a sequence of instructions used to build a Docker image. 
+It is called a declarative approach because we define the desired configuration, such as the base image, dependencies, application files, startup command, and exposed ports, while Docker handles the execution. 
+In our project, every microservice had its own Dockerfile. Jenkins used the Dockerfile during the CI pipeline to build a versioned image, which was then pushed to the image registry and deployed to the target environment.
 
 
 ====================================================================================================================================================================
 
 
+File name in docker :
+---------------------------
+1. If ur file name is Dockerfile ----> cmd -----> docker build -t <imagename:version> .  
+	 Automatically detects it.
+2. if u give custom docker file name ad dockerfile.prod  ----> docker build -t <file name> <image name>:<tag> .
+	Requires you to specify the context and dockerfile keys
+3. In docker compose file 
+services:
+  web:
+    build:
+      context: .
+      dockerfile: Dockerfile.dev 				# <--- Tells compose to look for your custom file
+    ports:
+      - "8080:80"
 
-In local if u create a file --> file name should be ---> Dockerfile
+Instructions:
+----------------
 
-FROM 
--------
-it should be the first instrucion in dockerfile 
-docker build -t <url>/<username>/<image:version> . 
 
-docker build -t <username>/<image:version> .
+FROM :
+--------
+
+1. docker build -t <url>/<username>/<image:version> . 
+2. docker build -t <username>/<image:version> .
 --> if u give username then it will push to that docker hub but u need to login first and use docker push 
-
-docker build -t <imagename:version> .
+3. docker build -t <imagename:version> .
 --> if u dont give url and username that means u r maintaing created image in local u r not pushing anywhere
-lets say u did it for local if u want to push now we need to do retag 
+4. lets say u did it for local if u want to push now we need to do retag 
 docker build <imagename:version> <username/imagename:version>
 
 docker login : used to login into dockerhub 
 
 ChatGpt:
 -----------
-FROM instruction specifies the base image on which our custom Docker image will be built. 
-It is always the first instruction in a Dockerfile (except optional parser directives).
+FROM instruction specifies the base image on which our custom Docker image will be built. It is always the first instruction in a Dockerfile (except optional parser directives).
+
+What is base image ?
+It is read-only layer used as the starting point for building a custom Docker image
+It provides the basic operating system (like Ubuntu or Alpine) and any pre-installed utilities, programming languages, or runtimes (like Node.js, Python, or Java) that your application needs to run.
 
 Why do we need FROM?
 Without a base image, Docker doesn't know where to start.
@@ -637,18 +639,19 @@ Base Image (FROM) ----> Install Packages ----> Copy Application ----> Run Applic
 
 Example:
 ------------
-FROM node:18 ---> Start building my image using the existing Node.js 18 image."
+FROM node:18 ---> Start building my image on top of existing Node.js 18 image.
 
 So now that node image contains all the things which are required to run application. 
 Now Docker already has:   Linux OS ,Node.js Runtime , npm , Required libraries . So You only need to add your application and run application.
-
 
 Why not start from scratch?
 Imagine writing Node.js yourself ------> You need to install everything manually : Linux , glibc , Node.js , npm , SSL Libraries , Certificates ---> Very difficult.
 Instead FROM node:18  ---> already gives you everything.
 
 Real-Time Project Example (RoboShop)  :  Catalogue service is a Node.js application.
-Dockerfile
+
+Dockerfile : 
+
 FROM node:18
 WORKDIR /app
 COPY . .
@@ -659,10 +662,10 @@ Docker already has Linux , Node.js , npm installed on badse image ---> Your Dock
 
 What happens internally ?
 When you execute :  docker build -t catalogue:v1 .
-step :1  ---> Docker/Docker Client reads the Dockerfile and first instruction FROM node:18
+step :1  ---> Docker Client reads the Dockerfile and first instruction FROM node:18
 step :2  ---> Docker checks Is node:18 available locally if exists docker immediately uses that image and but if Image does NOT exist. Docker automatically executes pull command  downloads it to local from dockerhub and uses that image 
 step :3  ---> Docker uses node:18 as the parent image. Our image inherits everything from node:18.
-step :4  ---> Now Docker executes remaining instructions. Everything gets added on top of node:18.
+step :4  ---> Now Docker executes remaining instructions on top of that. Everything gets added on top of node:18.
 
 Layer Representation: it adds from top 
 first commad is added as layer 1 and second command is added as layer 2 and 3rd command is added as layer 3 etc... The first layer is always the base image. i.e FROM instruction
@@ -679,36 +682,41 @@ Flow:
 Developer ----> push to GitHub ----> Jenkins ----> Reads Dockerfile ----> FROM node:18 ----> Pull Base Image (if needed) ----> Copies Application ----> Builds Image ----> Pushes to Nexus/ECR ----> Deployment
 
 Interview Answer (5 Years)
-
-"FROM is the first instruction in a Dockerfile and defines the base image used to build the custom image. Docker first checks whether the specified image exists locally. If not, it automatically pulls it from the configured registry. The base image provides the operating system, runtime, libraries, and other dependencies required by the application. All subsequent Dockerfile instructions create new layers on top of this base image. 
+FROM is the first instruction in a Dockerfile and defines the base image used to build the custom image.
+Docker first checks whether the specified image exists locally. If not it automatically pulls it from the configured registry. 
+The base image provides the operating system, runtime, libraries, and other dependencies required by the application. 
+All subsequent Dockerfile instructions create as new read only image layers on top of this base image. 
 In our RoboShop project, for Node.js services like Catalogue, we used FROM node:18 so the image already contained Node.js and npm already installed, allowing us to focus only on copying the application code and installing project-specific dependencies.
 
 Q1. Why is FROM mandatory?
 Because Docker needs a starting point (base image) to build the new image.
+
 Q2. Can a Dockerfile have multiple FROM instructions?
 yes ---> This is called a Multi-Stage Build.
+
 Q3. What happens if the base image is not present locally?
 Docker automatically downloads it from the registry (such as Docker Hub) before continuing the build.
 
 ⭐ Interview Tip (Very Important)
 Why do we use FROM node:18 instead of FROM ubuntu and installing Node.js ourselves?
 
-Using node:18 provides a prebuilt and tested runtime with Node.js and npm already installed, reducing Dockerfile complexity, improving build consistency, and minimizing maintenance. Using a generic Ubuntu image would require manually installing and maintaining the runtime, which increases build time and the chance of configuration drift.
+Using node:18 provides a prebuilt and tested runtime with Node.js and npm already installed, reducing Dockerfile complexity, improving build consistency, and minimizing maintenance. 
+Using a generic Ubuntu image would require manually installing and maintaining the runtime, which increases build time and the chance of configuration drift.
 
 FROM should always be the first instruction in the Dockerfile (except optional comments or parser directives).Because Docker needs a base image before executing any other instruction. Without a base image, Docker doesn't know where to build your application.
 
 Different ways of tagging images
 -------------------------------------------
-Case 1 :  docker build -t catalogue:v1 .         ---> image will be stored locally if u do docker images u can see that Nothing is uploaded anywhere.
+Case 1 :  docker build -t <image name>:<tag name> .         ---> image will be stored locally if u do docker images u can see that Nothing is uploaded anywhere.
 image name : catalogue 
 version : v1
  .  --> means current directory
  
-Case 2 : docker build -t arunkumar/catalogue:v1 .    ---> images created still in local . it does not push created image automatically It only tags the image. Nothing is pushed.
-You still need todo to upload it ----> docker push arunkumar/catalogue:v1
+Case 2 : docker build -t username/image name:tag name .    ---> images created still in local . it does not push created image automatically It only tags the image. Nothing is pushed. basically public registry
+You still need to do to upload it ----> docker push arunkumar/catalogue:v1
 It only creates the image and tags it.
  
-Case 3 : docker build -t nexus.example.com:8082/catalogue:v1 .          --> nexus or ecr 
+Case 3 : docker build -t nexus.example.com:8082/username/image name:tag name .          --> nexus or ecr  basically for private registry
 Now Docker understands This image belongs to Private Registry and again image i stored locally to push u need to do --->just do --->  docker push only 
 
 Retagging Images :
@@ -716,7 +724,8 @@ Retagging Images :
 Scenario : 
 u already did ---> docker build -t catalogue:v1 
 but ur team asks to Push it to Docker Hub. so again no need to rebuild with <url/username etc> instead u can do Simply retag it .
-docker tag catalogue:v1 url/username/catalogue:v1 ---> tag means To assign another repository name or version to an existing image without rebuilding it.
+
+command  :  docker tag catalogue:v1 url/username/catalogue:v1 ---> tag means To assign another repository name or version to an existing image without rebuilding it.
 
 docker login : Docker must know Who are you for that to login to docker hub we do this so Docker asks username and password 
 or To authenticate with a container registry (Docker Hub, Nexus, AWS ECR, etc.) before pushing or pulling images that require authentication.
@@ -725,14 +734,14 @@ or To authenticate with a container registry (Docker Hub, Nexus, AWS ECR, etc.) 
 Where are docker hub credentials stored ------> cat ~/.docker/config.json
 
 ⭐ Interview Tip (Real Company)
-"Do developers run docker login manually in production pipelines?"
-"No. In real CI/CD pipelines, credentials are stored securely in tools like Jenkins Credentials, GitHub Actions Secrets, or Azure DevOps Service Connections. During the pipeline execution, the registry login is performed automatically using those stored credentials, so no manual login is required."
+Do developers run docker login manually in production pipelines?
+No. In real CI/CD pipelines, credentials are stored securely in tools like Jenkins Credentials, GitHub Actions Secrets, or Azure DevOps Service Connections. During the pipeline execution, the registry login is performed automatically using those stored credentials, so no manual login is required.
 
 ====================================================================================================================================================================
 
 RUN:
 ------
-RUN is used to execute commands during the image build process. The changes made by the command become part of the Docker image.
+RUN instruction is used to execute commands during the image build process. The changes made by the command become part of the Docker image.
 or
 RUN executes commands while building the image and permanently saves the results in a new image layer.
 
@@ -751,30 +760,31 @@ RUN apt update
 RUN apt install nginx -y
 You execute :-   docker build -t nginx-image:v1 .
 
-Step 1 :  Docker reads FROM ubuntu:24.04 creates ubuntu image 
-Step 2 : Dockerfile has RUN apt update --> Docker does NOT execute the command directly on the image. instead  Docker creates a temporary container on basis of ubuntu 
+Step 1 : Docker reads FROM ubuntu:24.04 creates ubuntu image 
+Step 2 : Dockerfile has RUN apt update --> Docker does NOT execute the command directly on the image. instead  Docker creates a temporary writable container on basis of ubuntu 
 Step 3 : Inside that temporary container Docker executes apt update
 Step 4 : After execution completes, Docker takes a snapshot of the container filesystem. This snapshot becomes a new image layer on top of ubuntu image.
 Step 5 : Temporary container is deleted. But the layer remains on top image
 Step 6 : Docker reads the next instruction.  Again, Docker creates another temporary container. Executes and Creates another layer. Deletes the temporary container.
 
-Why temporary container?Because Docker images are read-only.
+A filesystem is the structured directory of files and folders inside the container
+snapshot is a frozen, read-only copy of those files captured at a specific moment in time.
+
+Why temporary container? Because Docker images are read-only.
 Docker cannot directly modify an image. Instead, It creates a temporary writable container, executes the command, saves the changes, then removes the temporary container.
 
 Why don't we use CMD for installation?
 Some beginners write CMD npm install This is wrong. Why? Because CMD executes when the container starts. That means Every time docker run Docker would execute npm install Imagine downloading 500 MB of dependencies every time the container starts.Very slow. Instead, Use RUN npm install Now dependencies are installed only once during image build.
 
+CMD instruction is stored inside the image configuration manifest (a JSON file) as part of the image's metadata on your local disk. 
 
 CMD:
 ------
-CMD is used to specify the default command that runs when a container starts.
-or
-CMD defines the default process or application that should execute when the container is launched.
-
-We use CMD command to start the apllication 
+CMD instruction is used to specify the default command that runs when a container starts.
+We use CMD command to start the apllication after container starting 
 
 If you execute : docker run catalogue:v1 the container doesn't know what to execute. That's why we use
-CMD ["node","server.js"]  ---> "Whenever a container is created from this image, execute node server.js."
+CMD ["node","server.js"]  ---> Whenever a container is created from this image, execute node server.js.
 
 During docker build : Docker executes all the instructions given but it just reads the CMD ["node","server.js"] it does not execute Docker only stores it inside the image metadata.
 During docker run Now execute docker run catalogue:v1 Docker creates a container.  Then reads the image metadata. Finds  CMD ["node","server.js"] Executes node server.js --> Application starts 
@@ -785,7 +795,7 @@ docker build ----> Dockerfile ---> FROM ---> WORKDIR ---> COPY ---> RUN ---> CMD
 Why not use RUN? 
 Suppose someone writes ----> RUN node server.js ---> What happens? --> during docker build --> docker executes  node server.js ---> Application starts. Image build never completes because the Node.js server keeps running. Build gets stuck. This is wrong. Starting the application must happen after the image is built. So we use CMD instruction it will run at the time of container process 
 
-Important Rule : Only one CMD should exist.
+Important Rule : Only one CMD instruction should exist.
 Bui if we write like in dockerfile 
 Ex: 
 CMD ["echo","Hello"]
@@ -795,8 +805,10 @@ only last command in file will execute ---> Docker ignores the previous CMD. The
 CMD Forms
 1. Exec Form (Recommended) :  CMD ["node","server.js"]
 Why recommended? No shell , Better signal handling, Preferred in production
-2. Shell Form CMD node server.js Internally  Docker runs /bin/sh -c "node server.js" 
-This works, but it's generally not preferred for long-running applications because signal handling is different.
+This runs the binary directly as PID 1. It gracefully handles stop signals, allowing your app to close database connections properly before exiting.
+
+2. Shell Form : CMD node server.js ----> Internally  Docker runs /bin/sh -c "node server.js" 
+Docker runs this inside a shell (/bin/sh -c). The downside? Your app doesn't run as PID 1, meaning it won't receive OS termination signals (like SIGTERM on docker stop), leading to unclean, abrupt shutdowns.
 
 Can CMD be overridden ---> yes 
 Suppose Dockerfile : 
@@ -829,8 +841,10 @@ RUN vs CMD
 | Example: `RUN npm install`                                  | Example: `CMD ["node","server.js"]`                                                                |
 
 
-Multiple RUN Instructions in single Docker files also create multiple layers 
-
+Instead : RUN npm install ---> installs everything once during image creation.
+Multiple RUN Instructions in single Docker files also create multiple layers
+Better Approach :  RUN apt update && apt install -y git wget    --------> Only one RUN instruction for multiple commands. one layer smaller image and faster build
+ 
 When you execute : docker run catalogue:v1  ---> Docker executes CMD ["node","server.js"] It starts the Node.js application.
 
 What happens?
@@ -843,54 +857,50 @@ Downloads dependencies every time
 Container startup becomes slow
 Wastes time and bandwidth
 
-Instead : RUN npm install ---> installs everything once during image creation.
-
-Better Approach :  RUN apt update && apt install -y git wget    --------> Only one RUN instruction. one layer smaller image and faster build
 
 Interview Question: Why do we combine commands?
  Ex : RUN apt update && apt install -y git wget
  Answer : To reduce the number of image layers, improve build performance, and decrease image size.
  
- Interview Answer (5 Years)
-
-"RUN is used to execute commands during the Docker image build process. Internally, Docker creates a temporary container from the current image, executes the specified command, captures the filesystem changes as a new image layer, and then removes the temporary container. This makes the installed software or configuration part of the final image. In our RoboShop project, we used RUN npm install so that all Node.js dependencies were installed at build time, allowing containers to start quickly without downloading dependencies during runtime."
+Interview Answer (5 Years)
+RUN is used to execute commands during the Docker image build process to install software, dependencies, or perform configuration changes and executes onlu during image buildig process. 
+Internally, Docker creates a temporary container from the current image, executes the specified command, captures the filesystem changes as a new image layer, and then removes the temporary container. This makes the installed software or configuration part of the final image. 
+In our RoboShop project, we used RUN npm install so that all Node.js dependencies were installed at build time, allowing containers to start quickly without downloading dependencies during runtime.
 
 Q3. Why is RUN used instead of CMD for installing software?
 Because installations should happen only once during image creation. Using CMD would execute the installation every time a container starts, increasing startup time and making containers less predictable.
 
 ⭐ Interview Tip (5 Years)
 
-"What happens internally when Docker executes a RUN instruction?"
-"Docker creates a temporary writable container from the current image, executes the RUN command inside it, commits the resulting filesystem changes as a new image layer, and then removes the temporary container. The final image includes those changes, so they don't need to be repeated when a container is started."
+What happens internally when Docker executes a RUN instruction?
+Docker creates a temporary writable container from the current image, executes the RUN command inside it, commits the resulting filesystem changes as a new image layer, and then removes the temporary container. The final image includes those changes, so they don't need to be repeated when a container is started.
 
 ⭐ Interview Answer (5 Years)
-
-"RUN is used during the image build process to install software, dependencies, or perform configuration changes. It executes only once during docker build, and the resulting changes are saved as a new image layer. 
+RUN is used execute commands during the image build process to install software, dependencies, or perform configuration changes. It executes only once during docker build, and the resulting changes are saved as a new image layer. 
 CMD is used to define the default command that runs when a container starts. It does not install anything; instead, it starts the application every time docker run is executed. 
 In our project, we used RUN npm install to package all Node.js dependencies into the image and CMD ["node","server.js"] to start the Catalogue application when the container was launched."
 
 ⭐ One interview tip (very common question)
-
 Interviewer: Can I have multiple RUN instructions?
-"Yes, but every RUN creates a new image layer. In real projects, we combine related commands using && to reduce the number of layers, improve image size, and make better use of Docker's build cache."
+Yes, but every RUN creates a new image layer. In real projects, we combine related commands using && to reduce the number of layers, improve image size, and make better use of Docker's build cache.
 
  Ex : RUN apt update && apt install -y git wget && apt clean
  
  
 Interview Answer (5 Years)
 
-"CMD is used to define the default command that runs when a container starts. During docker build, Docker does not execute the CMD instruction; instead, it stores it in the image metadata. When a container is created using docker run, Docker reads this metadata and executes the command as the container's main process. In our RoboShop project, we used CMD ["node","server.js"] so that every Catalogue container automatically started the Node.js application when deployed."
+CMD is used to define the default command that runs when a container starts. During docker build, Docker does not execute the CMD instruction; instead, it stores it in the image metadata. 
+When a container is created using docker run, Docker reads this metadata and executes the command as the container's main process. In our RoboShop project, we used CMD ["node","server.js"] so that every Catalogue container automatically started the Node.js application when deployed.
   
 Every Container is a process, so systemctl commands will not work in container becasue this should be main os containers are not main os it is using guest os 	
 Container is an running version of image so if it is runnig there should be something keeps it running that is CMD 
  
  
  ⭐ Interview Tip (Very Important)
-"Why do we use CMD instead of RUN to start the application?"
+Why do we use CMD instead of RUN to start the application?
 
-"RUN executes during the image build process and is intended for installing software or preparing the image. If we use RUN to start the application, the build will hang because the application keeps running during the build. CMD is executed only when a container starts, making it the correct instruction for launching the application."
+RUN executes during the image build process and intended for installing software or preparing the image. If we use RUN to start the application, the build will hang because the application keeps running during the build. CMD is executed only when a container starts, making it the correct instruction for launching the application.
 
-"Explain the difference between RUN, CMD, and ENTRYPOINT."
 
 Dockerfile 
 FROM centos:8
@@ -903,10 +913,9 @@ run : docker run -d -p 8080:80 cmd:v1
 
 LABEL :
 ----------
-LABEL is used to add metadata (information) to a Docker image in the form of key-value pairs.
-or
-LABEL allows us to store additional information about the image such as the author, application name, version, project name, environment, version or maintainer etc...
-Docker stores label info inside the image metadata.
+LABEL allows us to store additional metadata/information about the image in the form of key-value pairs.It stores label info inside the image metadata.
+Ex:  author, application name, version, project name, environment, version or maintainer etc...
+
 
 Why do we need LABEL?
 Suppose your company has 500 Docker images.
@@ -925,13 +934,13 @@ LABEL author="Arun Kumar Reddy" \
 			version="1.0" \
 			application="catalogue"
 			
-one way to see lable data 
-docker inspect catalogue:v1 ---> there will be labels block 
+Ways to see lable data  :
+1. docker inspect catalogue:v1 ---> there will be labels block 
 other way is 
-docker images --filter label=application=catalogue        ---> it will diaplay image 
+2. docker images --filter label=application=catalogue        ---> it will diaplay images which has that labels  
 
 Q3. How do you view labels?
-docker inspect <image-name>  --> looks for Labels block 
+docker inspect <image-name>:<tag name>  --> looks for Labels block 
 
 In our project we used lable info like 
 LABEL maintainer="DevOps Team"	
@@ -939,12 +948,10 @@ LABEL application="catalogue"
 LABEL version="2.3.5"
 LABEL environment="dev"
 
-
-
 Real Interview Scenario
-"How do you know which Jenkins build created a Docker image?"
+How do you know which Jenkins build created a Docker image?
 
-"In our project, the CI pipeline added build metadata using Docker labels, such as the Jenkins build number, Git commit ID, application name, and version. We could retrieve this information later using docker inspect, which made it easier to trace images back to the corresponding build and source code."
+In our project, the CI pipeline added build metadata using Docker labels, such as the Jenkins build number, Git commit ID, application name, and version. We could retrieve this information later using docker inspect, which made it easier to trace images back to the corresponding build and source code.
 
 ⭐ Interview Tip (4–5 Years)
 Many experienced teams automatically inject labels during the build process.
@@ -962,7 +969,9 @@ This makes images self-describing, which is extremely useful for auditing, troub
 
 EXPOSE:
 -----------
-EXPOSE is used to document which port the application inside the container listens on and doesn't open the port.It simply tells Docker "My application listens on port 8080." It doesnt do anything it just simply store the data in image metadata like lable 
+EXPOSE is used to document which port the application inside the container listens on and it doesn't open the port.
+It simply tells My application listens on port 8080. It doesnt do anything it just simply store the data in image metadata like lable 
+
 It is mainly documentation/metadata expose is basically information of networking 
 Stores container network port information like port, protocol, listening port , network metadata and Used for networking documentation
 
@@ -976,18 +985,22 @@ To check :  docker inspect catalogue:v1 ---> in ExposedPorts : {} block
 
 Interview Answer (5 Years)
 
-"EXPOSE is used to document the network port on which the application inside the container listens. It does not publish the port or make the application accessible from outside the container. During the image build process, Docker stores the exposed port information as image metadata. To allow external access, we must explicitly publish the port using the -p option during docker run or configure a Kubernetes Service in container orchestration environments. In our RoboShop project, we used EXPOSE 8080 for the Catalogue service because the Node.js application listened on port 8080 inside the container."
+EXPOSE is used to document the network port on which the application inside the container listens. It does not publish the port or make the application accessible from outside the container. During the image build process, Docker stores the exposed port information as image metadata. 
+To allow external access, we must explicitly publish the port using the -p option during docker run or configure a Kubernetes Service in container orchestration environments. In our RoboShop project, we used EXPOSE 8080 for the Catalogue service because the Node.js application listened on port 8080 inside the container."
 
 ⭐ Interview Tip
 "Since both are metadata, why did Docker create two separate instructions?"
 
-"Because they represent different categories of metadata. LABEL is intended for user-defined descriptive metadata such as ownership, version, and project details. EXPOSE is a Docker-specific networking instruction that records which ports the application is designed to listen on. This separation allows Docker and orchestration tools to understand network-related information independently from business or operational metadata."
+Because they represent different categories of metadata. 
+LABEL is intended for user-defined descriptive metadata such as ownership, version, and project details. 
+EXPOSE is a Docker-specific networking instruction that records which ports the application is designed to listen on. 
+This separation allows Docker and orchestration tools to understand network-related information independently from business or operational metadata.
 
 ===================================================================================================================================================================
 
 ENV :
 -------
-ENV is used to define environment variables inside a Docker image. These variables are available during container runtime and can be accessed by the application
+ENV is used to define environment variables inside a Docker image. These variables are available both during image building process(accessible by subsequent RUN instructions) and during container runtime and can be accessed by the application and stored at image metadata configuration to persists across container restart
 
 Why do we need ENV?
 Suppose your Catalogue application needs: Database Host , MongoDB Username , MongoDB Password , Application Port , Environment (dev/prod)
@@ -1001,14 +1014,14 @@ ENV APP_PORT=8080 \
     ENVIRONMENT=dev \
     LOG_LEVEL=INFO
 	
-Inside containe if u do : #env  ---> list of env variables 
+Inside containe if u do : #env  ---> list of env variables  or printenv
 
 Suppose Node.js application port or host url 
 const port = process.env.PORT;
 
 Real-Time Project (RoboShop)
 Suppose Catalogue service ----> Instead of const db = "mongodb.dev.company.com";  hardcode we write
-
+In application code we write
 const db = process.env.MONGO_URL;
 
 in Dockerfile
@@ -1022,11 +1035,12 @@ Production
 MONGO_URL ---> mongodb-prod.company.com
 Same application code. Only environment changes.
 
-docker run -it catalogue:v1 env --> display env details or u can inspect using inspect command 
+docker run -it catalogue:v1 env --> display env details or u can inspect using docker inspect command 
 
 Can ENV be overridden ---> yes 
 Dockerfile : ENV PORT=8080
 Run            : docker run -e PORT=9090 catalogue:v1  ---> container uses new value Dockerfile value 8080 is overridden.
+or --env-file
 
 Suppose we have diff env's like ---> dev, testing, prod 
 environment changes 
@@ -1050,30 +1064,55 @@ Stores environment variables			Stores listening port metadata
 Used by application	               				Used for networking documentation
 Example: PORT=8080							Example: EXPOSE 8080
 
+
+
+
+
+
+
+
+ENV :
+Defines configuration values for the application runtime.
+Available during both build time and container runtime. 
+Those variables read/consumed by subsequent RUN commands during the build and by the application code at runtime.
+Those are default value that can be overridden at runtime using the -e or --env-file flags.
+
+LABEL:
+LABEL key value pairs are used for just adding additional information about the image
+Evaluated during build time but exists purely as static image metadata at runtime 
+Cannot be consumed by the application code or build commands. It is only read by external tools or users running docker inspect
+Label key=value pair is Immutable. Once the image is built, the label values are frozen and cannot be overridden at runtime.
+
+EXPOSE: 
+Documents which network ports the containerized application listens on and dosent auotmatically publish the port to the host network 
+These variables read by humans , devops tools like application si running on this port number and protocal etc...
+
 Interview Answer (5 Years)
 
-"ENV is used to define environment variables that are available inside the container at runtime. These variables are commonly used for application configuration such as database URLs, ports, API endpoints, log levels, and environment-specific settings. During the image build, Docker stores the variables in the image configuration. When the container starts, they become part of the container's environment and can be accessed by the application. In our RoboShop project, we used environment variables for values such as MongoDB connection details and application configuration so that the same image could be deployed across development, testing, and production environments without changing the application code."
+ENV is used to define environment variables that are available inside the container at runtime. These variables are commonly used for application configuration such as database URLs, ports, API endpoints, log levels, and environment-specific settings. During the image build, Docker stores the variables in the image configuration. When the container starts, they become part of the container's environment and can be accessed by the application. In our RoboShop project, we used environment variables for values such as MongoDB connection details and application configuration so that the same image could be deployed across development, testing, and production environments without changing the application code.
 
 Q1. Can ENV be overridden?
 yes ---> docker run -e PORT=9090 catalogue:v1
+
 Q2. Does ENV create files?
 It creates environment variables inside the container.
+
 Q3. Where can you see ENV values?
-docker inspect <image>    or docker exec -it <container> env    or docker exec -it <container>  --> first login to container amnd just type --> env 
+docker inspect <image>    or docker exec -it <container> env    or docker exec -it <container>  --> first login to container and just type --> env or printenv
 
 🔥 One thing to remember (Very Important)
 
 Many beginners confuse these three:
 
 LABEL → Information about the image (author, version, owner).
-EXPOSE → Information about the application's listening port.
+EXPOSE → Information about the application's listening port i.e., networking.
 ENV → Configuration used by the application at runtime.
 
 ===================================================================================================================================================================
 
 COPY:
 -------
-COPY is used to copy application files and directories from local machine into the Docker image during the build process.
+COPY instruction is used to copy application files and directories from local machine or docker build context to Docker image during the build process.
 
 Why do we need COPY --> catalogue application has server.js,package.json and schema etc...to copy those files into image we use copy 
 
@@ -1095,8 +1134,8 @@ The original file remains on your machine COPY creates a copy inside image It do
 
 Interview Answer (5 Years)
 
-"COPY is used to copy files and directories from the Docker build context into the Docker image. During the build process, Docker reads the specified source from the build context, copies it to the destination inside the image, and stores the result as a new image layer. In our RoboShop project, we used COPY to transfer the application source code, package.json, and configuration files into the image before running npm install."
-
+COPY is used to copy files and directories from the Docker build context into the Docker image. During the build process, Docker reads the specified source from the build context, copies it to the destination inside the image, and stores the result as a new image layer. 
+In our RoboShop project, we used COPY to transfer the application source code, package.json, and configuration files into the image before running npm install.
 
 
 ⭐ Interview Tip (Very Important)
@@ -1112,25 +1151,19 @@ COPY . .
 RUN npm install
 
 Answer:
-
-"This is done to leverage Docker's build cache. Since package.json changes less frequently than the application source code, Docker can reuse the cached layer for npm install if only the application code changes. This significantly reduces build time in CI/CD pipelines."
+This is done to leverage Docker's build cache. Since package.json changes less frequently than the application source code, Docker can reuse the cached layer for npm install if only the application code changes. This significantly reduces build time in CI/CD pipelines.
 
 This answer immediately tells the interviewer that you understand Docker layer caching, which is expected from a 4–5 years DevOps Engineer.
 
 
 🔥 Difference Between COPY and RUN
 
-| COPY                                     | RUN                                             |
+| COPY                                     			| RUN                                             |
 | ---------------------------------------- | ----------------------------------------------- |
 | Copies files from local machine to image | Executes commands inside the image              |
 | Used to transfer application code        | Used to install software or configure the image |
 | Creates a new image layer                | Creates a new image layer                       |
 | Example: `COPY . .`                      | Example: `RUN npm install`                      |
-
-
-
-
-
 
 ADD :
 -------
@@ -1139,19 +1172,17 @@ Both are used to copy files from local machine to docker image but ADD have 2 ex
 2.It can directly untar the existing tar based files (such as .tar, .tar.gz, and .tgz). It does not automatically extract ZIP files, and remote URL downloads are not automatically unpacked."
 
 1. It can directly download files from internet
-Copy any line and below command  and build image again if u add or remove instructions
+copy any link and below command  and build image again if u add or remove instructions
 ADD https://github.com/devopswitharunkumar/roboshop-ansible-with-roles-for-CD-deploy-usage/blob/main/variables-prod.yaml /tmp/
 
 now login to container using ---> docker exec -it <container id> 
-check in /tmp/ folder ---> ls
+check in /tmp/ ---> ls
 
-It can directly untar the existing zip files  ---> download some randaon tar file from internet and place that in ADD folder and build image again if u add or remove instructions
+2. It can directly untar the existing tar files  ---> download some randaon tar file from internet and place that in ADD folder and build image again if u add or remove instructions
 ADD sample-1.tar /tmp/
 
 now login to container using ---> docker exec -it <container id> 
-check in /tep/ folder ---> ls
-
-
+check in /tmp/ ---> ls
 
 ADD is used to copy files and directories from host machine to the Docker image, just like COPY, but it also provides additional features such as extracting local compressed files and downloading files from remote URLs i.e., internet.
 
@@ -1165,7 +1196,7 @@ ADD catalogue.tar.gz /app --> automatically ADD unzips it and save it as catalog
 ADD has 3 Features:
 ---------------------------
 1.Copy Files Exactly like COPY instruction
-ADD app.js /app same like  COPY app.js /app
+ADD app.js /app         ----> same like  COPY app.js /app
 
 2. Automatically Extract Local Archives
 Suppose u have catalogue.tar.gz by using 
@@ -1188,7 +1219,8 @@ COPY vs ADD
 
 Interview Answer (5 Years)
 
-"ADD performs all the functions of COPY, but it also supports automatically extracting local tar archives and downloading files from remote URLs during the image build. In practice, we prefer using COPY for transferring application code because its behavior is explicit and predictable. We only use ADD when we specifically need automatic archive extraction or URL download functionality."
+ADD performs all the functions of COPY, but it also supports automatically extracting local tar archives and downloading files from remote URLs during the image build. 
+In practice, we prefer using COPY for transferring application code because its behavior is explicit and predictable. We only use ADD when we specifically need automatic archive extraction or URL download functionality.
 
 
 Q3. Does ADD automatically unzip ZIP files?
@@ -1197,7 +1229,16 @@ Answer : ❌ No.
 
 Docker automatically extracts local tar-based archives (such as .tar, .tar.gz, .tgz), but not ordinary ZIP files.
 
-
+COPY
+Copies local files or directories from the host machine into the container filesystem.
+Copies compressed files as-is (e.g., keeps .tar.gz compressed).
+Does not support remote URLs.
+Use for 95% of use cases to maintain transparency and small layers.
+ADD
+Copies local files, downloads remote files via URL, and auto-extracts archives.
+Automatically unpacks recognized local tar archives into directories.
+Can download files directly from external URLs into the container.
+Use only when you specifically need to auto-extract a local tarball.
 
 
 ===================================================================================================================================================================
@@ -1207,13 +1248,14 @@ CMD VS ENTRYPOINT
 
 ENTRYPOINT :
 -----------------
-used to define the main executable i.e., fixed command that will always run when a container starts.Both will execute/run at the time of container run time 
+used to define the main executable command i.e., fixed command that will always run when a container starts.
+Docker does not execute the ENTRYPOINT at building time it is stored in image configuration (metadata) --> when application/container starts it will run and No layer will be created at the time of building an image 
 
 Why do we need ENTRYPOINT?
 Suppose your image is created only for running a Node.js application.
 Every time someone runs : docker run catalogue:v1 ----> You always want --> run ---> node server.js
 to execute. Even if the user passes additional arguments, the application should still start. That's where ENTRYPOINT comes in.
-Docker does not execute the ENTRYPOINT at building time it is stored in image configuration (metadata) --> when application/container starts it will run and No layer will be created at the time of building an image 
+
 
 
 CMD way :
@@ -1249,6 +1291,7 @@ In ENTRYPOINT if u try to override it will append the exising command from -----
 
 docker ps -a --no-trunc ---> it will show detailed way in list of containers 
 
+diff 
 CMD command can be overriden by another command at run time means give values at terminal
 ENTRYPOINT command cannot be overidden and if u try to override it will append the existing command like ex :
 ping google.com -------> ping google.com yahoo.com       ----------> Arguments are appended.
@@ -1259,13 +1302,30 @@ BUT To completely override ENTRYPOINT intentionally
 docker run -d --entrypoint bash catalogue:v1   ---> instead of ENTRYPOINT ["node","server.js"]
 
 
+
+CMD 
+CMD is used to define default executable command only runs at container runtime it will not run at image build timeand stored as a metadata in image configuration/metadata 
+It can be overridden at container runtime 
+We can use CMD instruction to supply argument values to the ENTRYPOINT while using combination of instruction
+
+ENTRYPOINT
+ENTRYPOINT is used to define fixed executable command only runs at container runtime it will not run at image build timeand stored as a metadata in image configuration/metadata 
+It can't be overridden at container runtime but if u try to override it will append the exising command 
+If u want to intentionally override u can use --entrypoint argument at runtime 
+
+
 By COMBINING BOTH : we use combination of both CMD and ENTRYPOINT
 -----------------------------
 
-Dockerfile
+Dockerfile :
 FROM centos:8
 CMD ["google.com"]
 ENTRYPOINT ["ping"]
+or
+Dockerfile :
+FROM centos:8
+CMD ["pull"]
+ENTRYPOINT ["git"]                          ---> at runtime we use push, clone any git command in CMD instrucion 
 
 docker run entry:v1 -----> ping google.com 
 now if u want to override ------> docker run entry:v1 yahoo.com ---------> now google.com replaced by yahoo.com 
@@ -1278,8 +1338,6 @@ We are giving flexibility to change the supply the arguments we not giving optio
 
 Explain like :
 CMD command/arguments can be overrideen but ENTRYPOINT arguments/commands cannot be overridden but we can use CMD & ENTRYPOINT for the best results .. we can use CMD instruction  to give the default arguments to the ENTRYPOINT... if user want to override they can overidde from the run time if user dont want to override default argument will run  instead of failing container we supply default arguments 
-
-
 
 CMD + ENTRYPOINT Together -----> suppose u have java installed applications
 ENTRYPOINT ["java","-jar"]
@@ -1300,18 +1358,10 @@ default  : docker run catalogue like java -jar catalogue.jar
 if u want another jar --->  docker run catalogue payment.jar
 
 
-
-CMD vs ENTRYPOINT
-| CMD                   | ENTRYPOINT                                   |
-| --------------------- | -------------------------------------------- |
-| Default command       | Fixed executable                             |
-| Easily overridden     | Not overridden unless `--entrypoint` is used |
-| Arguments replace CMD | Arguments are appended to ENTRYPOINT         |
-| Used for defaults     | Used for the main application                |
-
 Interview Answer (5 Years)
 
-"ENTRYPOINT is used to define the main executable of a container. Unlike CMD, which provides a default command that can be easily overridden, ENTRYPOINT specifies the fixed command that always executes when the container starts. During the image build, Docker stores the ENTRYPOINT in the image configuration. At runtime, Docker uses it as the container's primary process. In our projects, ENTRYPOINT is useful when we want every container to consistently start the same application, while CMD can be used to provide default arguments."
+ENTRYPOINT is used to define the main executable of a container. Unlike CMD, which provides a default command that can be easily overridden, ENTRYPOINT specifies the fixed command that always executes when the container starts. 
+During the image build, Docker stores the ENTRYPOINT in the image configuration. At runtime, Docker uses it as the container's primary process. In our projects, ENTRYPOINT is useful when we want every container to consistently start the same application, while CMD can be used to provide default arguments.
 
 
 ===================================================================================================================================================================
@@ -1319,25 +1369,25 @@ Interview Answer (5 Years)
 
 USER:
 -------
-USER is used to specify which user should execute the remaining Dockerfile instructions and run the container by default.
-We use this because by default it will be running in root access to avoid root access we use this 
+USER instruction is used to specify which user should execute the remaining/subsequent Dockerfile instructions and run the container by default.
+We use this because by default container will be running in root access to avoid root access we use this 
 
-Switch the user used this command for 
-
-
-Why do we need USER?
-By default, Docker containers run as root that means UID =0 i.e., they have access to everything over the vm also they can  Root has Unlimited Privileges like Read Permission , Write Permission , Execute Permission , Install Packages , Delete Files , Modify System Files
-
-Why is running as root a problem?
-
-Suppose a hacker/some body exploits your application. If your container is running as root The attacker gets Root Access he can do anyting with u conainer data 
+It Just Switch the user but if user doesnt exist it will not create 
 
 Syntax:
 ---------
-USER username
+USER username								
+--->If you write USER <username> without creating the user first, the Docker build might succeed, but the container will fail to start at runtime or fail on subsequent RUN 	commands because the user arun does not actually exist in the container's operating system (/etc/passwd).
 or 
-RUN add user arunkumar
+RUN add user arunkumar				----> u need to create the user first then change user using USER instruction
 USER arunkumar
+
+
+Why do we need USER?
+By default, Docker containers run as root that means UID =0 i.e., they have access to everything over the vm also Root has Unlimited Privileges like Read Permission , Write Permission , Execute Permission , Install Packages , Delete Files , Modify System Files
+
+Why is running as root a problem?
+Suppose a hacker/some body exploits your application. If your container is running as root The attacker gets Root Access he can do anyting with u conainer data 
 
 Example:
 FROM node:18
@@ -1348,9 +1398,7 @@ RUN useradd appuser
 USER appuser
 CMD ["node","server.js"]
 
-Now When container starts, Application runs as appuser instead of root
-
-Docker starts the container as appuser instead of root  so Applications will only have the permissions they actually need.
+Now When container starts, Application runs as appuser instead of root user .. so Applications will only have the permissions they actually need.
 
 Production Dockerfiles often contain
 RUN groupadd app
@@ -1360,15 +1408,18 @@ This is considered a Docker security best practice.
 
 Can USER be changed -------->  docker run --user root image  --> via terminal  ---> so container starts as root user 
 
+Scenario :
 
 Example:
 FROM ubuntu
+RUN usedadd appuser
 USER appuser
 RUN apt install nginx
 
 this will not work because appuser doesnt has permission to install packages So 
 
-Correct way 
+Correct way : 
+
 FROM ubuntu
 RUN apt update
 RUN apt install nginx -y
@@ -1381,8 +1432,10 @@ CMD ["nginx","-g","daemon off;"]
 
 Interview Answer (5 Years)
 
-"USER is used to specify which user should execute the remaining Dockerfile instructions and run the container by default. By default, Docker containers run as the root user, which poses a security risk because the application has elevated privileges. Following the principle of least privilege, we create a dedicated application user and switch to it using the USER instruction before starting the application. This reduces the impact of potential security vulnerabilities. In production environments, running containers as non-root users is considered a Docker security best practice."
-
+USER is used to specify which user should execute the remaining Dockerfile instructions and run the container by default. 
+By default, Docker containers run as the root user, which poses a security risk because the application has elevated privileges. 
+Following the principle of least privilege, we create a dedicated application user and switch to it using the USER instruction before starting the application. 
+This reduces the impact of potential security vulnerabilities. In production environments, running containers as non-root users is considered a Docker security best practice.
 
 
 ⭐ Real Company Dockerfile Example
@@ -1398,21 +1451,23 @@ RUN chown -R appuser:appuser /app
 USER appuser
 EXPOSE 8080
 CMD ["node","server.js"]
+
+
+sudo chown [options] new_owner[:new_group] file_name     ---> -R -- recursively 
+
 Explain this in an interview:
 
-"During the image build, package installation and system configuration are performed as the root user because they require administrative privileges. Before starting the application, we create a dedicated application user, assign ownership of the application directory, and switch to that user using the USER instruction. This ensures the application runs with limited permissions, improving container security and aligning with production best practices."
+During the image build, package installation and system configuration are performed as the root user because they require administrative privileges. 
+Before starting the application, we create a dedicated application user, assign ownership of the application directory, and switch to that user using the USER instruction. This ensures the application runs with limited permissions, improving container security and aligning with production best practices.
 
 ===================================================================================================================================================================
 
 
-WORKDIR:
--------------
+WORKDIR :
+---------------
 
-WORKDIR is used to set the working directory inside the Docker image. All remaining Dockerfile instructions such as RUN, COPY, ADD, CMD, and ENTRYPOINT execute relative to this directory.
-or
-WORKDIR changes the current working directory inside the image for all following instructions.
-
-WORKDIR changes the current directory once, and all remaining instructions use/run it or there and Docker automatically creates if /app folder not present in local no need to do RUN mkdir /app
+WORKDIR is used to change the working directory inside the Docker image. All remaining Dockerfile instructions will be executed on this directory.
+If directory not present it will create and change to that directory
 
 Why do we need WORKDIR?
 Suppose your application should be stored in
@@ -1437,7 +1492,7 @@ Every RUN creates a new temporary container. The cd command only affects that te
 
 Interview Answer (5 Years)
 
-"WORKDIR is used to set the working directory inside the Docker image. If the specified directory does not exist, Docker automatically creates it. All subsequent instructions such as COPY, ADD, RUN, CMD, and ENTRYPOINT execute relative to this directory.
+WORKDIR is used to set the working directory inside the Docker image. If the specified directory does not exist, Docker automatically creates it. All subsequent instructions such as COPY, ADD, RUN, CMD, and ENTRYPOINT execute relative to this directory.
 
 
 Q2. Can we have multiple WORKDIR instructions?
@@ -1453,8 +1508,8 @@ Because cd only affects the current RUN instruction. Every RUN starts a new temp
 
 
 ⭐ Interview Tip (Very Important)
-"What happens if /app doesn't exist?"
-"Docker automatically creates the directory when it processes the WORKDIR instruction. There is no need to create it manually using RUN mkdir."
+What happens if /app doesn't exist?
+Docker automatically creates the directory when it processes the WORKDIR instruction. There is no need to create it manually using RUN mkdir.
 
 
 Example Scenario :
@@ -1487,16 +1542,17 @@ CMD ["sleep", "100"]
 Interviewer: Why doesn't RUN cd /tmp work for subsequent RUN instructions?
 
 Answer:
-
-"Each RUN instruction executes in a new temporary container. The cd command only changes the current shell's working directory for that specific RUN instruction and is not persisted. If we want all subsequent Dockerfile instructions to execute from a particular directory, we should use the WORKDIR instruction, which sets the working directory in the image configuration."
+Each RUN instruction executes in a new temporary container. The cd command only changes the current shell's working directory for that specific RUN instruction and is not persisted. If we want all subsequent Dockerfile instructions to execute from a particular directory, we should use the WORKDIR instruction, which sets the working directory in the image configuration.
 
 
 ===================================================================================================================================================================
 
 
-ARG:
------
-ARG allows us to pass values to the Docker build command without hardcoding them in the Dockerfile and those are available only during the Docker image build process.
+ARG :
+------
+ARG instruction allows us to pass values to the Docker build command at terminal without hardcoding them in the Dockerfile and those are available only during the Docker image build process.
+ARG instruction can be used befroe FROM instruction to provide values to FROM instruction
+ARG value given before FROM instruction will not be accessed/available after FROM instruction
 
 ENV --> args can be accessible at build time and runtime inside container 
 
@@ -1507,12 +1563,14 @@ RUN adduser ${username}
 USER ${username}
 CMD [ "sleep", "100" ]
 
-Now we need to provide the argument at docker build 
+Now we need to provide the argument value at docker build 
 lets say if we didnt pass it and we did ----------->  docker build -t arg:v1 . -------and----->  docker run arg:v1      ----> u will get error not able to find user u must provide the value if u use ARG in dockerfile at build time 
 
 Now -----> docker build -t arg:v1 --build-arg username=arunkumar .    ------>      and then ------>     docker run arg:v1 .  ---> now it will login 
 
-Only accessible in the build time ---> if i do env they will not present 
+Only accessible during build time ---> if i do env they will not present 
+
+Scenario 1:
 
 How can i use ARG variables inside container :       we will give ARG value to ENV variable so that it will be stored inside container env ---> if u type --- env ---inside containe ---> u can see variables 
 --------------------------------------------------------------    
@@ -1535,6 +1593,7 @@ If u want to check :--- >    docker exec -it <containerid> bash  ----> check #en
 
 we can use the combination of both ARG and ENV to get the best results we can assign the value of ARG to the ENV variables so that we can access them in the inside container  also 
 
+Scenario 2 :
 
 FROM is the first instruction ryt but we have one exception ----> we can use ARG before FROM as first instruction in dockerfile  ex: provide versions etc 
 ex:
@@ -1547,14 +1606,29 @@ So u can provide the version at build time directily ---> docker build -t arg:v1
 ARG instruction can be used befroe FROM instruction to provide values to FROM instruction like above example and 
 ARG value given before FROM instruction will not be access after FROM instruction
 
+Scenario 3 :
 FROM redhat/ubi9:${version} ----> u used this but u forgot to give value while docker build on that basis it will give error but we can give default version if u dont provide version it will take that
 
 that is ------> FROM redhat/ubi9:${version:-ubi9} ---> if u dont provivide value when u run ---> 
 cmd 
 docker build -t arg:v1 --build-arg username=arunkumar --build-arg course=devops --build-arg duration=4months  .      ---> this will automatically take ubi9 as version 
 
+Another scenario :
+ARG value given before FROM instruction will not be access after FROM instruction but if u want to access/inherit that redeclare the same variable without value it takes values as initial value 
+
+# 1. Declared before FROM to specify the OS version
+ARG VERSION=24.04
+FROM ubuntu:${VERSION}
+
+# 2. Re-declared here (without a value) to bring it into this build stage scope
+ARG VERSION               ----> by default value will be 24.04 
+
+# 3. Now it is available again!
+RUN echo "Building on Ubuntu version ${VERSION}"
+
 
 ChatGpt:
+------------
 Why do we need ARG?	
 Suppose today your application version is 1.0 ----> but tommorrow it may 1.1 ---> next week may be 1.2 ---> Should we edit the Dockerfile every time? ---> NO
 Instead
@@ -1585,7 +1659,7 @@ To build an image ---> in Dockerfile
 ARG BUILD_NUMBER
 RUN echo $BUILD_NUMBER
 
-In Jenkins pipeline syntax stage while build command ----> docker build --build-arg BUILD_NUMBER=125 -t catalogue:125 . -------------->Image built using 125 without editing Dockerfile.
+In Jenkins pipeline syntax stage while build command ----> docker build --build-arg BUILD_NUMBER=125 -t catalogue:125 . --------------> Image built using 125 without editing Dockerfile.
    .      ===> means current directory 
    
 Another Example :
@@ -1606,6 +1680,16 @@ Default Value : 17 if user doesnt pass version using build arg it usees 17
 In Jenkins we can use like this -------> docker build --build-arg VERSION=2.1 --build-arg BUILD_ID=145 -t catalogue:2.1 .
 
 
+ARG :
+ARG instruction allows us to pass values to the Docker build command at terminal without hardcoding them in the Dockerfile and those are available only during the Docker image build process.
+ARG instruction can be used befroe FROM instruction to provide values to FROM instruction
+ARG value given before FROM instruction will not be accessed/available after FROM instruction
+PAss them using --build-arg app=catalogue like 
+
+ENV :
+Env instruction s used to define environment variable which are consumed by the application at runtime and ENV available at both build time and runtime 
+ENV variables will be available through out the container lifecycle and we can see in container and we cannot use ENV before FROM instruction
+Override using docker run -e app=catalogue 
 
 ARG vs ENV
 ---------------
@@ -1627,7 +1711,8 @@ Can ARG be used in CMD -----> NO  ---> CMD will not execute at the time of runni
 
 Interview Answer (5 Years)
 
-"ARG is used to define build-time variables that are available only during the Docker image build process. These values are passed using the --build-arg option and are commonly used for build-specific information such as application versions, base image versions, or build numbers. Unlike ENV, ARG values are not available inside the running container. In our CI/CD pipeline, Jenkins passed dynamic values such as application version and build number using build arguments, allowing us to reuse the same Dockerfile without modification."
+ARG is used to define build-time variables that are available only during the Docker image build process. These values are passed using the --build-arg option and are commonly used for build-specific information such as application versions, base image versions, or build numbers. 
+Unlike ENV, ARG values are not available inside the running container. In our CI/CD pipeline, Jenkins passed dynamic values such as application version and build number using build arguments, allowing us to reuse the same Dockerfile without modification.
 
 Q1. When is ARG available --------> only during build time 
 Q2. Can ARG be seen inside the running container ---> no
@@ -1638,9 +1723,10 @@ Q4. Can ARG be overridden ----> yes  using --build-arg VERSION=2.0
 ⭐ Interview Tip (Very Important)
 
 Interviewer:
-
 Why not use ENV instead of ARG?
-"ARG is intended for values that are only required during the image build process, such as application versions or build numbers. ENV is intended for configuration values that the application needs while the container is running, such as database URLs, ports, or environment names. Using ARG for runtime configuration would not work because ARG values are discarded after the image is built."
+ARG is intended for values that are only required during the image build process, such as application versions or build numbers. 
+ENV is intended for configuration values that the application needs while the container is running, such as database URLs, ports, or environment names. 
+Using ARG for runtime configuration would not work because ARG values are discarded after the image is built.
 
 
 🔥 Real Project (RoboShop + Jenkins)
@@ -1677,7 +1763,7 @@ ENV → Run Time (exists inside the running container)
 
 ONBUILD:
 -------------
-ONBUILD is used to define a trigger instruction that is not executed immediately/image build time. Instead, it is executed automatically when another Docker image uses this image as its base image (FROM).
+ONBUILD is used to define a trigger instruction that is not executed immediately/first image build time. Instead, it is executed automatically when another Docker image uses this image as its base image (FROM).
 
 Why do we need ONBUILD?
 Suppose your company creates a standard Node.js base image for all developers.	
@@ -1701,16 +1787,24 @@ Notice:  During this build -----> ONBUILD COPY . . and  ONBUILD RUN npm install 
 when 
 Child Dockerfile used the base image as above image then 
 
-FROM node-base:v1
+docker build -t node-base:v1 .  ---> at this time ONBUILD triggers will store in image metadata
+
+child image:
+----------------
+FROM node-base:v1							 			---> we need to give this parent imagename and version we gave at docker build -t <imagename>:<tag> at parent stage 
 CMD ["node","server.js"]
 
-build :  docker build -t catalogue:v1 .    ----> Internally Docker executes  ONBUILD COPY . . and  ONBUILD RUN npm install  in child image build time. The ONBUILD triggers execute automatically.
+build :  docker build -t node:v1 .    ----> Internally Docker executes  ONBUILD COPY . . and  ONBUILD RUN npm install  in child image build time. The ONBUILD triggers execute automatically.
 The build automatically copies the code and installs dependencies.
 
-Verify ONBUILD ---> docker inspect node-base:v1
-Interview Answer (5 Years)
+And child class we cannot use for grand child class those onbuild triggers already exhausted and not available at child image 
+but if u use parent image name in grandchild class so that onbild instructions will trigger because those triggers are resent in parent image 
 
-"ONBUILD is used to register build triggers in a parent image. These instructions are not executed when the parent image is built. Instead, they are automatically executed when another Dockerfile uses that image in its FROM instruction. It is useful for creating reusable base images with common build steps. However, in most modern production projects, ONBUILD is used less frequently because it can hide build behavior and make Dockerfiles harder to understand."
+Verify ONBUILD ---> docker inspect node-base:v1
+
+Interview Answer (5 Years)
+ONBUILD is used to register build triggers in a parent image. These instructions are not executed when the parent image is built. 
+Instead, they are automatically executed when another Dockerfile uses that image in its FROM instruction. It is useful for creating reusable base images with common build steps. However, in most modern production projects, ONBUILD is used less frequently because it can hide build behavior and make Dockerfiles harder to understand.
 
 
 Q1. Does ONBUILD execute during its own image build?
@@ -1721,15 +1815,14 @@ When another Dockerfile uses the image as its parent image with the FROM instruc
 
 
 ⭐ Interview Tip
-"Why is ONBUILD not very popular today?"
-"ONBUILD can make Docker builds less transparent because instructions execute implicitly when a child image is built. In modern CI/CD pipelines, teams usually prefer explicit Dockerfiles where every build step is clearly visible and easier to maintain and troubleshoot."
+Why is ONBUILD not very popular today?
+ONBUILD can make Docker builds less transparent because instructions execute implicitly when a child image is built. 
+In modern CI/CD pipelines, teams usually prefer explicit Dockerfiles where every build step is clearly visible and easier to maintain and troubleshoot.
 
 
 ===================================================================================================================================================================
 
 Commands manually
-
-
 1. docker logs
 ------------------
 docker logs is used to view the standard output (stdout) and standard error (stderr) logs generated by a container. It helps in troubleshooting application startup and runtime issues.
@@ -1951,14 +2044,14 @@ roboshop-proj-docker
 
 Docker networking 
 -------------------------
-Docker networking allows isolated containers to communicate with each other, the host machine, and external networks.
+Docker networking enable isolated containers to communicate with each other, the docker host machine, and external networks like internet.
 
 
 we first need to understand normal server networking.
 
 Imagine you have WiFi at home.
 
-             Internet
+             Internet/users
                  │
              Router/Modem
          Gateway : 192.168.1.1
@@ -1968,28 +2061,26 @@ Imagine you have WiFi at home.
  Laptop       Mobile      TV
 192.168.1.10 192.168.1.20 192.168.1.30
 
-The router gives an IP address to every device.
+The router gives an IP address to every device which are under modem.
 Your laptop gets  192.168.1.10
 Your mobile gets 192.168.1.20
 Every device is connected to the same network. Exactly the same thing happens in AWS.
 
-
-In AWS
-
-Suppose you launch one EC2 instance. AWS automatically gives an IP.
+NOW :
+In AWS Suppose you launch one EC2 instance. AWS automatically gives an IP using ENI(Elastic Network Interface).AWS creates a virtual network card, assigns the private IP (172.31.90.88) to it, and attaches it to your EC2 instance.
 Example : 172.31.90.88
 
-Now execute ----> ifconfig or ip addr   in docker ec2 
+Now execute ----> ifconfig or ip addr in docker ec2 
 You will see ---> eth0
-
-What is eth0
-eth0 is the primary Ethernet Network Interface Card (NIC) of the Linux server through which the server communicates with the outside world.
+or
+ens5 or enp0s3 ---> but logically it serves the exact same role as the primary network interface as eth0
 
 Suppose AWS gives  -------> 172.31.90.88 to your EC2.
 Actually AWS attaches eth0 to your EC2. That interface receives the IP.
 
 Interview Answer
-eth0 is the primary network interface of a Linux machine. It receives the IP address from AWS or the physical network and is responsible for all communication between the server and external systems.
+eth0 : 
+eth0 is the primary network interface of a Linux machine/server. It receives the IP address from AWS or the physical network and is responsible for all communication between the server and external systems.
 
 
 Now Docker Comes:
@@ -1998,39 +2089,44 @@ When u install Docker in ec2
 Suppose Your EC2 has : eth0 ----> 172.31.90.88
 
 Now you install Docker.
-Should all containers directly use eth0 ??
+Should all containers directly use eth0 ?
 Answer ---> No.
 
 Why?
 Imagine 100 containers. If all of them use eth0 directly, there will be IP conflicts , Security issues , Difficult management So Docker creates its own network.
 
 What is docker0?
-Immediately after installing Docker, Docker automatically creates one virtual network interface i.e., docker0.
+Immediately after installing Docker, Docker automatically creates one virtual  network interface i.e., docker0 by default it is a default bridge network 
 EX: Execute --> ifconfig --> u can see ---> docker0   ----> has ip of   ----> 172.17.0.1
 
-docker0 is the default virtual bridge network interface created by Docker. It acts as a virtual switch or gateway for all containers connected to Docker's default bridge network.
------------
-Docker says "I won't directly connect containers to eth0. Instead "I'll create my own network." That network is docker0
+docker0 : 
+------------
+The docker0 interface is the default virtual network bridge created automatically by the Docker engine when u install docker in ec2.
+It enables isolated containers on the same host to discover and communicate with each other.
+It manages a private network subnet (typically 172.17.0.0/16) and dynamically assigns a unique IP address to the virtual network interface (eth0) of each container connected to the default bridge network
+It acts as the default gateway (172.17.0.1) for those containers means it takes the traffic from your containers and passes it out to the internet through your host machine's main network card (i.e., eth0).
+		simply ---> when container wants to talk to internete it moves traffic from inside the container's world to the outside world by using eth0 NIC connected to AWS/internete
+
+Docker says I won't directly connect containers to eth0. Instead "I'll create my own network. That network is docker0
 
 Flow : internet ---> EC2 eth0 (i.e., 172.31.90.88) ---> Docker install --> create docker-0  (i.e., 172.17.0.1) --->  now docker-0 assign containers ip
 container-1 :  172.17.0.2 
 container-2 :  172.17.0.3    etc.....
 
 Why docker0?
-
 Suppose : There are 20 containers. Instead of giving AWS IP to every container(i.e., eth0), Docker creates its own private network. Inside that network, containers receive 172.17.x.x addresses.
 All are inside Docker's private network.
 Now Every container send requests to the docker-0 that is default docker network then Docker forwards them.
 
 Real Example:
 If catalogue want to connect with mongodb 
-Suppose : MongoDB ---> 172.17.0.2 Catalogue 172.17.0.3 Catalogue wants MongoDB.
+Suppose : MongoDB ---> 172.17.0.2 and Catalogue 172.17.0.3 ---> Catalogue wants MongoDB.
 
 Request : Catalogue ---> 172.17.0.2 ---> docker0 ---> MongoDB
 Everything stays inside Docker's private network. Internet is not involved.
 
 
-Problem with Default Bridge Network
+Problem with Default Bridge Network :  it uses ip to communicate if container ip changes other container trying to connect with old ip so application fails and it cannot communicate using container name 
 Suppose ---> docker run mongodb and docker run catalogue ---> Both use Default Bridge Network. Yes, they can communicate using IP. Example 172.17.0.2 
 But imagine Tomorrow MongoDB restarts. Its IP changes but catalogue still trying with old ip so Application fails.
 
@@ -2038,17 +2134,16 @@ Another problem
 By default, containers on the default bridge network cannot reliably communicate using container names unless additional configuration is used.
 Instead of writing mongodb you often end up using 172.17.0.2 IP addresses. That is difficult to maintain.
 
-Solution 
-Docker says Don't use my default network.
+Solution  :  Docker says Don't use my default network. 
 
-Create your own.
-command : docker network create roboshop
+Create your own network :  It provide built in DNS based naminig resoltion 
+command : docker network create <network name>
 Docker creates ------> Gateway ---> 172.18.0.1
 
 Containers become : MongoDB has 172.18.0.2 and Catalogue has 172.18.0.3
 
 Now run
-docker run -d --name mongodb --network roboshop mongo
+docker run -d --name mongodb --network roboshop <image name>
 docker run -d --name catalogue --network roboshop catalogue
 
 Now Catalogue can connect using mongodb:27017....because user-defined bridge networks provide built-in DNS-based name resolution.
@@ -2094,9 +2189,14 @@ For this command --->  docker run -p 8080:80 nginx
 Docker never changes the application's listening port inside the container. Nginx still listens on 80. Docker only maps a host port to it.
 
 
+docker network create --driver bridge <network name>   ---> create a network 
+docker network connect <existing network name> <running container name>   ----> connect to already running container 
+docker network disconnect <existing network name> <running container name>   ----> disconnect to already running container 
+
+
 Bridge Network
 --------------------
-Bridge Network is Docker's default network driver that creates a private virtual network where multiple containers running on the same host and network can communicate with each other while remaining isolated from other networks.
+It is Dockers default network driver that creates a private isolated network where multiple containers running on the same host and network can communicate with each other while remaining containers are isolated from other networks.
 
 Docker creates ---> docker0 ---> Bridge ---> Containers connect to Bridge ---> Bridge connects to Host.
 
@@ -2104,9 +2204,14 @@ Docker creates ---> docker0 ---> Bridge ---> Containers connect to Bridge ---> B
 Docker creates bridge
 docker network ls ---> o/p : bridge, host , none   ---> bridge = docker-0
 
-2)User-defined Bridge
+It is Created automatically when Docker is installed and if u dont mention network docker automatically uses it
+Containers must use IP to communicate with each other 
+
+2)User-defined Bridge	
 cmd ------> docker network create roboshop
 Docker creates another bridge it is not default bridge  ---> container uses that bridge using  ---> --network roboshop
+
+Created manually and u need to mention the network name to use and By default it can use container names to communicate with containers it has built in DNS resolver name to ip 
 
 Why User-defined Bridge?
 
@@ -2155,7 +2260,6 @@ Overlay Network
 Overlay Network allows containers running on different Docker hosts to communicate securely as if they are on the same network.
 
 Suppose
-
 Server1 ---> has Catalogue ---->  Server2 -----> has MongoDB ----> Bridge cannot connect different hosts. Overlay can connect bw two hosts
 
 
@@ -2180,14 +2284,10 @@ How Kubernetes networking relates to Docker networking ⭐⭐⭐⭐
 
 
 
-
 Docker Compose:
 -----------------------
-
-Docker Compose is a tool used to define and manage multi-container Docker applications using a single YAML configuration file (docker-compose.yml). 
-It allows us to create, start, stop, and manage multiple related containers with a single command.
-or
-Docker Compose is used to run multiple containers together as a single application.
+Docker Compose is a declarative  tool used to define, orchestrate, and manage multi-container Docker applications through a single YAML configuration file (docker-compose.yml). 
+It allows us to create, scale, start, stop, and destroy, manage multiple independent services with a simple command
 
 Why do we need Docker Compose
 Suppose our RoboShop project has : Catalogue , User , Cart , Shipping , Payment etc... Without Docker Compose, we need to run each container separately.
@@ -2207,7 +2307,7 @@ In docker-compose.yml  file --->write All Services ---> One Command ---> Everyth
 cmd: docker compose up -d      ----> All containers start automatically.
 
 Docker Compose Architecture
-docker-compose.yml ---------> run : docker compose up ---> Docker Compose ---> Docker Engine ---> Creates Network ---> Creates Volumes ---> Creates Containers ---> Starts Containers
+docker-compose.yml ---------> run : docker compose up -d ---> Docker Compose ---> Docker Engine ---> Creates Network ---> Creates Volumes ---> Creates Containers ---> Starts Containers
 
 Notice : Docker Compose doesn't replace Docker. It simply talks to Docker Engine.
 
@@ -2215,7 +2315,6 @@ What is docker-compose.yml
 It is a YAML configuration file.
 
 Inside it,
-
 we define : -----> Services , Images , Ports , Networks , Volumes , Environment Variables , Restart Policies , Dependencies ------> Everything is stored in one file.
 
 Example:
@@ -2233,8 +2332,7 @@ So Compose reads this file. Starts MongoDB and Catalogue.
 Internal Working:
 when u run : -------->   docker compose up -d
 Internally
-
-Docker Compose ---> Reads docker-compose.yml ----> Parses YAML --->Checks Images exists or not in local---> Pulls Missing Images from registry ---> Creates Network ---> Creates Volumes ---> Creates Containers ---> Starts Containers ---> Application Ready
+Docker Compose ---> Reads docker-compose.yml ----> Parses YAML ---> Checks Images exists or not in local ---> Pulls Missing Images from registry ---> Creates Network ---> Creates Volumes ---> Creates Containers ---> Starts Containers ---> Application Ready
 
 Services:
 
@@ -2276,9 +2374,6 @@ services:
 
 Instead of random names, Docker creates catalogue
 
-
-
-
 Port Mapping and Environment Variables 
 port Mapping:
 --> Exactly same as docker run -p 8080:80  ---> host port : 8080 and container port : 80 
@@ -2295,7 +2390,7 @@ services:
     networks:
      - roboshop
 	 ports: 
-	- "8080:80"
+	 - "8080:80"
     environment:
     - RABBITMQ_DEFAULT_USER=roboshop
     - RABBITMQ_DEFAULT_PASS=roboshop123
@@ -2342,7 +2437,7 @@ Question : Will it wait until MongoDB is fully ready -------> No. It only ensure
 If you need to wait until the database is actually ready, you combine it with health checks, wait-for scripts, or application retry logic. Many interviewers ask this.
 
 Commands :
-1)docker compose up  ---> start all services i.e., containers at a time
+1)docker compose up -d ---> start all services i.e., containers at a time
 -d --> detached mode ---> run in background
 
 2)docker compose down   ---> stop and removes container 
@@ -2362,8 +2457,7 @@ Real-Time Project
 In our RoboShop development environment, we used Docker Compose to quickly bring up the entire application stack. The Compose file defined services like MongoDB, Redis, RabbitMQ, and the application containers, along with their networks, ports, environment variables, and dependencies. Instead of executing multiple docker run commands manually, developers simply ran docker compose up -d, which created the required network, started all containers, and connected them automatically. This reduced manual effort and ensured that every developer had the same local environment.
 
 Interview Answer (5 Years)
-
-"Docker Compose is a tool used to define and manage multi-container Docker applications using a YAML configuration file called docker-compose.yml. Instead of starting containers individually with multiple docker run commands, we define all services, networks, volumes, environment variables, and dependencies in a single file. Docker Compose reads this file and communicates with Docker Engine to create and start all required containers with a single command such as docker compose up -d. In our RoboShop project, Docker Compose simplified local development by allowing the entire microservices stack to be started consistently with one command."
+Docker Compose is a tool used to define and manage multi-container Docker applications using a YAML configuration file called docker-compose.yml. Instead of starting containers individually with multiple docker run commands, we define all services, networks, volumes, environment variables, and dependencies in a single file. Docker Compose reads this file and communicates with Docker Engine to create and start all required containers with a single command such as docker compose up -d. In our RoboShop project, Docker Compose simplified local development by allowing the entire microservices stack to be started consistently with one command."
 
 Q2. What file does Docker Compose read?
 docker-compose.yml  or compose.yml in newer versions 
@@ -2397,7 +2491,7 @@ Q4. Difference between docker run and docker compose up?
 If the interviewer asks: "Where did you use Docker Compose?"
 Avoid saying: "We used Docker Compose in Production."
 
-"We primarily used Docker Compose for local development, integration testing, and quickly bringing up the complete RoboShop application stack. It allowed developers to start all dependent services such as MongoDB, Redis, RabbitMQ, and the application containers with a single command. For production deployments, we used Kubernetes to orchestrate and manage containers."
+We primarily used Docker Compose for local development, integration testing, and quickly bringing up the complete RoboShop application stack. It allowed developers to start all dependent services such as MongoDB, Redis, RabbitMQ, and the application containers with a single command. For production deployments, we used Kubernetes to orchestrate and manage containers.
 
 
 
@@ -2428,23 +2522,19 @@ Everything is lost. Why ---->  Because Docker stores container data inside the c
 
 Now comes in Docker volumes
 
-
 What is a Docker Volume?
-A Docker Volume is a persistent storage mechanism managed by Docker that stores data outside the container's writable layer so that data remains available even if the container is removed or recreated volumes remain available. basically stores in host machine 
-or
-Docker Volume stores container data permanently outside the container so that the data is not lost when the container is recreated.
+A Docker Volume is a persistent storage mechanism managed by Docker that stores data outside the container's so that data remains available even if the container is removed or recreated volumes. basically columes stores in host machine at (/var/lib/docker/volumes/)
 
 Without Volume : Everything is inside the container ---> if u Delete the container ---> Everything disappears.
 With Volume       :  Create a volume and attached to containers data where container stores so that even if u delete the container --> volumes remains --> create a new container and attch same volume for new container so data exists 
 
 Internal Working
-
 command :  docker run -d --name mongodb -v mongo-data:/data/db mongo
 so basically mongodb stores data in --->/data/db --> u can find ths stores location in images
 
 Docker internally performs these steps.
 
-Step: 1 ---> Docker Checks in host machine --->  Does volume exist ---> mongo-data ---> If No ---> Creates volume.
+Step: 1 ---> Docker Checks in host machine --->  Does volume exist uses it ---> mongo-data ---> If No ---> Creates volume.
 Step: 2 ---> Mounts ---> mongo-data to /data/db ---> inside MongoDB container.
 Step: 3 ---> MongoDB writes all database files to ---> /data/db
 Step: 4 ---> Actually Those files are stored inside Docker Volume. Not inside container.
@@ -2455,7 +2545,6 @@ Where are Volumes Stored ----->
 Linux Normally : /var/lib/docker/volumes/
 
 Example : /var/lib/docker/volumes/mongo-data/
-
 Docker manages this location. We generally don't modify these files manually.
 
 Commands
@@ -2475,7 +2564,6 @@ if u mount Now MongoDB writes directly into the volume.
 
 
 Real Project Example
-
 In our RoboShop project, MongoDB, MySQL, and Redis required persistent storage. We attached Docker volumes to these containers so that database files remained available even if the containers were recreated during deployments or upgrades. This ensured that application data was preserved and did not depend on the lifecycle of individual containers.
 
 
@@ -2489,16 +2577,7 @@ MySQL
 RabbitMQ
 
 These are called Stateful Applications.
-
-Stateful means
-
-they continuously generate important data.
-
-That data must survive container deletion.
-
-So these applications should always use Docker Volumes.
-
-
+Stateful means they continuously generate important data. That data must survive container deletion. So these applications should always use Docker Volumes.
 
 When you create a file : Docker performs something like this internally.
 Container ----> /usr/share/nginx/html/volume.html ----> Docker OverlayFS -----> /var/lib/docker/overlay2/<container-layer> ----> Physical Disk
@@ -2510,13 +2589,19 @@ i container deleted ---> Docker deletes overlay2/<random id >  which means volum
 
 types of Volumes:
 -----------------------
-1)Anonymous Volume
-Suppose : docker run -v /data nginx     ---> Docker automatically creates a random volume name.
+1)Anonymous Volume : Docker automatically creates with a random volume name and managed by docker and docker volume commands are not suppotrd.
+Anonymous volumes are useful when Docker or an image needs temporary/persistent storage without you needing to manage a specific volume name.
+Ex: 
+Suppose : docker run -v /data nginx  
+
+/data ---> container path 
 
 Example : f7a89c234abc...  
 Not recommended. Difficult to manage.
 
-2)Named Volume :
+U can see using ---> docker volume ls
+
+2)Named Volume : It is a volume storage managed by docker where explicitly we provide a custom name and it can persist across container lifecycle and docker volume commands will support  
 cmd : docker run -v mongo-data:/data/db mongo
 
 Docker itself manages storage. Using docker volume commands 
@@ -2533,7 +2618,8 @@ Docker stores it inside /var/lib/docker/volumes/mongodb/_data
 Since Docker manages these volumes, backup, restore and maintenance become much easier. With bind mounts, Linux directories are managed manually.
 
 3)Bind Mount (Host Path/unnamed volume)
-Instead of Docker managing storage, Suppose you want to use your own directory.
+A bind mount maps a specific host file or directory directly into a container, so it is useful when the container needs direct access to host-managed files or directories.
+Instead of Docker managing storage, we can mentio our own directory .
 cmd: docker run -v /home/ec2-user/data:/data/db mongo
 
 Now /home/ec2-user/data belongs to you. Docker simply mounts it.
@@ -2547,6 +2633,11 @@ Ex:
 3)/home/ec2-user/nginx-data belongs to Linux. Docker doesn't manage it. Docker simply mounts it.
 
 If you create volume.html --> inside the container it immediately appears inside /home/ec2-user/nginx-data ---> Delete the container. Folder or File still exists. Because Linux owns this folder. Docker does not.
+
+
+4. tmpfs Mount
+A tmpfs mount stores container data in the host's memory (RAM) instead of persistent disk storage. so the data is temporary and If the container stops or is removed data will be lost
+Ex: docker run --tmpfs /app/temp nginx
 
 Difference 
 Named Volume : Docker manages storage. 
@@ -2565,8 +2656,8 @@ Volume vs Bind Mount
 
 Why not store everything inside containers?
 Suppose
-
-MongoDB container size 5 GB ---> Database : 500 GB ------> if everything stays inside container ---> Deleting container ----> 500 GB lost ----->  Very dangerous. Volumes solve this problem.
+MongoDB container size 5 GB ---> Database : 500 GB ------> if everything stays inside container ---> Deleting container ----> 500 GB lost ----->  Very dangerous. 
+Volumes solve this problem.
 In users case --> if we have an application users register with their details --> those detailses if u store in container --> if container deleted or new code changes pushed we need to run new container with new code so if u store in container if u delete container whole data will be lost if user tries to login with etails registered he will get error becasue all data lost 
 
 Real-Time Deployment
@@ -2578,8 +2669,7 @@ Immediately Create new container
 Attach : mongo-data Application starts. Database remains intact. Users never lose data.
 
 Interview Answer (5 Years)
-
-"Docker Volumes are Docker-managed persistent storage locations that store application data outside the container's writable layer. Since containers are ephemeral, any data stored inside them is lost when they are deleted. Volumes solve this problem by preserving data independently of the container lifecycle. In our RoboShop project, we used Docker volumes for stateful services such as MongoDB and MySQL so that database files persisted across container recreations, deployments, and upgrades."
+Docker Volumes are Docker-managed persistent storage locations that store application data outside the container's writable layer. Since containers are ephemeral, any data stored inside them is lost when they are deleted. Volumes solve this problem by preserving data independently of the container lifecycle. In our RoboShop project, we used Docker volumes for stateful services such as MongoDB and MySQL so that database files persisted across container recreations, deployments, and upgrades.
 
 Q1. Why do we use Docker Volumes?
 To persist application data independently of the container lifecycle.
@@ -2591,7 +2681,6 @@ Q3. What happens if I delete the volume?
 All data stored in that volume is permanently lost.
 
 Q4. Can multiple containers use the same volume ---> Yes.
-
 Docker allows multiple containers to mount the same volume, but whether that is safe depends on the application. Read-only sharing is common. For databases like MongoDB or MySQL, sharing the same writable data directory between multiple containers is generally not recommended because it can corrupt data unless the application is specifically designed for it.
 
 Q5. Which applications generally require volumes?
@@ -2610,7 +2699,7 @@ Jenkins (to preserve jobs, plugins, and configuration)
 
 
 
-docker compose down -v ---> eletes container and volumes at a time 
+docker compose down -v ---> deletes container and volumes at a time 
 
 Containers are ephemeral, which means they are temporary in nature. Whatever data is created inside a container is stored in the container's writable layer. If the container is deleted, Docker also removes that writable layer. As a result, all the data stored inside the container is lost.
 
@@ -2618,8 +2707,7 @@ This behavior is perfectly fine for stateless applications like frontend applica
 
 
 Interview Answer (4+ Years)
-
-"Containers are ephemeral, so any data stored inside the container's writable layer is deleted when the container is removed. For stateless applications this is acceptable, but for stateful applications like MongoDB, MySQL, Redis, and RabbitMQ we need persistent storage. Docker Volumes solve this problem by storing data outside the container. In our RoboShop project, we used named Docker Volumes with Docker Compose for all stateful services. During deployments we frequently recreated containers using docker compose down and docker compose up -d, but because the database files were stored in Docker Volumes, application data remained intact and users could continue using the application without losing their information."
+Containers are ephemeral, so any data stored inside the container's writable layer is deleted when the container is removed. For stateless applications this is acceptable, but for stateful applications like MongoDB, MySQL, Redis, and RabbitMQ we need persistent storage. Docker Volumes solve this problem by storing data outside the container. In our RoboShop project, we used named Docker Volumes with Docker Compose for all stateful services. During deployments we frequently recreated containers using docker compose down and docker compose up -d, but because the database files were stored in Docker Volumes, application data remained intact and users could continue using the application without losing their information.
 
 
 
@@ -4411,9 +4499,5 @@ Interview Question :  How do you verify that Docker has created separate namespa
 Then I inspect /proc/<PID>/ns on the host or /proc/self/ns from inside the container. 
 These directories list the PID, Network, Mount, UTS, IPC, User, and Cgroup namespaces associated with the container's processes. 
 I can also verify individual namespaces using commands like ps, ip addr, hostname, mount, and id."
-
-
-
-
 
 ===================================================================================================================================================================
