@@ -2717,22 +2717,22 @@ Containers are ephemeral, so any data stored inside the container's writable lay
 
 Multi-Stage Builds
 -------------------------
+It is a docker build optimization technique where multiple FROM instructions are used in a single Dockerfile. One stage is used to build the application, and another stage is used to create the final lightweight image by copying only the required artifacts.
 
-A Multi-Stage Build is a Docker build technique where multiple FROM instructions are used in a single Dockerfile. One stage is used to build the application, and another stage is used to create the final lightweight production image by copying only the required artifacts.
-or
-We use one Docker image to build the application and another Docker image to run the application.
+i.e., We use one Docker image to build the application and another Docker image to run the application.
 
 Why do we need Multi-Stage Builds?
 Let's understand the problem first. Suppose we have a Java Spring Boot application.
 
+Suppose we have a Java Application --> we need to build the application first and then run the application 
 To build it, we need
-
 JDK
 Maven
 Source Code
-
 So our Dockerfile looks like
 
+Single stage 
+----------------
 FROM maven:3.9-eclipse-temurin-17
 COPY . .
 RUN mvn clean package
@@ -2742,25 +2742,24 @@ Question
 What does this image contain?
 It contains : Maven , JDK , Source Code , Maven Cache , Target Folder , JAR File ---> Everything.
 
-Question : Do we need Maven in Production --> No. --->  Do we need Source Code ----> No ---->  Do we need pom.xml ----> No ----> We only need catalogue.jar 
+Question : Do we need Maven in Production --> No --->  Do we need Source Code ----> No ---->  Do we need pom.xml ----> No ----> We only need catalogue.jar 
 So why carry everything?
 
 What's the problem?
 Suppose : Application JAR size ---> 80 MB ---> Maven ---> 350 MB ---> JDK ---> 250 MB ---> Source Code ---> 20 MB ---> Final Image is very large ---> 700 MB+
+But we need only jar file to run the application 
 
-
-Solution : Multi-Stage Build.
-
+Solution : Multi-Stage Build
+------------------------------------
 Example:  Java Based Application
-Now Stage 1 :  Only builds application.
+Now Stage 1 :  Only builds application and produces jar file 
 
-FROM maven:3.9 AS builder
+FROM maven:3.9 AS builder													we can use AS or alias 
 WORKDIR /app
 COPY . .
 RUN mvn clean package
 
-produces jar file 
-Second Stage
+Stage 2 :
 
 FROM eclipse-temurin:17-jre
 WORKDIR /app
@@ -2771,10 +2770,9 @@ Notice : We copied Only catalogue.jar from 1st stage Everything else stays insid
 
 Internal Working : docker build -t catalogue:v1 .
 
-Docker ---> Starts Stage 1 ---> Pulls Maven Image ---> Copies Source Code ---> Runs ---> mvn clean package ---> Creates ---> catalogue.jar
-
+Starts Stage 1 ---> Pulls Maven Image ---> Copies Source Code ---> Runs ---> mvn clean package ---> Creates ---> catalogue.jar
 Stage 2 ---> Pulls JRE Image ---> Copies only ---> catalogue.jar ---> Creates Final Image ---> Builder Stage ---> Discarded 
-As stage 1 discarded only stage 2 data will be present that is ----> JRE and catalogue.jar file thats it nothing else in 1st stage build maven etcc all will br removed 
+As stage 1 discarded only stage 2 data will be present that is ----> JRE and catalogue.jar file thats it nothing else in 1st stage build maven etcc all will be removed 
 
 
 Advantages
@@ -2795,7 +2793,7 @@ AS builder ---> its a stage name. like alias
 we refer that i stage2 build like ---->     --from=builder
 
 
-Example:  NodeJS Based Application
+Another Example:  NodeJS Based Application
 
 Stage 1
 
@@ -2811,17 +2809,19 @@ stage 2:
 FROM nginx:latest 
 COPY --from=builder /app/dist /usr/share/nginx/html
 
-Production contains Only Static Files. No Node, No npm, No Source Code.
-
+Final image contains Only Static Files. No Node, No npm, No Source Code.
 
 Real Project
-
-In our RoboShop project, we used multi-stage builds for applications that required a build step. The first stage used a Maven image to compile and package the Spring Boot application into a JAR file. The second stage used a lightweight JRE image and copied only the generated JAR using COPY --from=builder. This reduced the image size, improved deployment speed, and ensured that build tools such as Maven and the application source code were not present in the production image, improving security and reducing the attack surface.
+In our RoboShop project, we used multi-stage builds for applications that required a build step. The first stage used a Maven image to compile and package the Spring Boot application into a JAR file. The second stage used a lightweight JRE image and copied only the generated JAR using COPY --from=builder. 
+This reduced the image size, improved deployment speed, and ensured that build tools such as Maven and the application source code were not present in the final image, improving security and reducing the attack surface.
 
 
 Interview Answer (5 Years)
 
-"A Multi-Stage Build is a Docker build optimization technique where multiple FROM instructions are used in a single Dockerfile. The first stage is responsible for compiling or building the application using tools such as Maven or Node.js, while the second stage creates a lightweight production image by copying only the required build artifacts. This significantly reduces the final image size, improves security by excluding build tools and source code, speeds up image distribution, and creates a cleaner production image. In our RoboShop project, we used multi-stage builds to package Spring Boot applications into JAR files and deploy only the JAR with a lightweight JRE image."
+A Multi-Stage Build is a Docker build optimization technique where multiple FROM instructions are used in a single Dockerfile. 
+The first stage is responsible for compiling or building the application using tools such as Maven or Node.js, while the second stage creates a lightweight image by copying only the required build artifacts. 
+This significantly reduces the final image size, improves security by excluding build tools and source code, speeds up image distribution, and creates a cleaner production image. 
+In our RoboShop project, we used multi-stage builds to package Spring Boot applications into JAR files and deploy only the JAR with a lightweight JRE image.
 
 
 Q1. Why do we use Multi-Stage Builds?
@@ -2831,7 +2831,7 @@ Q2. Can we have multiple FROM instructions?
 Yes. That is exactly what makes it a Multi-Stage Build.
 
 Q3. What happens to the Builder Stage?
-It is used during the image build process. The final production image contains only the artifacts copied from it. The intermediate build stage is not part of the final image.
+It is used during the image build process. The final image contains only the artifacts copied from it. The intermediate build stage is not part of the final image.
 
 Single Stage vs Multi-Stage
 
@@ -2846,17 +2846,15 @@ Single Stage vs Multi-Stage
 
 
 ⭐ Interview Tip (Very Important)
-"What is the biggest advantage of Multi-Stage Builds?"
-Don't just say: "It reduces image size."
+What is the biggest advantage of Multi-Stage Builds?
+Don't just say: It reduces image size.
 
-"The biggest advantage is that it completely separates the build environment from the runtime environment. We compile the application in the builder stage using tools like Maven or Node.js, but the final production image contains only the runtime and the compiled application. This results in smaller images, faster deployments, reduced attack surface, and improved security, which is why we used multi-stage builds for our production images."
+The biggest advantage is that it completely separates the build environment from the runtime environment. We compile the application in the builder stage using tools like Maven or Node.js, but the final  image contains only the runtime and the compiled application. 
+This results in smaller images, faster deployments, reduced attack surface, and improved security, which is why we used multi-stage builds for our production images.
 
 
 
 ===================================================================================================================================================================
-
-
-
 
 
 Docker Layers
@@ -2864,7 +2862,7 @@ Docker Layers
 Why Docker introduced Layers?
 Before understanding Docker Layers, let's understand the problem. Suppose you have a Dockerfile.Insterd of create one layer big image 
 
-What is Docker Layey
+What is Docker Layer ?
 A Docker Layer is a read-only filesystem layer created for every Dockerfile instruction. Docker stacks these layers one above another to form the final Docker Image.
 or
 Every instruction in Dockerfile creates one layer.
@@ -2910,8 +2908,6 @@ it creates temporary container because image layers are read only so RUN instruc
 
 Docker Layer Caching
 ---------------------------
-
-
 What is Layer Cache?
 Docker Layer Cache is the mechanism where Docker reuses previously built layers if the corresponding Dockerfile instruction and its inputs have not changed.
 
@@ -2935,9 +2931,11 @@ During second build
 Docker checks Layer 1  ---> changes ? No ---> Reuse layer from Cache
 Docker checks Layer 2  ---> changes ? No ---> Reuse layer from Cache
 Docker checks layer 3   ---> we changes server.js so copy should happen so ---> changed ? yes ---> rebuild that layer 
-IMP : ---->   Every instruction after COPY instr is rebuilt.
 
-Once Copy rebuild ---> whatever instructions present after COPY all of them will be rebuild 
+Points IMP : 
+----> Every instruction present after COPY instr is rebuilt because COPY is rebuilt so remaining instruction are force to rebuild 
+----> In Image 1 i have RUN yum install git -y instrucion and built an image now if i use same instruction in 2nd dockerfile or image it uses that from build cache it will no build 
+
 
 Why are Dockerfile instructions ordered carefully?
 Because Docker Layer Cache depends on instruction order.
@@ -2973,9 +2971,7 @@ Image Optimization
 --------------------------
 Why optimize Docker Images?
 
-Question
-
-Why optimize Docker Images?
+Question : Why optimize Docker Images?
 Suppose Image Size 3 GB Every deployment Docker downloads 3 GB from Registry. Slow. Consumes bandwidth. Consumes storage. Therefore Optimize Image.
 
 What is Image Optimization?
@@ -2983,7 +2979,7 @@ Reducing Docker Image size while improving build speed and security.
 
 Best Practices
 1. Use Small Base Images
-Instead of ubuntu/nodejs/etc Use alpine or distroless image versions ---> Smaller image. Less vulnerabilities. Faster pull.
+Instead of ubuntu/nodejs/etc Use alpine or distroless or slim base image versions ---> Smaller image. Less vulnerabilities. Faster pull.
 
 2. Multi Stage Build
 Don't keep ---> Maven , JDK , Gradle , Source Code inside Production Image becasue these are all not required to up the application Only keep Application Jar to runn the application it hass all things which are required to up the application 
@@ -3017,7 +3013,6 @@ COPY app.jar .
 is enough. Less data. Better cache.
 
 7. Minimize Layers
-
 Less layers ---> Less metadata ---> Smaller image ---> Faster pull.
 
 Real Project Example
@@ -3054,13 +3049,14 @@ Fewer vulnerabilities.
 
 4+ Years Interview Answer
 
-"Docker Images are built as a stack of immutable layers, with most Dockerfile instructions contributing to the final image. Docker uses layer caching to reuse unchanged layers across builds, which significantly improves build performance. To maximize cache efficiency, we place stable instructions like dependency installation before frequently changing application code. In our CI/CD pipelines, we optimized Docker images using multi-stage builds, lightweight runtime images, .dockerignore, proper instruction ordering, and cache cleanup. This reduced image size, improved build times, and accelerated deployments."
+Docker Images are built as a stack of immutable layers, with most Dockerfile instructions contributing to the final image. Docker uses layer caching to reuse unchanged layers across builds, which significantly improves build performance. To maximize cache efficiency, we place stable instructions like dependency installation before frequently changing application code. In our CI/CD pipelines, we optimized Docker images using multi-stage builds, lightweight runtime images, .dockerignore, proper instruction ordering, and cache cleanup. This reduced image size, improved build times, and accelerated deployments.
 
 ===================================================================================================================================================================
 
+Docker Best Practices:
+-----------------------------
 
-
-"What Docker best practices do you follow while writing Dockerfiles and deploying containers?"
+What Docker best practices do you follow while writing Dockerfiles and deploying containers?
 
 Docker Best Practices
 Whenever we create Docker images, our goal is not just to make the application work.
@@ -3079,7 +3075,7 @@ These are called Docker Best Practices.
 
 
 1. Use Small Base Images
-"We used lightweight runtime images to reduce image size."
+We used lightweight runtime images to reduce image size.
 Suppose if i use ubuntu base os image  ---> FROM ubuntu
 Ubuntu is a complete operating system.
 
@@ -3328,6 +3324,39 @@ If they ask
 Answer:
 "Using lightweight images, multi-stage builds, Docker layer caching, and .dockerignore reduced image size and build time, resulting in faster image pulls and quicker deployments."
 
+
+
+1. Use Small Base Images
+Use lightweight images like alpine or slim instead of full OS blueprints to drastically reduce image size, speed up deployment, and minimize the attack surface by eliminating unnecessary system utilities.
+2. Use Multi-Stage Builds
+Separate the compilation environment from the execution environment to discard heavy build-time tools (like Maven or Go compilers) and keep only the final application binary or JAR file in the production layer.
+3. Order Dockerfile Instructions Properly
+Place slow-changing instructions like COPY package.json and dependency installations before frequently changing application source code to maximize Docker layer cache reuse and reduce build pipeline times.
+4. Combine Multiple RUN Commands
+Chain commands using && and \ within a single RUN block to drastically reduce the total number of intermediate filesystem layers and eliminate redundant image metadata bloat.
+5. Clean Package Cache
+Always bundle package manager cache cleaning (e.g., && rm -rf /var/lib/apt/lists/* or && yum clean all) inside the same RUN layer that installs the software, preventing ephemeral package archives from getting baked into the image.
+
+6. Use .dockerignore
+Exclude large, irrelevant directories like .git, node_modules, and local logs from the initial build context to prevent slow uploads from the host disk to the Docker engine daemon.
+7. Run Container as Non-Root User
+Create a dedicated system user and switch to it using the USER instruction to enforce the principle of least privilege, preventing container breakout exploits from instantly gaining root access to the underlying host.
+8. Don't Store Secrets Inside Images
+Never bake hardcoded credentials or API keys into Dockerfiles or ENV parameters; instead, dynamically inject them at runtime using environment variables or dedicated systems like Kubernetes Secrets and HashiCorp Vault.
+9. Use Specific Image Tags
+Strictly avoid using the moving target :latest tag; pin explicit semantic versioning (e.g., node:20.11.0-alpine) to guarantee absolute build reproducibility and predictable behavior across production environments.
+10. Use Named Volumes for Stateful Applications
+Map persistent backend databases (like PostgreSQL or MongoDB) to Docker Named Volumes to securely decouple the critical data lifecycle from ephemeral application containers during updates.
+
+11. Use Custom Networks
+Isolate production application stacks inside dedicated user-defined bridge networks to leverage the engine's built-in DNS service discovery while completely blocking unauthorized inter-container communication.
+12. Implement Health Checks
+Configure embedded HEALTHCHECK instructions so the container runtime can natively monitor application responsiveness and automatically route or restart traffic away from frozen or zombie processes.
+13. One Process Per ContainerEnforce a strict decoupling policy where each container manages a single process or microservice to enable granular horizontal auto-scaling, precise logging, and isolated process failure domains.
+14. Use Image Scanning
+Integrate automated scanning tools like Trivy, Aqua, or Snyk directly into the CI/CD pipeline to catch CVE software vulnerabilities and outdated packages before the image can be promoted to production registries.
+
+
 ===================================================================================================================================================================
 
 
@@ -3343,18 +3372,14 @@ docker compose down --rmi all -v	Complete cleanup (containers, networks, images,
 ===================================================================================================================================================================
 
 
-
-
-Docker 
----------
+Docker :
+-----------
 Docker is an open-source containerization platform that allows us to package an application along with its runtime, libraries, dependencies, and configuration into a container, ensuring the application runs consistently across different environments.
 Docker helps developers Build, Ship, and Run applications consistently.
 
 Why Docker?
-
-Before Docker,
-
-Developers said, "It works on my machine."
+Before Docker
+Developers said, It works on my machine.
 Different environments had different library versions.
 Deployment failures were common.
 
@@ -3364,7 +3389,7 @@ Docker System
 -------------------
 Docker System refers to the complete Docker environment that includes Docker Engine, Images, Containers, Networks, Volumes, Build Cache, and other Docker resources used to build and run containerized applications.
 
-Docker System as the complete ecosystem.It also provides commands to monitor and clean up Docker resources.
+Docker System as the complete ecosystem.It also provides commands to manage and clean up Docker resources ( unused files.).
 Docker System
 │
 ├── Docker Engine
@@ -3375,45 +3400,35 @@ Docker System
 ├── Build Cache
 └── Logs
 
-Commands:
+Commands: It is most commonly used to check disk space or clean up unused files.
 
 docker system df             --->  Shows Docker disk usage.
-docker system prune      --->  Removes unused containers, networks, cache, etc.
+docker system prune      --->  Removes unused/stopped containers, dangling images, networks, cache, etc.
 docker system info          --->  Shows Docker environment information.
 
-Docker Image
-------------------
-A Docker Image is a read-only template that contains the application code, runtime, libraries, dependencies, environment configuration, and metadata required to create a Docker container.
-or
-Docker Image is a read-only template created from a Dockerfile. It contains everything required to run an application and acts as the blueprint for creating Docker containers.
+Docker Image :
+--------------------
+Docker Image is a read-only template created from a Dockerfile Instructions. It contains everything required to run an application like application code, runtime env, libraries, dependencies, configuration, and metadata and it acts as the blueprint for creating Docker containers.
 
-Image itself never runs. Container runs by using image 
-
-Internal Working
-Docker Image consists of
-
-Multiple Read-only Layers
-Metadata
-Configuration
-
-Each instruction creates image layers.
+--> Image itself never runs. Container runs by using image  
+--> Each instruction in dockerfile creates new layer
 
 
 Base Image
 ---------------
 A Base Image is the initial image specified using the FROM instruction in a Dockerfile. It serves as the foundation on which our custom Docker image is built.
 or
-"A Base Image is the starting point of every Dockerfile. It provides the operating system or runtime environment required by the application."
+A Base Image is the starting point of every Dockerfile. It provides the operating system or runtime environment required by the application.
 Example :
-FROM ubuntu o FROM eclipse-temurin:17-jre
+FROM ubuntu or FROM eclipse-temurin:17-jre
 remaining instructions will be built on top of this base image 
 
 
-Docker Container
------------------------
+Docker Container :
+-------------------------
 A Docker Container is a running instance of a Docker Image that executes the application in an isolated environment while sharing the host operating system kernel.
 or
-"A Docker Container is a lightweight isolated runtime environment created from a Docker Image. It executes the application while sharing the host operating system kernel."
+A Docker Container is a lightweight isolated runtime environment created from a Docker Image. It executes the application while sharing the host OS kernel.
 Containers have
 Own Filesystem
 Own Network Namespace
@@ -3426,19 +3441,17 @@ Difference Between Image and Container
 | Docker Image                           | Docker Container                          |
 | -------------------------------------- | ----------------------------------------- |
 | Read-only template                     | Running instance                          |
-| Static                                 | Dynamic                                   |
+| Static                                             | Dynamic                                   |
 | Cannot execute                         | Executes application                      |
 | Built using Dockerfile                 | Created from Image                        |
 | Multiple containers can use same image | Each container has its own writable layer |
 
 
 Interview Answer
-
-"Docker Image is a blueprint, whereas a Docker Container is the running instance of that blueprint. One image can be used to create multiple containers."
+Docker Image is a blueprint, whereas a Docker Container is the running instance of that blueprint. One image can be used to create multiple containers.
 
 AMI vs Docker image 
-
-"An AMI is a template used to launch EC2 instances, just as a Docker Image is a template used to create Docker Containers. Similarly, an EC2 Instance corresponds to a running Docker Container."
+An AMI is a template used to launch EC2 instances, just as a Docker Image is a template used to create Docker Containers. Similarly, an EC2 Instance corresponds to a running Docker Container.
 
 docker attach
 ------------------
@@ -3459,7 +3472,7 @@ docker exec -it <containerid> bash ---> Starts new shell process.
 Project : In real projects we mostly use docker exec -it -------> because it is safer and allows debugging without attaching to the main application process.
 
 Interview Answer
-"docker attach connects to the primary running process of a container, whereas docker exec starts a new shell or process inside the container. In day-to-day operations, we mostly use docker exec for debugging."
+docker attach connects to the primary running process of a container, whereas docker exec starts a new shell or process inside the container. In day-to-day operations, we mostly use docker exec for debugging.
 
 
 Every Docker Container is a Process
@@ -3472,9 +3485,7 @@ ps -ef ---> to see all running process
 
 Why do we say 
 Example :
-"Every Docker Container is a Process"?
-
-Docker does not create a Virtual Machine. Docker simply starts an isolated Linux Process.
+Every Docker Container is a Process --> Docker does not create a Virtual Machine. Docker simply starts an isolated Linux Process.
 
 Example : docker run nginx
 
@@ -3494,7 +3505,7 @@ A File System is the method used by an operating system to organize, store, retr
 Hard Disk ---> Filesystem ---> Folders ---> Files
 
 
-Docker File System : Every container gets its own isolated filesystem created from Docker Image Layers.
+ 
 
 When container -->  writes, logs, uploads temp files, -->  Docker stores them inside Writable Layer. If the container is removed, Writable Layer is removed. That's why we use Docker Volumes
 
@@ -3505,8 +3516,9 @@ Interview Answer
 
 ⭐ 4+ Years Final Interview Summary
 
-"What is a Docker Container internally?"
-"A Docker Container is a lightweight isolated runtime environment created from a Docker Image. Internally, it is an isolated Linux process that uses namespaces for isolation and cgroups for resource management while sharing the host operating system kernel. Each container has its own filesystem, network stack, and process space, but it does not have its own kernel like a virtual machine. The container remains running as long as its main process (PID 1) is active."
+What is a Docker Container internally?
+A Docker Container is a lightweight isolated runtime environment created from a Docker Image. Internally, it is an isolated Linux process that uses namespaces for isolation and cgroups for resource management while sharing the host operating system kernel. 
+Each container has its own filesystem, network stack, and process space, but it does not have its own kernel like a virtual machine. The container remains running as long as its main process (PID 1) is active.
 
 *******************************************************************************************************************************************************************
 
@@ -3514,8 +3526,8 @@ Interview Answer
 
 Docker Architecture :
 ---------------------------
-
-Docker Architecture defines how different Docker components work together to build images, create containers, manage networking and storage, and communicate with Docker registries. The major components are Docker Client, Docker Daemon (Docker Engine), Docker Socket, Docker Registry, containerd, and runc.
+Docker Architecture defines how different Docker components work together to build images, create and run containers, manage networking and storage, and communicate with Docker registries. 
+The major components are Docker Client,Docker Socket,Docker Host (Docker Engine (Docker Daemon)), containerd, and runc and Docker Registry.
 
 
 Docker Architecture as a company.
@@ -3524,14 +3536,20 @@ User (types docker run cmd) ---> Docker Client reads it sent through ---> Docker
 
 Docker Client: 
 ------------------
-Docker Client is the command-line interface (CLI) through which users interact with Docker. It accepts Docker commands and sends them to the Docker Daemon using Docker REST APIs.
+Docker Client is the command-line interface (CLI) through which users interact with Docker. It accepts Docker command and converts them into HTTP REST API requests and send those request to the Docker Daemon using Docker Socker it is the communication channel between client and docker daemon.
+
+Docker Client doesnt create images or container It only sends requests to Docker Deamon 
 
 Ex:  docker build,  docker run , docker pull etc...
 
+REST API request based on command : 
+HTTP POST Request 	---> is used when you are creating things (like docker run or docker build).
+HTTP GET Request   	---> is used when you are listing things (like docker ps or docker images).
+HTTP DELETE Request ---> is used when you are removing things (like docker rm or docker rmi).
+
 Internal Working :
 Suppose you execute ----> docker run nginx
-	
-User ---> Docker CLI ---> Converts command into REST API request ---> Sends request through---> Docker Socket ---> docker daemon
+User ---> Docker CLI ---> Converts command into REST API request ---> Sends request through ---> Docker Socket ---> docker daemon
 
 
 Real Project
@@ -3540,29 +3558,54 @@ In our Jenkins Pipeline ------>    sh 'docker build -t catalogue:v1 .'
 
 Jenkins simply executes Docker Client. Docker Client ----> sends request via Docker Socket communication channel ----> Docker Daemon.
 
-Docker Client doesnt create images or container It only sends requests to Docker Deamon 
+┌────────────────────────────────────────────────────────────────────────┐
+│  DOCKER HOST (Your AWS EC2 Linux Server)                              │
+│                                                                        │
+│  ┌──────────────────────────────────────────────────────────────────┐  │
+│  │  DOCKER ENGINE (The overall Software Collection / Package)       │  │
+│  │                                                                  │  │
+│  │  1. Docker REST API (The network entry interface)                │  │
+│  │                                                                  │  │
+│  │  2. Docker Daemon (dockerd)                                      │  │
+│  │     └── Handles: Images, Volumes, Custom Networks, Auth          │  │
+│  │                                                                  │  │
+│  │  3. containerd (Background Service / Systemd Unit)               │  │
+│  │     └── Handles: Container states, snapshot layers, pulls        │  │
+│  │                                                                  │  │
+│  │  4. runc (Low-level CLI Binary tool)                             │  │
+│  │     └── Handles: Interacting with Linux Kernel cgroups/namespaces│  │
+│  └──────────────────────────────────────────────────────────────────┘  │
+└────────────────────────────────────────────────────────────────────────┘
 
-Interview Answer
 
-Docker Client is the user interface used to interact with Docker. It accepts commands like docker build, docker run, and docker pull, converts them into REST API requests, and sends them to Docker Daemon through the Docker Socket.
-
-
+Docker Host :
+-----------------
+Docker Host is the physical or virtual machine on which Docker Engine runs and where Docker containers are created and executed.
+It consists Docker Engine
 
 Docker Engine:
 -------------------
-Docker Engine is the complete container runtime platform that enables building, running, and managing containers. It consists of Docker Daemon (dockerd), Docker REST API, and containerd/runc for container execution.
-
-What is Docker Engine?
-
-Docker Engine is the core runtime platform of Docker. It consists of Docker Daemon, Docker REST API, containerd, and runc. Docker Engine receives requests from Docker Client, manages Docker resources, and creates containers using containerd and runc.
+Docker Engine is the complete engine/platform that enables building, running, and managing containers. 
+It consists of Docker Daemon (dockerd), Docker REST API, and containerd/runc for container execution.
+Docker Engine receives requests from Docker Client, manages Docker resources, and creates containers using containerd and runc.
 
 
 Docker Engine Components
 
-1. Docker Daemon (dockerd)     --> responsible for building images, creating containers , managing networks and managing volumes 
-2. Docker REST API                      --> Allows Docker Client to communicate with Docker Daemon. Docker Client converts it into a REST API request.
-3. containerd                                --> Manages the complete lifecycle of containers. like Pull Image , Create Container , Start Container , Stop Container , Delete Container
-4. runc                                           --> Actually creates the Linux container. Uses Namespaces and cgroups and Starts PID 1.
+1. Docker Daemon (dockerd)     --> responsible for building images, creating containers , managing networks and managing volumes and connects with registy
+2. Docker REST API                      --> Docker Client uses the Docker Engine API to send requests to the Docker Daemon.
+3. containerd                                --> Manages the complete lifecycle of containers. like Create Container , Start Container , Stop Container , Delete Container and Manage container images/snapshots
+4. runc                                           --> Actually creates the container process. Uses Namespaces and cgroups  to create the container process and Starts PID 1..
+
+Docker Client uses the Docker Engine API to send requests to the Docker Daemon.
+Docker socket is one way those API requests are transported to dockerd or communication happens .
+
+containerd and runc are underlying runtime components used by Docker Engine;
+dockerd communicates with containerd, and containerd uses runc to create and run containers
+runc is the low-level OCI runtime responsible for creating and starting container processes using Linux kernel isolation features.
+
+who will perform create and running of containers 		----> runc 
+who will perform delete and stopping of containers 	----> containerd 
 
 Docker Engine
 ├── Docker Daemon
@@ -3576,8 +3619,7 @@ The complete flow becomes
 User ---> Docker Client ---. Docker REST API ---> Docker Engine ---> Docker Daemon ---> Image Exists? ---> No ---> Docker Registry ---> Download Image ---> containerd ---> runc ---> Linux Kernel ---> Container Running
 
 4+ Years Interview Answer
-
-"Docker Engine is the core runtime component of Docker. It includes Docker Daemon, which manages Docker resources; Docker REST API, which enables communication between the client and daemon; containerd, which manages the container lifecycle; and runc, which creates the actual Linux containers. When a user executes a Docker command, the Docker Client sends a REST API request to Docker Engine. Docker Daemon processes the request, containerd manages the lifecycle, and runc creates the isolated container using Linux kernel features."
+Docker Engine is the core runtime component of Docker. It includes Docker Daemon, which manages Docker resources; Docker REST API, which enables communication between the client and daemon; containerd, which manages the container lifecycle; and runc, which creates the actual Linux containers. When a user executes a Docker command, the Docker Client sends a REST API request to Docker Engine. Docker Daemon processes the request, containerd manages the lifecycle, and runc creates the isolated container using Linux kernel features."
 
 Docker Daemon (dockerd)
 -----------------------------------
@@ -3638,7 +3680,7 @@ Why Normal User gets Permission Denied ---> if user not added to docker group/ n
 Because Docker Socket belongs to root user and docker group, Normal user cannot access it.
 
 Solution: 
- sudo usermod -aG docker ec2-user ----> After executing do Logout and Login or newgrp docker command. Now Normal user can communicate with Docker Socket.
+sudo usermod -aG docker ec2-user ----> After executing do Logout and Login or newgrp docker command. Now Normal user can communicate with Docker Socket.
  
  Real Project
 In CI/CD, Jenkins must have permission to access /var/run/docker.sock Otherwise Jenkins cannot build or run containers. we need to add jenkins user to the docker group	
@@ -3649,15 +3691,11 @@ Docker Socket is a Unix domain socket located at /var/run/docker.sock. It acts a
 
 Docker Registry
 --------------------
-Docker Registry is a repository used to store and distribute Docker Images. Docker Daemon pulls images from registries and pushes newly built images to them.
+Docker Registry is a central repository used to store and distribute Docker Images. Docker Daemon pulls images from registries and pushes newly built images to them.
 
 Examples
 
-Docker Hub
-AWS ECR
-Azure ACR
-Nexus
-Harbor
+Docker Hub , AWS ECR , Azure ACR , Nexus , Harbor
 
 Internal Working:
 run ---> docker run nginx
@@ -3678,21 +3716,18 @@ Complete Internal Flow (Most Important):
 Suppose if u run ------> docker run nginx
 User ---> Docker Client ---> Converts Command into REST API ---> Docker Socket (/var/run/docker.sock) ----> Docker Daemon ----> Image Available? NO ---> Docker Registry (Docker Hub) ---> Download Image ---> containerd ---> runc ---> Linux Kernel ---> Running Container
 
-
-
-
-
 Interview Answer (4+ Years)
-"Docker Architecture consists of Docker Client, Docker Daemon, Docker Socket, Docker Registry, containerd, and runc. Docker Client accepts user commands and converts them into REST API requests. These requests are sent through the Unix socket /var/run/docker.sock to Docker Daemon. Docker Daemon is the core service responsible for building images, creating containers, managing networks and volumes, and communicating with Docker Registries. If the requested image is not available locally, Docker Daemon pulls it from a registry such as Docker Hub or a private registry like Nexus. It then delegates container creation to containerd, which invokes runc to create the isolated Linux container. In our project, Jenkins invoked Docker CLI commands, Docker Daemon built and pushed images to our registry, and the deployment servers pulled those images to create containers."
+Docker Architecture consists of Docker Client, Docker host (Docker Engine (Docker API , Docker Daemon, containerd,runc), Docker Socket, Docker Registry. 
+Docker Client accepts user commands and converts them into REST API requests. These requests are sent through the Unix socket /var/run/docker.sock to Docker Daemon. 
+Docker Daemon is the core service responsible for building images, creating containers, managing networks and volumes, and communicating with Docker Registries. 
+If the requested image is not available locally, Docker Daemon pulls it from a registry such as Docker Hub or a private registry like Nexus. 
+It then delegates container creation to containerd, which invokes runc to create the isolated Linux container. 
+In our project, Jenkins invoked Docker CLI commands, Docker Daemon built and pushed images to our registry, and the deployment servers pulled those images to create containers."
 
 
 ⭐ Interview Tip (Very Important)
-"How does docker run nginx work internally?"
-"When I execute docker run nginx, Docker Client converts the command into a REST API request and sends it through /var/run/docker.sock to Docker Daemon. Docker Daemon checks whether the nginx image exists locally. If not, it pulls the image from the Docker Registry. After the image is available, Docker Daemon delegates container creation to containerd, which invokes runc to create an isolated Linux container. Finally, the application's main process (PID 1) starts, and the container enters the Running state."
-
-
-
-
+How does docker run nginx work internally?
+When I execute docker run nginx, Docker Client converts the command into a REST API request and sends it through /var/run/docker.sock to Docker Daemon. Docker Daemon checks whether the nginx image exists locally. If not, it pulls the image from the Docker Registry. After the image is available, Docker Daemon delegates container creation to containerd, which invokes runc to create an isolated Linux container. Finally, the application's main process (PID 1) starts, and the container enters the Running state."
 
 Containerd and runc :
 
@@ -3731,7 +3766,6 @@ Calls runc
 
 
 What is runc?
-
 runc is a low-level OCI-compliant container runtime responsible for creating and starting containers using Linux kernel features such as namespaces and cgroups.
 or
 runc is the component that actually creates the container.
@@ -3865,12 +3899,6 @@ Ex:  CMD ["echo","Hello"]  ---> docker run test it gives output and exits immedi
 
 
 ===================================================================================================================================================================
-
-
-
-
-
-
 
 
 Additional topics:
