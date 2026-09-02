@@ -820,15 +820,18 @@ Now Docker ignores command given in dockerfile : CMD ["node","server.js"] ------
 RUN  ---> runs at the time of image creation or building
 CMD ---> runs at the time of container creation  
 
+RUN 
+is used to execute commands during image building process and what ever changes made by the command those will be added as a new layer on top of base image 
+Purpose is like Install packages , Create directories , Download dependencies , Configure software
+Multiple RUN instruction we can have and all will be runned 
+Runs only **once** while building the image
 
-RUN vs CMD
-RUN Executed During docker build
-Purpose : Install packages , Create directories , Download dependencies , Configure software
-Ex: RUN npm install
-
-CMD Executed During docker run
+CMD 
+is used to specify the default command to execute at the time of container start and during image build time it will not run instead it saves as metadata in image metadata
 Purpose : Start the application
-Example : CMD ["node","server.js"]
+Only one CMD instruction should have in each file if we mention multiple it will consider last Instruction and above remaining are ignored 
+CMD can be overridden during run time (docker run )
+Runs **every time** a container starts                             
 
 RUN vs CMD
 ------------------
@@ -908,6 +911,9 @@ RUN yum install nginx -y
 CMD ["nginx", "-g", "daemon off;"]
 
 run : docker run -d -p 8080:80 cmd:v1 
+
+
+
 
 ====================================================================================================================================================================
 
@@ -4062,7 +4068,14 @@ This is called Resource Starvation.
 
 Solution:  We define limits.
 Example : 
-docker run --memory=512m --cpus=2 nginx    ----> Now Docker ensures Container cannot exceed
+1. docker run --memory=512m --cpus=2 nginx    ----> Now Docker ensures Container cannot exceed			---> it is like hard limit 
+
+2. docker run -d --name my-app -m 512m --memory-reservation 256m nginx
+3. docker run -d --name my-app --cpus="2.0" --cpu-shares=512 nginx
+
+--memory-reservation 256m and --cpu-shares=512  ----> refers to soft limit it can cross this line if container wants more and host has space but will pushed back to use same limit if server runs low but if container hits hard limit  --> 
+in case of memory  ----> container dead -- OOM killed error --> container will be killed by linux kernel 
+in case of cpu ---> High latency (requests take much longer to respond).Low performance and slow execution speed. High CPU Throttling metrics in your dashboards 
 
 Meaning : Container cannot use more than 512 MB RAM
 
@@ -4083,9 +4096,7 @@ Container C --> Limit : 2 GB
 Linux Kernel uses cgroups to enforce these limits.
 
 Memory Limit
-
 What happens internally?
-
 Container starts ---> Application allocates memory ---> Linux cgroup monitors ---> Memory reaches 512 MB ---> Application requests ---> more memory ---> Linux denies ---> OOM Killer executes ---> Container stops
 
 
@@ -4107,7 +4118,7 @@ Internal Working :
 Linux Scheduler allocates CPU based on cgroups. Docker doesn't schedule CPU. Linux Kernel does.
 
 Memory Swap : 
-Command:  docker run --memory=512m --memory-swap=1g
+4. Command:  docker run --memory=512m --memory-swap=1g
 
 Means RAM 512 MB Swap 512 MB Total Available 1 GB If RAM becomes full, Linux temporarily uses disk (swap).
 
@@ -4122,7 +4133,6 @@ command : docker stats
 This command displays real-time CPU and memory usage for running containers.
 
 Real Project Example
-
 In our project, we monitored resource usage using docker stats during development and testing. For production deployments, resource limits were primarily defined in Kubernetes manifests rather than with Docker CLI options. This ensured that each microservice received appropriate CPU and memory allocations and prevented one service from exhausting node resources.
 
 Why do we configure Resource Limits?
@@ -4140,7 +4150,7 @@ The container is throttled. It is not killed. The Linux scheduler restricts its 
 
 4+ Years Interview Answer
 
-"In Docker, resource limits are configured to prevent a container from consuming excessive host resources. We can limit memory using --memory and CPU using --cpus. Internally, Docker configures Linux cgroups, which enforce these limits. If a container exceeds its memory limit, the Linux OOM Killer terminates the main process, causing the container to stop. If it exceeds its CPU limit, the Linux scheduler throttles CPU usage rather than terminating the container. In our project, we monitored container resource consumption using docker stats, while production resource limits were managed through Kubernetes resource requests and limits, which use the same Linux cgroups mechanism underneath."
+In Docker, resource limits are configured to prevent a container from consuming excessive host resources. We can limit memory using --memory and CPU using --cpus. Internally, Docker configures Linux cgroups, which enforce these limits. If a container exceeds its memory limit, the Linux OOM Killer terminates the main process, causing the container to stop. If it exceeds its CPU limit, the Linux scheduler throttles CPU usage rather than terminating the container. In our project, we monitored container resource consumption using docker stats, while production resource limits were managed through Kubernetes resource requests and limits, which use the same Linux cgroups mechanism underneath.
 
 
 
@@ -4236,7 +4246,6 @@ Application crashes ---> PID 1 exits ---> Container enters ---> Exited State ---
 
 
 Real Project Example
-
 In development environments, we sometimes used --restart=unless-stopped so that application containers came back automatically after a server reboot but remained stopped if a developer had intentionally stopped them for maintenance.
 
 In production, when applications were deployed on Kubernetes, we generally did not configure Docker restart policies because Kubernetes itself manages container restarts. The kubelet monitors containers and recreates them based on the Pod's restart policy. Therefore, restart management was handled by Kubernetes rather than Docker.
