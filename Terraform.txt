@@ -16,15 +16,14 @@ Shift left practice -- we use in pipelines
 Network ALC topic 
 
 Terraform:	
--------------
-Terraform is an open-source Infrastructure as Code (IaC) tool developed by HashiCorp. It allows us to create, modify, and destroy infrastructure resources using declarative configuration files. Terraform supports multiple providers like AWS, Azure, GCP, Kubernetes, etc.
+--------------
+Terraform is an open-source Infrastructure as Code (IaC) tool developed by HashiCorp. It is used to provision, manage, and automate and destroy cloud resources using declarative configuration files(.tf files) written in HCL (HashiCorp Configuration Language).
+Terraform supports multiple providers like AWS, Azure, GCP, Kubernetes, etc.
 
-Terraform is an open-source Infrastructure as Code (IaC) tool developed by HashiCorp. It is used to provision, manage, and automate cloud resources using declarative configuration files(.tf files) written in HCL (HashiCorp Configuration Language). Terraform enables us to create, update, and destroy infrastructure in a consistent, repeatable, and version-controlled manner across multiple environments.
+ Terraform enables us to create, update, and destroy infrastructure in a consistent, repeatable, and version-controlled manner across multiple environments.
 
 Project-Based Interview Answer (Recommended)
-
 In our project, we used Terraform to provision and manage AWS infrastructure such as EC2 instances, Route53 records, Security Groups, IAM Roles, and S3 backends. We used reusable modules, remote state with S3 and DynamoDB, and environment-specific tfvars files to manage Dev and Production environments. This helped us automate infrastructure provisioning, maintain consistency across environments, and support version-controlled infrastructure deployments.
-
 
 
 2) Manual vs Ansible vs Terraform (Correction needed)
@@ -47,16 +46,17 @@ Install nginx,Java,MongoDB,Application deployment,Configuration files
 
 Interview: Terraform creates servers ---> Ansible configures created servers(it will prepare/configure the server what are all things needed for the application deployment)
 
-
+Advantages :
+------------------
 1)version control
-we can keep our configuration files in git this helps us to track changes,collabrate with team members , Code review from managers, roll back to old version if newer version has issues in production so that bussiness will not impact 
+we can keep our configuration files in github this helps us to track changes,collabrate with team members , Code review from managers, roll back to old version if newer version has issues in production so that bussiness will not impact 
 
 we can track : who changed and what they have changed and why they changed 
 
-2) consistent infrastructure
+2) consistent infrastructure across multiple environments
 Terraform helps us achieve consistent infrastructure across multiple environments like Dev, Test, Pre-Prod, and Production by using the same infrastructure code and but values change based on the environment.(using variables.tfvars file)
 
- automated infra --> we perform CRUD operations create.read,update,delete
+Automated infra --> we perform CRUD operations create.read,update,delete
 Terraform allows us to define infrastructure in a declarative manner, where we specify the desired state of resources, and Terraform automatically decides the required actions needed to achieve that state.
 ex:
 means lets say currently we have an ec2 with
@@ -66,7 +66,6 @@ instance_type = "t3.small"	            --> desired state
 
 When we run ---> terraform apply /plan 
 
-Terraform automatically Reads existing state(.tfstate file) then Compares currentstate file (tfstate + aws existing resource running) vs desired state(.tf diles) then it decides to create/update/delete resources to Achieves desired state	
 
 3)State Management
 Terraform state is a file that stores information about resources created by Terraform(when u run apply cmd).State file is not exactly current cloud state always. It is Terraform's last known recorded state of resources.
@@ -77,7 +76,7 @@ It tracks the current state of the infrastructure available in cloud platform cr
 based on that State file enables terraform to perform actions like create ,update,delete based on the existing infrastructure .
 
 my understanding:
-So basically State file stores the information of currently created/managed/running resources in a cloud platform created by using terraform.Whn i change code and when i do plan or apply command it will read/check that state file and configuration files(.tf files) and compare with aws console resource available based on the info it will decide and perform actions like update,delete or create 
+So basically State file stores the information of currently created/managed/running resources in a cloud platform created by using terraform.When i change code and when i do plan or apply command it will read/check that state file and configuration files(.tf files) and compare with aws console resource available based on the info it will decide and perform actions like update,delete or create 
 
 Terraform Compares b/w ---> Terraform Code i.e,. desired state (.tf configuration files) VS State File (.tfstate file)+ Real AWS (running resources in ex aws )
 Then decides                      ---> Create?,Update?,Delete? resources 
@@ -87,8 +86,19 @@ Example:
 based on the state file info it will decide to update because both are diff values so it will update the resource
 
 
-Terraform state is used to track resources created and managed by Terraform. It stores resource metadata, dependencies, and IDs inside terraform.tfstate file. During terraform plan or apply, Terraform compares the desired configuration(.tf files) with the state file(.tfstate file) and actual cloud infrastructure(aws console infra), then decides whether resources need to be created, updated, or deleted. 
+Terraform state is used to track resources created and managed by Terraform. It stores resource metadata, dependencies, and IDs inside terraform.tfstate file. 
+
+When you run terraform plan or terraform apply , Terraform automatically first performs a state refresh (terraform refresh) by querying the actual AWS API to see actual status of cloud resorces if anyone manually changed things in the aws console  if changed the background refresh detects this variance (called Configuration Drift). It updates its temporary memory so it can compare your code against reality., and then Terraform compares the desired configuration(.tf files) with the state file(.tfstate file) and actual cloud infrastructure(aws console infra), then decides whether resources need to be created, updated, or deleted. 
 In production, we store state remotely using backends like AWS S3 with DynamoDB locking for collaboration.
+
+Terraform automatically Reads existing state(.tfstate file) then Compares currentstate file (tfstate + aws existing resource running) vs desired state(.tf diles) then it decides to create/update/delete resources to Achieves desired state	
+
+
+How it interacts with the Remote BackendIf you are using a secure remote backend like AWS S3 with DynamoDB locking:
+Acquires the Lock: Terraform talks to DynamoDB to lock your state so no other engineer or CI/CD pipeline can run a build at the same time.
+Downloads the State: It pulls the latest terraform.tfstate file from your S3 bucket into memory.
+Performs the Refresh: It runs the API checks against live AWS to verify if the resources in the S3 state file match real life.
+Releases the Lock: Once your plan or apply finishes, it uploads the updated state back to S3 and unlocks DynamoDB.
 
 
 4)Cost optimisation:
@@ -125,23 +135,32 @@ Cost reduced
 5)Dependency Management 
 Terraform automatically understands dependencies.When one resource depends on another resource attribute,Terraform automatically understands the relationship between resources and creates, updates, or deletes them in the correct order.
 In real infrastructure, some resources depend on others Terraform automatically handles this.
-Example:
-resource "aws_vpc" "main" {
+
+1. Implicit Dependency :  
+An Implicit Dependency means you do not have to write any special code to tell Terraform which resource to build first. Terraform automatically detects that based on code reference
+# 1. This resource defines the Security Group
+resource "aws_security_group" "web_sg" {
+  name        = "web-server-sg"
+  description = "Allow HTTP traffic"
 }
-resource "aws_subnet" "public" {                    --> so subnet depends on vpc it automatically understand that first i need to create vpc then subnet 
-vpc_id = aws_vpc.main.id
-}
-resource "aws_instance" "web" {                   --> EC2 depends on Subnet create subnet then it will create ec2
-  ami = "ami-12345"
+
+# 2. This resource defines the EC2 Instance
+resource "aws_instance" "web_server" {
+  ami           = "ami-12345"
   instance_type = "t3.micro"
-  subnet_id = aws_subnet.public.id
+  
+  # LINKING HAPPENS HERE: 
+  vpc_security_group_ids = [ aws_security_group.web_sg.id ] 								# this is called implict dependency because u referenced the ids of sg so SG will be created first then ec2 
 }
-Terraform understands: First create VPC --> then create subnet --> Because subnet depends on VPC --> then create ec2 because ec2 depends on subnet id 
+
+Terraform understands: First create SG --> then create EC2 --> Because ec2 depends on SG id's 
 
 During Destroy
 
-Terraform follows reverse order ----> Delete EC2 --> Delete Subnet --> Delete VPC
-Because VPC cannot be removed while subnet/EC2 exists.
+Terraform follows reverse order ----> Delete EC2 --> Delete SG
+Because EC2 cannot be removed while sg exists.
+
+2. Explicit Dependency : we explicitly mention this resource dependent on other resource creste that first and wait for that to complete then run this resource using (depends_on)
 
 6)Modules
 Terraform modules are reusable collections of Terraform configuration files that are used to organize and reuse infrastructure code.
@@ -173,7 +192,9 @@ Declarative gives Idempotency --> First apply: EC2 not present and Terraform cre
 Second apply without changing terraform code:
 Terraform checks(Terraform compares 3 things:) --> terraform Code: EC2 required i.e., desired state  --> AWS: EC2 already exists ---> Decision: No changes required ---> Output: No changes. and Infrastructure is up-to-date.
 
-That is idempotency. and it follows above menthod  How Terraform Does This Internally? this 
+That is idempotency and it follows above menthod  How Terraform Does This Internally? this 
+
+Idempotency means that an operation can be applied multiple times and produce the exact same final result as applying it just once
 
 Declarative 						vs                                     Imperative
 Declarative (Terraform)					                 Imperative (Scripts)
@@ -193,14 +214,18 @@ Ex: Lets say we are working on a proj and we created multiple resources using te
 8) Hybrid Cloud
 Terraform supports many providers such as AWS,Azure,GCP,Kubernetes,VMware
 
+====================================================================================================================================================================
+
 Terraform Installation flow
 -----------------------------------
 Your diagram:
 Developer Laptop(vs code) --> Terraform CLI --> AWS Provider Plugin(AWS CLI) --> AWS API --> Creates resources
 
-Authentication: Terraform needs Access Key and Secret Key
+Authentication: Terraform needs Access Key and Secret Key to do aws configure 
 or
-In Production we use :    IAM Role
+In Production we use :    
+1 . IAM Role
+2. Jenkins Credentials Manager (Go to Jenkins Manage Jenkins -> Credentials ) ---> in code we refere with withCredentials([[]]) block 
 
 1)Install terraform.exe  ----> from google and install in laptop and paste that path in environment variables
 2)Install AWS_CLI 
@@ -242,7 +267,7 @@ or
           (configured by AWS CLI)
                   |
                   |
-              AWS API
+              AWS API			---> it is a communication system that lets software prog's or tools like terraform , jenkins etc,,  talk directly to AWS to manage cloud resources.
                   |
                   |
             AWS Account
@@ -250,7 +275,7 @@ create/update/delete
       EC2 | VPC | S3 | Route53 | EKS
 	
 
-In our project, we write Terraform configuration files in VS Code and maintain them in Github. Terraform CLI executes commands using git bash. During terraform init, it downloads required provider pluginsfro terraform registry. Terraform plan do compares configuration files(.tf code files) with the state file(.tfstate file) + existing AWS infrastructure in aws to generate an execution plan. Terraform apply communicates with AWS through provider APIs using AWS credentials and creates or updates resources. After execution, Terraform updates the state file to track managed infrastructure.
+In our project, we write Terraform configuration files in VS Code and maintain them in Github. Terraform CLI executes commands using git bash. During terraform init, it downloads required provider plugins from terraform registry. Terraform plan do compares configuration files(.tf code files) with the state file(.tfstate file) + existing AWS infrastructure in aws to generate an execution plan. Terraform apply communicates with AWS through provider APIs using AWS credentials and creates or updates resources. After execution, Terraform updates the state file to track managed infrastructure.
 
 syntax:
  resource "what resource ex: ec2,vpc "	"name of resource we want to display as"{
@@ -270,9 +295,9 @@ resource "aws_instance" "web" {            --> aws_instance we cant change this 
 
 This syntax is called HashiCorp Configuration language (HCL)
 
+====================================================================================================================================================================
 
-
-Aws provider code  --> it will download aws provider plug in and connect and create resources 	
+Aws provider code  --> it will download aws provider plug in and connect and create resources 	 we can define this in provider.tf or main.tf 
 -------------------------
 terraform {
   required_providers {
@@ -323,8 +348,7 @@ HelloWorld --> instance name
 
 Now command flow starts.
 
-1) terraform init ----> Prepare working directory.
-it creates
+1) terraform init ----> initializes the working directory by reading your configuration files and identifying the required infrastructure providers (like AWS), and downloading their corresponding plugin binaries into a local .terraform directory and It also creates a .terraform.lock.hcl file to pin dependency versions across environments. when u run it creates 
 1).terraform folder
 2).terraform.lock.hcl
 
@@ -345,16 +369,18 @@ project/
  
 Important: terraform init does NOT create AWS resources. Only prepares Terraform.
 
-2) terraform validate (optional) ----> Checks: Syntax correct? and Configuration valid?
+2) terraform validate (optional) ----> checks your code for syntax errors, missing arguments, and invalid attribute names
 Example catches: Wrong: instance_typ = "t3.micro"     --> e is not there in type 
 it will run automatically when u run plan command to check syntax 
 
 
-3) terraform plan ⭐⭐⭐ ----> Show what Terraform is going to do on cloud (just plan it will not create resources)
+3) terraform plan ⭐⭐⭐ ----> It generates a execution plan basically it Shows what Terraform is going to do on cloud (just plan it will not create resources)
 
 Flow: terraform plan
 
 Reads Terraform code (.tf files) -----> Reads state file (terraform.tfstate) -----> Connects AWS using credentials -----> Checks current resources -----> Compares: (Desired state VS Current state + aws infra already existing in aws)  -----> Creates execution plan (whether to create/update/delete)
+
+generates a dry-run execution plan by performing a background 'state refresh'—querying live cloud APIs to check for configuration drift against your .tfstate file. It then compares this current infrastructure state with your desired .tf configurations to calculate the exact structural actions needed
 
 Example: No EC2 currently:
 
@@ -376,7 +402,7 @@ Remove resource: Plan: - destroy              	    --->      (-) symbol  --> inc
 Important: Plan does not change AWS. Only shows.
 
 
-4) terraform apply ⭐⭐⭐ -----> Actually create/update/delete infrastructure in cloud 
+4) terraform apply ⭐⭐⭐ -----> Actually create/update/delete infrastructure in cloud platform
 
 Flow: terraform apply                  --> prompt for conformation yes or no
 or
@@ -409,16 +435,16 @@ flow :
 
 Developer ---> Writes code in VS Code ---> terraform init (download providers) ---> terraform plan (compare and preview) ---> terraform apply (create infra) ---> AWS Account (resources created) ---> terraform.tfstate updated
 
+====================================================================================================================================================================
 
 
-
-Terraform variables       In gihub  examples: terraform-concepts/create-ec2-using-variables-tf and terraform-concepts/variabes-concept-tfvars
--------------------------
+Terraform variables :     In gihub  examples: terraform-concepts/create-ec2-using-variables-tf and terraform-concepts/variabes-concept-tfvars
+---------------------------
 Terraform variables are used to store and pass dynamic values into Terraform configuration files instead of hardcoding them.
 Variables make Terraform code reusable, flexible, and easier to maintain across multiple environments like Dev, Test, and Production.
 
 Why do we use Variables?
-1. Avoid hardcoding , 2. Code reusability , 3. Environment separation (dev/prod) , 4. Easy maintenance , 5. Secure value management ,6. Dynamic infrastructure creation
+1. Avoid hardcoding , 2. Code reusability , 3. Environment separation (dev/prod) , 4. Easy maintenance
 
 1st scenario: for variables.tf file 
 ----------------
@@ -461,7 +487,8 @@ resource "aws_security_group" "allow_all" {
 }
 variables.tf
 ---------------
-4)now variables.tf  we will give default values for above variabes defined in ec2.tf and sg.tf
+4)now variables.tf --->  we will give default configuration values for above variabes defined in ec2.tf and sg.tf
+
 variable "ami_id" {
     type = string
     default = "ami-0220d79f3f480ecf5"
@@ -504,6 +531,7 @@ variable "sg_cidr_blocks" {
 2nd scenario:  terraform.tfvars file 
 -----------------
 terraform.tfvars file is used to override the default values present/given in variables.tf
+terraform.tfvars is a variable definition file used to feed environmental values directly into your declared variables, overriding any defaults set in variables.tf
 Ex:
 in variables.tf i have this value 
 
@@ -513,14 +541,16 @@ variable "instance_type" {
   
 }
 we already gave instance_type value in variabes.tf file like above if i want to overeide that value we can give it in terraform.tfvars file like it will automatically overrides default value
+In terraform.tfvars
 Ex:   instance_type="t3.small"     --> now instance will be updated or created with t3.small it ignores value mentioned in variables.tf file
 terraform.tfvars this file name is fixed file terraform automatically takes it and we can give any name roboshop.tfvars etc 
 
 variable "instance_type" {   in variables.tf and instance_type="t3.small"    ------> name should be same to override default values 
 
 And Imp point:
-terraform.tfvars if u give file name like this then only terraform knows to oveeride values automatically and takes values from terraform.tfvars file  (run : terraform apply)
-if we give diff file name for tfvars file(Ex: roboshop.tfvars) terraform doesnt not pic values from this file we have to specifically mention file using -var-file option  
+--> terraform.tfvars if u give file name like this then only terraform knows to override values automatically and takes values from terraform.tfvars file  (run : terraform apply)
+
+--> if we give diff file name for tfvars file(Ex: roboshop.tfvars) terraform doesnt not pic values from this file we have to specifically mention file using -var-file option  
 terraform apply -var-file="roboshop.tfvars"    like this 
 
 3rd scenario: we can pass variable file in terminal
@@ -553,7 +583,7 @@ TF_VAR_  --> fixed
  
 6th scenario:  prompt for value in cmd line
 -----------------
-we did not mentioned default value of that variable in variabes.tf file and terrafor checks it and not found in variables files now variabe not found any where it will prompt for value when u run plan or apply in terminal
+we did not mentioned default value of that variable in variabes.tf file and terraform checks it and not found in variables files now variabe not found any where it will prompt for value when u run plan or apply in terminal
 variable "ami_id" {
     type = string
     #default = "ami-0220d79f3f480ecf5"       --> here we commented this and this value not present anywhere in code files so prompt in terminal
@@ -575,6 +605,8 @@ Interview Answer ⭐⭐⭐ Terraform variabes
 
 Terraform variables are used to make infrastructure code dynamic and reusable by avoiding hardcoded values. We define variables in variables.tf and provide values through tfvars files, command line, or environment variables. In our project, we maintained separate variable files for dev and production environments while using the same Terraform modules. Terraform supports data types like string, number, boolean, list, map, object, set, and tuple.
 
+====================================================================================================================================================================
+
 Data Types:
 ---------------
 Data types define what kind of values a variable can store and how Terraform should understand and process those values. They help Terraform validate input values and prevent incorrect configurations.
@@ -587,28 +619,24 @@ Why do we use data types?
 
 1. string  --> String data type is used to store text values.
 type = string            ex: default = "roboshop'
+
 2. number --> Number data type is used to store numeric values like counts, ports, or sizes.
 type = number        ex: default = 0
+
 3. bool  --> Boolean data type stores only true or false values and is mainly used for enabling or disabling configurations.
 type = bool              ex: default = true
+
 4) List ⭐⭐⭐ --> List stores multiple values. Similar to Array.
 List data type stores multiple values of the same type in an ordered collection and values can be accessed using index numbers.
 type = list(string)
 in
 variables.tf 
 variable "availability_zones" {
-
  type = list(string)
-
+  availability_zones = ["us-east-1a", "us-east-1b" ]
 }
-terraform.tfvars 
-availability_zones = [
-
-"us-east-1a",
-
-"us-east-1b"
-
-]
+terraform.tfvars  ----> override values present in 
+availability_zones = ["us-east-1d", "us-east-1e" ]
 
 access them via ---> var.availability_zones[0]
  availability_zone = var.availability_zones[count.index] --> all
@@ -623,11 +651,8 @@ variable "instance_type" {
 }
 terraform.tfvars 
 instance_type = {
-
  dev  = "t3.micro"
-
  prod = "t3.large"
-
 }
 
 access them ---> var.instance_type["dev"] 
@@ -635,7 +660,27 @@ access them ---> var.instance_type["dev"]
 instance_type = var.instance_type[var.environment]
 If: environment="prod"  ---> Output: t3.large
 
-6) Object ⭐⭐⭐ ---> Object stores different types together. Like structured data.
+6) Set ---> Similar to list but removes duplicates. 
+Set data type stores a collection of unique values and automatically removes duplicates.
+variable "ports" {
+type=set(number)
+}
+ 
+values --> ports=[80,443,80]     --> terraform store [80,40] --> Duplicate removed.
+
+7) Tuple ---> Fixed collection with different data types.
+Tuple stores a fixed number of values where each value can have a different data type.
+variable "server" {
+type = tuple([string,number,bool])
+default=[ "web", 8080, true ]
+}
+Access:
+web
+8080
+true
+
+
+8) Object ⭐⭐⭐ ---> Object stores different types together. Like structured data.
 Object data type groups multiple related values with different data types into a single variable.
 variable "ec2_config" {
 type = object({
@@ -654,67 +699,48 @@ ec2_config = {
 
 access --> var.ec2_config.disk_size
 
-7) Set ---> Similar to list but removes duplicates. 
-Set data type stores a collection of unique values and automatically removes duplicates.
-variable "ports" {
-type=set(number)
-}
- 
-values --> ports=[80,443,80]     --> terraform store [80,40] --> Duplicate removed.
-
-8) Tuple ---> Fixed collection with different data types.
-Tuple stores a fixed number of values where each value can have a different data type.
-variable "server" {
-type = tuple([string,number,bool])
-default=[
-"web",
-8080,
-true
-]
-}
-Access:
-web
-8080
-true
-
-
-
 Interview Answer ⭐⭐⭐ Terraform Data Types
 Terraform data types define the type of values that variables can accept. They help Terraform validate inputs and maintain reliable infrastructure code. Terraform supports primitive data types like string, number, and bool, and complex data types like list, map, set, object, and tuple. In our project, we used them to make modules reusable and avoid hardcoded configurations.
 
 simple 
 Primitive Types
-================
+============
 string  → text
 number  → numeric
 bool    → true/false
 
 Collection Types
-================
+=============
 list    → multiple ordered values
 map     → key-value pairs
 set     → unique values
+
 Structural Types
-================
-object  → group of named attributes
+=============
 tuple   → fixed structure values
+object  → group of named attributes
 
 
-Conditions: In github : terraform-concepts/conditions folder 
+====================================================================================================================================================================
+
+
+Conditions: 				Ex : In github : terraform-concepts/conditions folder 
 --------------
 Conditions in Terraform are used to make decisions dynamically based on variable values or expressions.
 They allow Terraform to create flexible infrastructure by choosing different values, enabling/disabling resources, or changing configurations based on requirements.
+
 syntax:
 ---------
 1)nrml condition:
+
 if(condition) {
    if true this will run 
  else
 	if false it will run
 }
 
-2)one line syntax:
-expression ?  "if true this will run "  :  "if false this will run" --> terraform will follow this 
+2)one line syntax:		declarative ternary operator pattern
+expression/condition ?  "if true this will run "  :  "if false this will run" 				--> terraform will follow this 
 
 Example : 1
 1)provider.tf
@@ -736,6 +762,27 @@ variable "ami_id" {
   
 }
 
+instance_type = var.env_instance_type == "dev" ? "t3.small" : "t3.medium"           ---> using var dynamic passing 
+instance_type = "prod" == "prod" ? "t2.micro" : "t3.medium"									  ---> hardcodening 
+
+Ex  : 2 --> 
+variable "is_production" {
+  type    = bool
+  default = false
+}
+resource "aws_instance" "web_server" {
+  ami           = "ami-12345"
+  
+  # IF is_production is true, use t3.medium. ELSE, use t3.micro.
+  instance_type = var.is_production ? "t3.medium" : "t3.micro"
+}
+
+When is_production = false:
+instance_type = false ? "t3.medium" : "t3.micro" ➔ Result: "t3.micro"
+When is_production = true:
+instance_type = true ? "t3.medium" : "t3.micro" ➔ Result: "t3.medium"
+
+
 2)conditions with tags
 tags = {
  Environment = var.env_instance_type
@@ -746,10 +793,11 @@ tags = {
 3)multiple conditions
 instance_type = (
 var.environment == "prod" ? "t3.large" : "t3.micro"
-var.environment == "stage" ? "t3.medium" : "t3.micro"
+var.environment == "dev" ? "t3.medium" : "t3.micro"
 )
 
 4)Conditions with for_each Example
+
 Operators in conditions
 
 Comparison operators:
@@ -773,21 +821,27 @@ NOT
 !var.enable_backup ---> Reverse condition.
 
 Interview Answer ⭐⭐⭐
-
 Terraform conditions are used to make infrastructure configurations dynamic based on input values. Terraform uses conditional expressions with the syntax condition ? true_value : false_value. In our project, we used conditions to manage environment-specific configurations like instance sizes, enabling features, and controlling resource creation using count and variables.
 
-outputs.tf: 
--------------
-ex:  terraform/count-using-loop-concept folder in vs code 
-terraform output is used to get the info from the created resources(takes data from .tfstate file after resource creation) and display/print on terminal.
-Within the same Terraform configuration, resources communicate directly using resource references like aws_instance.web.public_ip. We don't use output blocks for this. Output blocks are mainly used to expose values from one module or Terraform project so they can be consumed by another module or project, especially when using remote state.
 
-we created an instance but we want total info /particular attribute info of that instance we can use this 
-By using out we can take the outpu of one resource and give it as input to another resource  ex: aws_instance.web.public_ip
+====================================================================================================================================================================
+
+outputs.tf:              ex:  terraform/count-using-loop-concept folder in vs code 
+-------------
+terraform output is used to get the info/value of the created resources(takes data from .tfstate file after resource creation) and display/print on terminal.
+Resource → Resource in the same module
+Within the same Terraform configuration, resources communicate directly using resource references using 
+---->   aws_instance.web.public_ip. 					----> We don't use output blocks for this. 
+
+Output blocks are mainly used to expose values from one module or Terraform project so those values can be consumed by another module or project, especially when using remote state.
+
+Resource → Resource in different modules
+By using output we can take the output of one resource/module and give it as input to another resource/module  ex: aws_instance.web.public_ip
+
 
 Interview Answer ⭐⭐⭐
-
-Terraform outputs are used to expose and display information about resources created by Terraform. After provisioning infrastructure, outputs help us retrieve values like instance IDs, IP addresses, DNS names, and ARNs. We also use outputs to pass values between Terraform modules/projects. In our project, modules exposed resource information using outputs.tf, which was consumed by other modules and automation pipelines.
+Terraform outputs are used to expose and display information about resources created by Terraform. After provisioning infrastructure, outputs help us retrieve values like instance IDs, IP addresses, DNS names, and ARNs. We also use outputs to pass values between Terraform modules/projects. 
+In our project, modules exposed resource information using outputs.tf, which was consumed by other modules and automation pipelines.
 
 Output Syntax
 -------------------
@@ -799,7 +853,7 @@ Terraform creates resources ---> Stores details in state file ---> outputs.tf di
 
 Why do we use outputs.tf?
 Main reasons:
-1. Display created resource information 2. Share values between modules 3. Avoid manually checking cloud console 4. Use Terraform output in CI/CD pipelines 5. Pass resource information to other tools
+1. Display created resource information in terminal 2. Share values between modules 3. Avoid manually checking cloud console 4. Use Terraform output in CI/CD pipelines 5. Pass resource information to other tools
 
 types of uses 
 -----------------
@@ -822,8 +876,6 @@ resource "aws_route53_record" "web" {
   records = [aws_instance.web.public_ip]       #No output block is used. Terraform directly references: aws_instance.web.public_ip
 }
 
-
-
 run : terraform apply
 
 AWS creates: EC2 instance with below values 
@@ -841,7 +893,7 @@ output "public_ip" {
   value = aws_instance.web.public_ip
 }
 
- or aws_instance.web.private_ip or aws_instance.web.public_ip or aws_instance.web.public_dns etcc 
+or aws_instance.web.private_ip or aws_instance.web.public_ip or aws_instance.web.public_dns etcc 
 
 Run: terraform apply  --> Output: Apply complete! 
 
@@ -853,9 +905,9 @@ In main.tf we have resource "aws_instance" "web" ---> terraform apply ---> AWS c
 
 
 terraform output command
-After apply: You can check anytime: cmd --> terraform output
-Specific output:
-terraform output public_ip
+After apply: 
+You can check anytime: --> terraform output
+Specific output:               --> terraform output public_ip
 
 Sensitive Outputs
 -----------------------
@@ -868,44 +920,34 @@ output "db_password" {
 Output: db_password = <sensitive> --> Password hidden.
 
 
-outputs.tf with Modules ⭐⭐⭐
--------------------------------
+2) outputs.tf with Modules ⭐⭐⭐
+-------------------------------------------------
 Where output is actually used (Modules)
-You have EC2 module.
-Structure:
-terraform/
-modules/
-  ec2/
-    main.tf
-    outputs.tf
-main.tf
+Ex: Module A
+module "ec2" {
+  source = "./modules/ec2"
+}
+output "private_ip" {
+  value = module.ec2.private_ip
+}
+Module B 
+module "ansible" {
+  source = "./modules/ansible"
 
-Module creates EC2:
-
-modules/ec2/main.tf
-resource "aws_instance" "server" {
- ami="ami-123"
- instance_type="t3.micro"
+  target_ip = module.ec2.private_ip
 }
 
-modules/ec2/outputs.tf
-output "public_ip" {
- value = aws_instance.server.public_ip
+variable "target_ip" {
+  type = string
 }
 
-Root module:
-main.tf
-module "web" {
-source="./modules/ec2"
-}
-
-Access module output:
-
-resource "aws_route53_record" "web" {
-records = [
- module.web.public_ip                                   #public_ip  --> this name is given in output file  output "public_ip" {
-]
-}
+module.<module_name>.<output_name>
+  target_ip = module.ec2.private_ip ----> if you want to use module.ec2.private_ip from outside the ec2 module, then private_ip must be exposed through an output block in that module.
+  
+we created an instance but we want total info /particular attribute info of that instance we can use this 
+	output "ec2-total-info" {
+	  value = aws_instance.ec2-conditions    						#print total info about ec2
+	} 
 EC2 Module Creates EC2 ---> outputs.tf exposes IP ---> Root Module ---> gets IP ---> Creates Route53 record
 
 
@@ -931,6 +973,8 @@ Rule to remember for interviews:
 Same module/project → Direct resource reference.
 Different modules → output + module.<module_name>.<output_name>.
 Different Terraform projects → output + terraform_remote_state.
+
+===================================================================================================================================================================
 
 Loops:
 --------
@@ -1175,6 +1219,8 @@ Terraform loops are used to avoid duplicate infrastructure code and dynamically 
 
 ex: check this folder for ex --->   terraform/dynamic-block-loop-concept         terraform --> folder name 
 
+===================================================================================================================================================================
+
 Functions:
 -------------
 Terraform functions are built-in reusable operations provided by Terraform that are used to transform, manipulate, and calculate values inside Terraform configuration files.
@@ -1207,6 +1253,7 @@ locals {
 o/p:  ROBOSHOP
 
 2)lower() ---> Convert to lowercase.    Ex: lower("DEVOPS") --> o/p: devops
+
 3)join()    ---> Combines list values into one string.
 Ex:  join("-", ["roboshop","prod"])          o/p : roboshop-prod 
 
@@ -1215,6 +1262,7 @@ tags = {
  Name = join("-", [var.project,var.environment])
 }
 Output: roboshop-dev
+
 4)split() ---> Convert string into list.
 Ex: split(",", "web,cart,user")
 
@@ -1440,10 +1488,10 @@ Interview Answer ⭐⭐⭐
 
 Terraform functions are built-in methods used to manipulate and transform values inside Terraform configurations. We use functions for string operations, list and map handling, file processing, encoding, and dynamic configuration generation. In our project we used functions like lookup for environment-based values, length with count, file/templatefile for user data scripts, and jsonencode for IAM policies.
 
-
+===================================================================================================================================================================
 
 locals file: (i.e., locals.tf)
-------------
+-------------
 Terraform locals are used to define internal reusable named/variable values inside Terraform configuration files that can be referenced multiple times within the same module.
 
 locals = Store calculated/reusable values inside Terraform code
@@ -1628,7 +1676,7 @@ variable "Roboshop_instance_names" {
 }
 mongodb,mysql,shipping it will take t3.small other than that any instance we get it wil take t3.micro mentioned in main.tf if key not found in map it will take default value
 
-
+===================================================================================================================================================================
 
 Data Sources :
 ------------------
@@ -1704,6 +1752,7 @@ Yes. Terraform stores data source information also in terraform.tfstate file
 But:
 Terraform only tracks it and Terraform does NOT manage lifecycle(Meaning: Terraform cannot: create,update,delete that VPC.)
 stores in the form of below
+
 Data Source
 ------------
 mode = data  (from data source)
@@ -1724,7 +1773,7 @@ Interview Answer ⭐⭐⭐
 Terraform data sources are used to fetch information about existing resources that are created outside the current Terraform configuration. Data sources allow us to reference existing infrastructure like AMIs, VPCs, subnets, security groups, and Route53 zones without hardcoding values. In our project, we used data sources to fetch existing AWS resource details dynamically and pass those values to Terraform modules.
 
 
-
+===================================================================================================================================================================
 
 Terraform State (.tfstate file)
 -------------------------------------
@@ -2186,6 +2235,9 @@ In newer Terraform versions, native S3 state locking using use_lockfile = true i
 
 &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
+===================================================================================================================================================================
+
+Multi-Env 
 
 How to create multiple environments
 there is multiple ways:
@@ -2194,7 +2246,7 @@ there is multiple ways:
 3)by creating diff repos
 
 
-Why do we need multiple environments ---> A company usually has environments like
+Why  
 Developer(DEV) -----> QA / TEST(UAT) -----> PRE-PROD -----> PRODUCTION
 
 Each environment should have: Separate infrastructure,Separate state,Separate variables,Separate databases,Separate Route53 records,Separate VPCs (often)
