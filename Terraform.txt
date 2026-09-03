@@ -1845,13 +1845,17 @@ State Management Flow --> When running
 
 terraform init --> Downloads providers , Initializes backend , Configures state location
 terraform plan
-Flow: Read terraform code + Read terraform.tfstate + Refresh actual AWS cloud infra state ---> Compare ---> Show actions what need to be done 
+Flow: Read terraform code(configuration file .tf files) + Read terraform.tfstate + Refresh actual AWS cloud infra state using AWS API ---> Compare ---> Show actions what need to be done 
 whether  --->  + create or ~ update or  - destroy
 
 terraform apply --> Creates/updates/deletes resources ---> after that it Updates info in terraform.tfstate
 
+Step 2 (the refresh) actually writes modifications back to your terraform.tfstate file if it detects drift or missing resources.This ensures your state metadata perfectly aligns with cloud reality before presenting you with the action proposal.
+if u dont want to do that u can use ----> -refresh=false      --> terraform.tf state will not modified if any changes detected 
+
 
 Local State:
+---------------
 By default: Laptop ---> project/terraform.tfstate
 
 Problems:
@@ -1876,8 +1880,8 @@ Example: DB password , Secrets , Private IPs ---->  Should not keep locally.
 
 
 
-Remote State
-------------------
+Remote State :
+-------------------
 Terraform remote state stores the terraform.tfstate file in a shared remote backend(ex : AWS S3 storage etc ) instead of the local machine.
 
 Common AWS backend: S3 (storage) + DynamoDB(locking system)
@@ -1897,7 +1901,7 @@ DynamoDB
    |
 State locking
 
-imp : while developer running file will be locked in remote and developer cant run at the same time once developer 1 completes then Dev 2 can run
+imp : while developer running using terraform commands terraform.tfstate file will be locked in remote and developer cant run at the same time once developer 1 completes then Dev 2 can run
 
 Configure Remote Backend:
 ------------------------------------
@@ -1994,7 +1998,7 @@ Most important Files:
 1)terraform.tfstate.backup        --> Don't commit to Git there may be sensitive info present 
 terraform.tfstate.backup is an automatically created backup copy of the previous Terraform state file before Terraform updates the current terraform.tfstate file.
 
-Now:
+Now: In local 
 
 terraform.tfstate: latest infra information
 
@@ -2004,14 +2008,35 @@ lets say u ran terraform apply with some new resource code and those are existin
 terraform.tfstate               ---> stores the  latest info i have written another resource block latest infra info 
 terraform.tfstate.backup ---> previous infra information means  before writtening another resource block 
 
-
 Can Terraform use backup automatically? -----> No ❌ Backup is only for recovery.
 
 Example:
 state corrupted --> remove that file --> rm terraform.tfstate
 You can manually restore --> cp terraform.tfstate.backup terraform.tfstate so u will get state file with latest infra info 
 
+If ur using remote state that using s3 bucket 
+When you use a remote AWS S3 backend, the local .backup files completely disappear. Terraform does not create or store a terraform.tfstate.backup file on your local machine or Jenkins server anymore.
+Instead, backups are managed remotely by enabling S3 Bucket Versioning. Every time you run terraform apply, AWS automatically preserves your previous state file as an older "version" inside the same S3 bucket.
 
+How to pull a backup manually 
+terraform state pull > my-local-backup.json
+mention this in s3 bucket block 
+
+ versioning_configuration {
+    status = "Enabled"
+  }
+Ex: to create bucket with terraform code ....... if u create bucket manually u need to enable it manually in aws console 
+# This goes in your S3 setup file, NOT inside terraform { backend "s3" { ... } }
+resource "aws_s3_bucket_versioning" "state_versioning" {
+  bucket = "roboshop-remotebucket"
+  
+  versioning_configuration {
+    status = "Enabled"
+  }
+}
+
+Without Versioning Enabled: The new file completely overwrites and deletes the old configuration data forever.
+With Versioning Enabled: AWS S3 leaves the old version exactly where it is, marks it as a "Historical Version", and places the new state file directly on top as the "Current Version".
 
 2) .terraform Folder
 
@@ -2025,10 +2050,12 @@ Add:
 Reason: Large size , Machine specific , Can recreate anytime using terraform init
 
 
+Using S3 remote for terraform.tfstate --> all backup files will be stored in versions tab those are tfstafe.backup files ..we need to identify them using timestamp and last modified thats it in main key that is tfstate file it will have current infrastructure information ...those backup files will be available untim bucket is deleted and all ackup files iwll be there not onlu last backup file it will have last last backup and go onn 
+
 
 3).terraform.lock.hcl (Dependency Lock File)
 -----------------------------------------------------------
-.terraform.lock.hcl is a Terraform dependency lock file created during terraform init. It stores the exact provider versions and checksum information that Terraform selected, so every developer and CI/CD pipeline uses the same provider version.
+.terraform.lock.hcl is a Terraform dependency lock file created during terraform init. It stores the exact provider version installed and checksum information that Terraform selected, so every developer and CI/CD pipeline uses the same provider version.
 
 
 Why provider is needed ---> Terraform itself cannot directly talk to AWS when u write terraform code to create ec2 instance it understands that we need to create ec2 But it doesn't know AWS API.For that it needsAWS Provider Plugin
@@ -2194,8 +2221,9 @@ Terraform does:
 In S3 bucket
 ----------------
 Both files will be created
-terraform.tfstate
-terraform.tfstate.tflock   ← Lock file created
+terraform.tfstate    ----> directly in bucket if u want to see clik on key name given in provide and open or download tab 
+terraform.tfstate.tflock   ← Lock file created     ---> in same bucket 
+terraform.tfstafe.backup ----> same bucket ---> keyname given ---> version tab 
 
 Now Developer-2 runs:
 
@@ -2221,12 +2249,11 @@ If you're learning the latest Terraform:
 
 In newer Terraform versions, native S3 state locking using use_lockfile = true is the recommended approach. It removes the need for a separate DynamoDB table while still preventing concurrent updates to the state file.
 
-&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
 
 ===================================================================================================================================================================
 
-Multi-Env 
-
+Multi-Env approach : 
+---------------------------
 How to create multiple environments
 there is multiple ways:
 1)using tfvars file
