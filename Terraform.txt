@@ -1920,28 +1920,25 @@ Configure Remote Backend:
  Run: terraform init -reconfigure ---> Terraform reconfigures remote backend.
  
  
- What happens during apply with remote state?
- 
- Developer  1 runs:  terraform apply
- Flow:
+What happens during apply with remote state?
+Developer  1 runs:  terraform apply
+Flow:
 Terraform --> Check DynamoDB lock aquires it --> Lock state --> Download tfstate from S3 --> Compare(desired state and current state(aws infra existing + tfstate file) --> decides to Create/update/delete AWS resources --> Upload updated state to S3 --> Remove lock 
 --> until developer1 completes then only developer 2 cant run
 
 
 State Locking (DynamoDB)
 -----------------
-Problem without locking:
+1. Problem without DynamoDB locking:
 Developer A: creating EC2
-
 Same time 
 Developer B: trying to create RDS
 
 Both update state together at same time. State file may be corruption possible.
 
-With DynamoDB:
-
+With DynamoDB locking:
 Developer A: terraform apply 
-Lock acquired
+Lock acquired       ---> means file has been locked 
 
 Developer B:   terraform apply
 Error: state locked --> After Developer A finishes: Lock released then only Developer 2 can run
@@ -1989,9 +1986,12 @@ Example: terraform force-unlock abc123
 
 
 Remote State Interview Answer ⭐⭐⭐
-
 Terraform state file maintains mapping between Terraform configuration (.tf files) and real infrastructure existing in cloud. By default state is stored locally as terraform.tfstate. For team environments we configure remote backend like AWS S3 to store state centrally. DynamoDB is used for state locking to avoid multiple users modifying the same state at the same time.
 Whenever terraform plan or apply runs, Terraform compares desired configuration with current state and performs required changes.
+
+Interview Answer (4+ Years)
+Terraform acquires a state lock before performing any operation that modifies infrastructure. When using an S3 backend with DynamoDB locking (or S3 native locking with newer versions), it prevents multiple users or pipelines from updating the same state file simultaneously. 
+If a previous operation is interrupted, a stale lock may remain. In that case, we verify that no Terraform operation is still running and then use terraform force-unlock <LOCK_ID> or remove the stale lock entry before retrying.
 
 Most important Files:
 ----------------------------
@@ -2015,7 +2015,7 @@ state corrupted --> remove that file --> rm terraform.tfstate
 You can manually restore --> cp terraform.tfstate.backup terraform.tfstate so u will get state file with latest infra info 
 
 If ur using remote state that using s3 bucket 
-When you use a remote AWS S3 backend, the local .backup files completely disappear. Terraform does not create or store a terraform.tfstate.backup file on your local machine or Jenkins server anymore.
+When you use a remote AWS S3 backend, the local .backup files completely disappear after destroy.. Terraform does not create or store a terraform.tfstate.backup file on your local machine or Jenkins server anymore.
 Instead, backups are managed remotely by enabling S3 Bucket Versioning. Every time you run terraform apply, AWS automatically preserves your previous state file as an older "version" inside the same S3 bucket.
 
 How to pull a backup manually 
@@ -2271,43 +2271,42 @@ Method 1: Using tfvars (Recommended) : ex: terraform-multi-env/using-tfvars in g
 ------------------------------------------------------
 
 terraform-project/
+		main.tf
+		variables.tf
+		provider.tf
 
-main.tf
-variables.tf
-provider.tf
+		dev/
+			backend.tf
+			dev.tfvars
 
-dev-backend/
-    backend.tf
-    dev.tfvars
-
-prod-backend/
-    backend.tf
-    prod.tfvars
+		prod/
+			backend.tf
+			prod.tfvars
 	
 Scenario:
 -------------
-we are deploying application to 2 environments that is dev and prod env so we have to create 
-mongodb-dev, redis-dev,mysql-dev ec2 instances in both envs etc.... and it should reflect route53 records with mongodb-dev.devopswitharun.online etc for both envs
-same code but diff environments 
+we are deploying application to 2 environments that is dev and prod so we have to create 
+mongodb-dev, redis-dev,mysql-dev and ,mysql-prod,mongodb-prod etc.. ec2 instances in both envs etc.... and it should reflect route53 records with mongodb-dev.devopswitharun.online,mongodb-prod.devopswitharun.online etc for both envs
+same code but diff environments using variables
 its better to create diff buckets for 2 env to store state file because we do more testiing in dev to not disturb buckets it better to keep seperate 
 
-Now in Aws 
-S3 --> create 2 buckets --> create bucket --> give name (daws76s-state-dev) --> create and the create new bucketwith (daws76s-state-prod) name
+Now in Aws We create two buckets 
+S3 --> create 2 buckets --> create bucket --> give name (daws76s-state-dev) --> create and then create another new bucketwith (daws76s-state-prod) name
 DynamoDB --> create table with name (daws76s-state-dev) and partition kay (LockID) --> create table ---> create 2nd table with (daws76s-state-prod ) and partition kay (LockID)--> create table
 
-startswith function
+starts with function
   records = [startswith(each.key, "web") ? each.value.public_ip : each.value.private_ip]  
 --> if ec2 instance name starts with web then get the publicip whether it is dev or prod doesnt matter  web-dev or web-prod both will satisfy because it starts with web name 
   
-  
-To Run : 
+
+To Run dev : 
 terraform init -backend-config=dev-backend/backend.tf  --> here im loading dev env backend file 
 terraform plan -var-file=dev-backend/dev.tfvars 
 		-var-file=dev-backend/dev.tfvars  --> if not given it will load default variables
 terraform apply -var-file=dev-backend/dev.tfvars 
 
-but now i want to do it with prod 
-terraform init -reconfigure -backend-config=prod-backend/backend.tf	 
+but now i want to run prod 
+terraform init -reconfigure -backend-config=prod-backend/backend.tf	  
 --> we already configured dev so thats y to reconfigure to prod Without it Terraform continues using DEV backend
 terraform plan -var-file=prod-backend/prod.tfvars 
 		-var-file=prod-backend/prod.tfvars  --> if not given it will load default variables
@@ -2323,9 +2322,9 @@ ex: terraform-multi-env/using-workspace in github
 
 
 Commands:
----------------
-1)terraform workspace delete <name of the workspace>  --> delete a workspace
-2)terraform workspace new <name of the workspace>      --> create a new workspace
+----------------
+1)terraform workspace new <name of the workspace>      --> create a new workspace
+2)terraform workspace delete <name of the workspace>  --> delete a workspace
 3)terraform workspace select <name of the workspace>   --> switch to a particular workspace
 4)terraform workspace show  --> show the name of the current workspace  ur are working
 5)terraform workspace list  --> gives list of workspaces available by default terraform creates default workspace
@@ -2397,6 +2396,7 @@ terraform workspace new prod --> now it will create a prod folder inside bucket 
 
 terraform plan and apply 
 
+
 3)Create diff repos for diff env 
 ---------------------------------------
 
@@ -2439,29 +2439,27 @@ Please wait for a minute or two and try again.
 If this problem persists, and neither S3 nor DynamoDB are experiencing an outage, you may need to manually verify the remote state and remove the Digest value stored in the DynamoDB table
 
 
-"The checksum calculated for the state stored in S3 does not match the checksum stored in DynamoDB."
+The checksum calculated for the state stored in S3 does not match the checksum stored in DynamoDB.
 
 You can answer:
-
 This means the Terraform remote state stored in S3 and the checksum stored in the DynamoDB lock table are inconsistent. It can happen if the state file was manually modified, deleted, or a previous Terraform operation was interrupted. Terraform stops execution to prevent state corruption. The resolution is to verify the state file, remove the stale lock or digest if appropriate, and reinitialize the backend.
 
 
-
+===================================================================================================================================================================
 
 
 
 Provisioners:
 -----------------
-Terraform provisioners are used to execute scripts or commands on a local machine or a remote machine after infrastructure creation or before destruction
+Terraform provisioners are used to execute scripts/files or commands on a local machine or a remote server after infrastructure creation or before destruction
+
+local machine ---> where the terraform apply command is physically running and executing
 
 Why do we need Provisioners?
 1)Suppose Terraform code creates an EC2 instance.
 2)After creation you want to configure like: Install nginx,Create users,Copy files,Execute shell scripts,Register server,Update inventory using provisioners we can do
 
-Terraform's main job is: Infrastructure Provisioning
-NOT Configuration management 
-Configuration management is usually done by: Ansible ,Chef,Puppet
-Provisioners are mainly for small bootstrap tasks
+Terraform's main job is: Infrastructure Provisioning NOT Configuration management ..Configuration management is usually done by: Ansible ,Chef,Puppet..Provisioners are mainly for small bootstrap tasks
 
 
 Real Flow
@@ -2481,7 +2479,7 @@ Types of Provisioners
 
 1)local-exec 
 ----------------
-The local-exec provisioner  Runs commands/scripts On the local machine where Terraform is running after a resource is created or destroyed.
+The local-exec provisioner  Runs commands/scripts On the local machine where Terraform (where terraform applu cmd) is running after a resource is created or destroyed.
 It is commonly used to integrate Terraform with external scripts, configuration management tools, notification systems, or CI/CD workflows.
  
 flow: Laptop ---> terraform apply ---> Run local command
@@ -2491,59 +2489,74 @@ resource "aws_instance" "web" {
   instance_type = "t3.micro"
    vpc_security_group_ids = [aws_security_group.allow_all.id]
   
-  provisioner "local-exec" {
-    command = "echo EC2 Created"
-  }
-  
-# ec2 will be created above now after creating save ip into file 
-
+	provisioner "local-exec" {
+		command = "echo EC2 Created"
+	}																								# ec2 will be created above now after creating save ip into file 
 	provisioner "local-exec" {
 		command = "echo ${self.public_ip} > inventory"
 	}
 	provisioner "local-exec" {
 		command = "ansible-playbook -i inventory nginx.yml"
-}
+	}
 }
 
+or 
+Jenkins EC2 instance where our terraform code is running it is local because it doesnt need to login to another sever 
+
+The Tooling Server (The "Local" Machine): This is your Jenkins EC2 instance. It holds your Git code, runs the pipeline, and executes the actual terraform apply command.
+The Target Server (The "Remote" Machine): This is a brand new, empty Application EC2 instance that your Terraform code is creating from scratch.
 
 
 Flow: Terraform ---> Creates EC2 ---> Runs Ansible ---> Ansible configures server
 
-Imp:
-local-exec can be used with EC2,S3,Route53,Sg,IAM role etc....
+Imp: local-exec can be used with EC2,S3,Route53,Sg,IAM role etc.... because no connection need to connect like ec2 we need connection 
 
-Scenario:
+Scenario :  Adding provisioner block after resource creation 
 -------------
-i have run terraform apply with some provisioner block 	
-in resource block i have 
+i have run terraform apply with some provisioner block 	 and in resource block i have 
+Ex :
 resource "aws_instance" "ec2" {
-provisioner "local-exec" {
+	provisioner "local-exec" {
       command = "echo [web] > inventory.ini "
     }
     provisioner "local-exec" {
     command = "echo ${self.public_ip} >> inventory.ini"
     }
 }	
-i did ---> terraform apply   --> ec2 created with above provisioner ---> but still i didnt destroy withput destroy
-i have added other provisioner block 
+i did ---> terraform apply   --> ec2 created with above provisioner 
+no for the same code above i have added another provisioner blocks code 
 
-provisioner "local-exec" {
-    command = "echo [web:vars] >> inventory.ini"
+	provisioner "local-exec" {
+		command = "echo [web:vars] >> inventory.ini"
     }
     provisioner "local-exec" {
-    command = "echo ansible_user=ec2-user >> inventory.ini"
+		command = "echo ansible_user=ec2-user >> inventory.ini"
     }
-withput destroy
-now i ran terraform apply --> terminal shows no changes so provisioner block are executed at the time of first apply of that resource block 
-with destroy and again apply
-now 4 block executed 
+	
+without destroy existing resource and re apply if i run
+--> terraform apply --> terminal shows no changes so provisioner block are executed at the time of first time apply of that resource block...when u add provisions block in middle after resource creation it cannot detect and this block Runs during resource creation if u dont mention when = destroy.
+with destroy and again apply ---> now it can detect 4 blocks and all are executed 
 
-imp : ******     ----> so provisioner block are executed at the time of first terraform apply of that resource block 
+imp : ******     ----> so provisioner block are executed at the time of first terraform apply of that resource block if we add block after resource creation and re apply it cannot detect the changes 
 
-Ex scenarios where local-exec used real time:
------------------------------------------------------------
+Two things :
+--> All provisioner block present in code/resource block are executed at the time of first terraform apply of that resource block but if we add provisioner block after resource creation and re apply to see any changes terraform cannot detect the extra added blocks as new changes and it simply shows the no changes needed      ----> above example 
+--> In provisioner block i gave a command and if commands fails to run then terraform will mark that resource as failed        ----> below example 
+
+Runs during resource creation 
+ provisioner "local-exec" {
+		command = "echo ansible_user=ec2-user >> inventory.ini"
+    }
+Runs during resource deletion 
+	provisioner "local-exec" {
+		when = destroy
+		command = "echo ansible_user=ec2-user >> inventory.ini"
+    }
+
+Example scenarios where local-exec used real time:
+--------------------------------------------------------------------
 Real-world Uses (4+ Years)
-1. Trigger Ansible ⭐⭐⭐⭐⭐  This is probably the most common use.
+1. Trigger Ansible playbooks⭐⭐⭐⭐⭐  This is probably the most common use.
 Ex:
 resource "null_resource" "configure" {
   depends_on = [aws_instance.web]
@@ -2555,14 +2568,14 @@ resource "null_resource" "configure" {
 local-exec does not install software.It simply executes whatever command you provide on the local machine.
 is conceptually correct, but it assumes Ansible is already installed on the machine where Terraform is running.
 
-
 If the execution host does not have Ansible installed or the executable is not available in the system PATH, the command fails with 'ansible-playbook is not recognized'.
 In production, the execution host—such as a Jenkins agent, GitHub Actions runner, or Ansible controller—already has Terraform, Ansible, AWS CLI, and other required tools installed before Terraform is executed."
 
 
 
-Real Company Scenario ⭐⭐⭐⭐
 
+
+Real Company Scenario ⭐⭐⭐⭐
 Suppose you're using Jenkins.
 
 GitHub
@@ -2584,11 +2597,7 @@ local-exec
    ▼
 ansible-playbook -i inventory.ini main.yml      --> no recognized error because ansible already installed by jenkins agent
 
-Notice something important:
-
-Jenkins already has Ansible installed.
-
-Terraform is not installing it.
+Notice something important: Jenkins already has Ansible installed. Terraform is not installing it.
 
 
 2. Generate Dynamic Inventory ⭐⭐⭐⭐
@@ -2602,67 +2611,57 @@ Inventory becomes
 Then Ansible uses it.
 
 3. Run Shell Script ⭐⭐⭐⭐    runs Any custom automation scripts
-	provisioner "local-exec" {
-	  command = "./deploy.sh"
-	}
+		provisioner "local-exec" {
+		  command = "./deploy.sh"
+		}
 
 4. Notify Slack / Teams ⭐⭐⭐⭐
-	provisioner "local-exec" {
-	  command = "curl -X POST https://hooks.slack.com/... "
-	}
+		provisioner "local-exec" {
+		  command = "curl -X POST https://hooks.slack.com/... "
+		}
 	
 5. Trigger Jenkins Job ⭐⭐⭐
-	provisioner "local-exec" {
-	  command = "curl http://jenkins/job/deploy/build"
-	}
+		provisioner "local-exec" {
+		  command = "curl http://jenkins/job/deploy/build"
+		}
 	
-6. Update DNS using Script ⭐⭐⭐
-
-Instead of Terraform Route53.
-
-provisioner "local-exec" {
-  command = "./update-dns.sh ${self.public_ip}"
-}
+6. Update DNS using Script ⭐⭐⭐ ---> Instead of Terraform Route53.
+	provisioner "local-exec" {
+	  command = "./update-dns.sh ${self.public_ip}"
+	}
 
 7. Send Email ⭐⭐
-provisioner "local-exec" {
-  command = "./sendmail.sh"
-}
+	provisioner "local-exec" {
+	  command = "./sendmail.sh"
+	}
 
 9. Generate Configuration Files ⭐⭐⭐
-provisioner "local-exec" {
-  command = "python generate_inventory.py"
-}
+	provisioner "local-exec" {
+	  command = "python generate_inventory.py"
+	}
 
-9. Trigger API ⭐⭐⭐⭐
+10. Trigger API ⭐⭐⭐⭐
 	provisioner "local-exec" {
 	  command = "curl https://company-api/deployment"
 	}
 	
 
-
-	
-	
 A strong answer is:
 
-We used Terraform to provision the infrastructure, and after the resources were created, we generated an inventory file dynamically using a local-exec provisioner. Then we invoked ansible-playbook from the Terraform execution host. The execution host already had Ansible installed (for example, a Jenkins agent or an Ansible controller). The playbook connected to the EC2 instances over SSH and performed software installation and configuration. We did not use Terraform to install Ansible itself.
-
+We used Terraform to provision the infrastructure, and after the resources were created, we generated an inventory file dynamically using a local-exec provisioner. 
+Then we invoked ansible-playbook from the Terraform execution host. The execution host already had Ansible installed (for example, a Jenkins agent or an Ansible controller). The playbook connected to the EC2 instances over SSH and performed software installation and configuration. We did not use Terraform to install Ansible itself.
 
 Interview Answer (4+ Years)
-
-The local-exec provisioner executes commands on the machine where Terraform is running after a resource is created or destroyed. It is primarily used to integrate Terraform with external tools rather than configure remote infrastructure. In our environment, we used local-exec to generate dynamic inventory files, invoke Ansible playbooks after EC2 provisioning, trigger deployment scripts, call REST APIs, and send deployment notifications. Since it runs on the Terraform execution host, the required tools such as Ansible, AWS CLI, Git, or custom scripts must already be installed on that machine.
+The local-exec provisioner executes commands on the machine where Terraform is running after a resource is created or destroyed. It is primarily used to integrate Terraform with external tools rather than configure remote infrastructure. 
+In our environment, we used local-exec to generate dynamic inventory files, invoke Ansible playbooks after EC2 provisioning, trigger deployment scripts, call REST APIs, and send deployment notifications. Since it runs on the Terraform execution host, the required tools such as Ansible, AWS CLI, Git, or custom scripts must already be installed on that machine.
 
 does not check terraform state lock 
 terraform apply -lock=false
 
-Interview Answer (4+ Years)
-
-Terraform acquires a state lock before performing any operation that modifies infrastructure. When using an S3 backend with DynamoDB locking (or S3 native locking with newer versions), it prevents multiple users or pipelines from updating the same state file simultaneously. If a previous operation is interrupted, a stale lock may remain. In that case, we verify that no Terraform operation is still running and then use terraform force-unlock <LOCK_ID> or remove the stale lock entry before retrying.
-
 
 2) remote-exec
 --------------------
-To Run/execute commands on the remote machine/server by logging into resource (ex: EC2) using SSH after resource is created
+To execute commands/script files on the remote ec2 server by logging into resource (ex: EC2) using SSH after resource is created
 
 Flow ----> terraform apply ---> Create EC2 ---> login using into ec2 using SSH (i.e., connection block)---> Execute Linux Commands on remote server
 
@@ -2676,7 +2675,7 @@ resource "aws_instance" "web" {
 		type="ssh"
 		user="ec2-user"
 		private_key=file("mykey.pem")  or password = "DevOps321
-		host=self.public_ip                     #self means current resource ec2 ip in which block we returned provisioner
+		host=self.public_ip                     #self means current resource ec2 ip in which block we returned provisioner   if other using module module.<ref name>.<ip>
 	}
 
 	provisioner "remote-exec" {
@@ -2693,31 +2692,10 @@ Flow : terraform apply ---> Create EC2 ---> connect using SSH info(i.e.,using co
 Without connection block --------> Terraform doesn't know: Which server? and Which user? and Which SSH key?
 
 Imp:
-remote-exec used only with EC2 instances because it needs a machine to connect so s3,route53 etc..we dont need connection feature
+remote-exec used only with EC2 instances because it needs a machine to connect...so s3,route53 etc..we dont have connection feature in this resources.
 
-interview answer:
-
-"Terraform first provisions an EC2 instance to act as the Ansible controller. Then a remote-exec provisioner uses SSH to log in to that EC2 and installs Ansible using the operating system's package manager (for example, dnf on Amazon Linux 2023 or apt on Ubuntu). After Ansible is installed, Terraform or the CI/CD pipeline can invoke ansible-playbook to configure the target servers."
-
-
-
-
-3) file Provisioner ----> Copies files From local machine To remote server.
-Example
-In Local i have below file 
-index.html
-now i want to Copy that file to remote server
-EC2 --> /var/www/html/index.html
-Example:
-provisioner "file" {
-source="index.html"
-destination="/tmp/index.html"
-}
-Flow ----> Laptop ---> Copy file ---> EC2 remote server
-
-
-inline vs script
--------------------
+In this remote-exec we have inline and script :
+-------------------------------------------------------------
 inline: to run Small commands
 
 inline=[
@@ -2732,50 +2710,60 @@ script="install.sh"
 Terraform uploads this file to ec2 remote server ---> install.sh
 it Runs like : bash install.sh
 
+
+inline: The commands are hardcoded directly inside your .tf file. No external files are uploaded to the server; it just types them out for you.
+script: The commands live in an external .sh file. Terraform physically uploads that file to the EC2 server first, executes it, and cleans it up.
+
+interview answer:
+Terraform first provisions an EC2 instance to act as the Ansible controller. Then a remote-exec provisioner uses SSH to log in to that EC2 and install's Ansible using the operating system's package manager (for example, dnf on Amazon Linux 2023 or apt on Ubuntu). After Ansible is installed, Terraform or the CI/CD pipeline can invoke ansible-playbook to configure the target servers.
+
+
+3) file Provisioner ----> Copies files or directories from local machine to remote server.
+
+Example : In Local i have below file  ---> index.html but now i want to Copy that file to remote server
+EC2 --> /var/www/html/index.html
+
+Example:
+		provisioner "file" {
+			source="index.html"
+			destination="/tmp/index.html"
+		}
+Flow ----> Laptop ---> Copy file ---> EC2 remote server
+
+
 destroy Provisioner :  Runs before destroying resource.
 --------------------------
 
 Example
-provisioner "local-exec" {
-when = destroy
-command="echo deleting"
-}
+	provisioner "local-exec" {
+		when = destroy
+		command="echo deleting"
+	}
 
 Flow : terraform destroy ---> echo deleting ---> Delete EC2
 
 
-Failure Behaviour 
------------------------
+Failure Behaviour :
+------------------------
 By default If provisioner fails
-Terraform ---> Resource ---> Provisioner fails ---> Terraform marks resource failed 
-You can ignore that using
-
-on_failure="continue"
+Terraform ---> Resource ---> Provisioner fails ---> Terraform marks as resource failed and it is not idempotent 
+You can ignore that using ----->  on_failure="continue"
 
 Instead of fail --> Terraform continues the execution instead of exiting from running pgm 
 
 
-self keyword 
------------------
+self keyword :
+------------------
 Inside provisioner Terraform provides self keyword
 
-Example
-
-self.public_ip  ---> means Current resource public IP.
-
-Instead of writing ---> aws_instance.web.public_ip
-
-Use  ---> self.public_ip
-
-
+Example  :  self.public_ip  ---> means Current resource/module public IP.
+Instead of writing ---> aws_instance.web.public_ip ----->  Use  ---> self.public_ip
 
 Why companies avoid Provisioners?
-
 HashiCorp itself recommends avoiding heavy use of provisioners.
 
 Reason:
-
-Terraform is an Infrastructure as Code Tool NOT an Configuration Management Tool and Provisioners are not idempotent like Ansible and Terraform cannot track what happened inside provisioners.
+Terraform is an Infrastructure as Code Tool NOT an Configuration Management Tool and Provisioners are not idempotent like Ansible and Terraform cannot track what happened inside provisioners if provisioner execution fails it terraform marks as resource failed.
 
 Example : yum install nginx ----> runs every time with provisioners
 
@@ -2800,15 +2788,26 @@ Interview Answer (4+ years)
 Terraform provisioners are used to execute scripts or commands after infrastructure is created or before it is destroyed. There are three main provisioners: local-exec, which runs commands on the local machine; remote-exec, which connects to the remote server using SSH or WinRM and executes commands; and the file provisioner, which copies files from the local machine to the remote server. In enterprise environments, provisioners are used only for small bootstrap tasks because HashiCorp recommends using configuration management tools like Ansible for software installation and server configuration.
 
 Interview Answer (4+ years)
-
 Provisioners are not limited to EC2 instances. They can be attached to many Terraform resources. 
 However, remote-exec and file provisioners require a machine that Terraform can connect to over SSH(Linux OS) or WinRM(Windows OS), so they are typically used with EC2 instances or virtual machines. 
 local-exec can be used with almost any resource to execute commands on the machine running Terraform, such as triggering Ansible, updating files, or sending notifications. In enterprise projects, provisioners are used sparingly, with Ansible, cloud-init, or user data preferred for server configuration.
 
 
+User Data is an EC2 bootstrap mechanism where we provide a script that executes during the instance's initial startup. 
+I use it for basic initialization such as installing bootstrap packages or starting required agents. Terraform provisioners, such as local-exec and remote-exec, allow Terraform to execute commands during the resource lifecycle. 
+Local-exec runs on the Terraform execution machine, while remote-exec connects to the target machine and executes commands there. I use provisioners cautiously and prefer tools like Ansible for detailed server configuration
 
 
-Real-world practice
+
+main things :
+User Data: runs during the EC2 instance's boot/initialization, as part of launching the instance.
+Provisioner: runs as part of Terraform's resource lifecycle, typically after the resource is created for creation-time provisioners.
+
+User Data is mainly used for EC2 bootstrapping during instance startup, whereas Terraform provisioners are used to execute commands or scripts as part of the resource lifecycle, generally after the resource has been created.
+
+Terraform ---> Create EC2 ---> EC2 starts/boots ---> User Data executes ---> EC2 becomes ready ---> Provisioner can execute its configured action
+
+Real-world practice : 
 Terraform
       │
       ▼
@@ -2824,15 +2823,12 @@ Ansible / User Data / Cloud-Init
 Install packages, configure applications, deploy code
 
 
-Very Common Usage: null_resource
------------------------------------------------
-What is null_resource?
-
-null_resource is a special Terraform resource that does not create any infrastructure. Its only purpose is to execute actions like: Running Ansible,Running shell scripts,Calling APIs,Executing local commands
 null_resource
 ------------------
-Creates Nothing
-Only executes commands
+What is null_resource?
+null_resource is a special Terraform resource that does not create any infrastructure. Its only purpose is to execute actions like Running Ansible,Running shell scripts,Calling APIs,Executing local commands
+or
+Creates Nothing Only executes commands
 
 Many organizations use a null_resource with a local-exec provisioner to trigger an Ansible playbook after infrastructure creation.
 Example:
@@ -2849,7 +2845,6 @@ Terraform --> Infrastructure Created --> null_resource --> Runs Ansible
 This is more common than attaching a local-exec provisioner directly to every EC2 resource.
  
  nterview Answer (4+ Years)
-
 null_resource is a special Terraform resource that does not create any infrastructure. It is mainly used to execute provisioners such as local-exec or remote-exec. In projects, we often use a null_resource with a local-exec provisioner to trigger an Ansible playbook after Terraform has created the infrastructure. We typically use depends_on to ensure all required resources, such as EC2 instances and Route53 records, are created before Ansible starts configuring the servers.
 
 Complete Example:
@@ -3009,53 +3004,51 @@ to run inside server
 we can write multiple provisioners it will execute one by one  
 
 
+First understand the problem : Suppose Terraform created an EC2 instance But now you want to do something inside that EC2, such as Install Java , Install Docker , Install Nginx , Create a user , Download application , Start a service -->to manage this tasks we use user_data or provisioners 
+
+User Data is a bootstarp script that AWS EC2 executes automatically when the instance starts for the first time/at immediately after start.     (Ex: user_data = file(install.sh) --> this )
+local-exec --> whatever given commands of script files run where Terraform(terraform apply) is running. It doesn't SSH into the EC2.
+remote-exec --> executes commands/script files inside the remote EC2 by logging via SSH  --> we use connection block and remote-exec block 
+
+*******************************************************************************************************************************************************************
 
 
 
+Another Part : 
 
 
-
-
-
-
-
-*****************************************************************************************************************************************************************
+*******************************************************************************************************************************************************************
 
 
 
 Modules:
 ------------
-A Terraform module is a reusable collection of Terraform configuration files that are grouped together to create and manage a specific set of infrastructure resources.
+A Terraform module are reusable collection of Terraform configuration files that are grouped together to create and manage a specific set of infrastructure resources.
 
 Module = Reusable Terraform Code
-Instead of writing the same EC2, VPC, Security Group, or RDS code repeatedly for dev, test, stage, and prod, we write the infrastructure logic once inside a module and call that module multiple times with different input values.
+Instead of writing the same EC2, VPC, Security Group, or RDS code repeatedly for dev, test, stage, and prod, we write the infrastructure logic once inside a module and call that module multiple times with different input values (diff env specific value files).
 
 Types of Modules
 -----------------------
-There are mainly three ways you will encounter modules.
 
-Module Type	Example
-Local Module/customised module  ---> 	source = "./modules/ec2"
-Git Module/open source module	   ---> source = "git::https://..."
-Terraform Registry Module	           ---> source = "terraform-aws-modules/vpc/aws"
+1. Local Module/customised module  ---> 	source = "./modules/ec2"        		-----> refering in local 
+2. Git Module/open source module	   ---> source = "git::https://..."					-----> refers from gitub
+3. Terraform Registry Module	           ---> source = "terraform-aws-modules/vpc/aws"
 
 Example:
 -----------
 Why do we need modules?
-
 Suppose your company has three applications ------------> Catalogue,Cart,Shipping
-
 Each application requires same code --------------> EC2,Security Group,IAM Role,CloudWatch configuration,Tags
 
 
-Without modules, you may duplicate the same Terraform code witing same code in diff folders 
+Without modules, you may duplicate the same Terraform code writing same code in diff folders 
 
 catalogue/  ---> ec2.tf,sg.tf,iam.tf
 cart/   ---> ec2.tf,sg.tf,iam.tf
 shipping/ ---> ec2.tf,sg.tf,iam.tf
 
 With modules:
-
 modules/
     application/
         main.tf
@@ -3079,18 +3072,16 @@ modules/
              ▼
 
 Application Infrastructure Repositories
-
+Diff Env's : 
 roboshop-dev
 roboshop-stage
 roboshop-prod
 
 Interview answer for 4+ years experience
-
-Terraform modules are reusable collections of Terraform configurations used to standardize and avoid duplication of infrastructure code. In our projects, we created reusable modules for common infrastructure components such as VPCs, EC2 instances, security groups, IAM roles, and other AWS resources. The root module passed environment-specific inputs to child modules through variables, and child modules exposed required resource information through outputs. We maintained shared modules in version-controlled repositories and pinned module versions so changes could be tested in lower environments before being promoted to production. This improved code reuse, consistency, maintainability, and standardization across environments.
+Terraform modules are reusable collections of Terraform configurations used to standardize and avoid duplication of infrastructure code. In our projects, we created reusable modules for common infrastructure components such as VPC, EC2 instances, security groups, IAM roles, and other AWS resources. The root module passed environment-specific inputs to child modules through variables, and child modules exposed required resource information through outputs. We maintained shared modules in version-controlled repositories and pinned module versions so changes could be tested in lower environments before being promoted to production. This improved code reuse, consistency, maintainability, and standardization across environments.
 
 
 our project structure is 
-
 terraform-infra/
 │
 ├── modules/
@@ -3114,21 +3105,25 @@ terraform-infra/
 │   │     ├── backend.tf
 │   │     ├── terraform.tfvars
 │   │     └── main.tf
+			└── provider.tf
 │   │
 │   ├── qa/
 │   │     ├── backend.tf
 │   │     ├── terraform.tfvars
 │   │     └── main.tf
+			└── provider.tf
 │   │
 │   ├── preprod/
 │   │     ├── backend.tf
 │   │     ├── terraform.tfvars
 │   │     └── main.tf
+			└── provider.tf
 │   │
 │   └── prod/
 │         ├── backend.tf
 │         ├── terraform.tfvars
 │         └── main.tf
+			└── provider.tf
 │
 └── providers.tf
 
@@ -3137,12 +3132,13 @@ Suppose you're deploying DEV ===> terraform apply -----> environment/dev/main.tf
 Same happens for QA, PREPROD and PROD. Only the variable values change.	
 
 
+===================================================================================================================================================================
+
 VPC (Virtual Private Cloud):
 -----------------------------------
 Amazon VPC (Virtual Private Cloud) is a logically isolated virtual network in AWS where we launch and manage resources such as EC2 instances, load balancers, RDS databases, and EKS clusters.
 
 Each VPC has its own:
-
 IP address range(CIDR range)
 Subnets
 Route tables
@@ -3155,36 +3151,30 @@ DNS configuration
 
 Think of a VPC as your private network boundary inside AWS.
 
-
-
 Why do we need a VPC?
-
-Suppose we deploy RoboShop.
-
-We have:
-
-Load Balancer
-Web Servers
-Application Servers
-MongoDB
-MySQL
-Redis
+Suppose we deploy RoboShop Application and we have like 
+1. Load Balancer ---> we are using Application Load Balancer (ALB)
+2. Web Servers (web application)
+3. Application Servers (catalogue,cart, etc...)
+4. Databases :
+		MongoDB , MySQL , Redis and RabbitMQ
 
 We should not expose everything directly to the internet.
 now users through Internet access request flows through ---> interner gateway --> application load balancer --> public subnet (We deploy web component in this subnet)---> private subnet (We deploy application related components like catalogue,cart,user etc here ) ---> database subnet (we deploy db related components here)
 
-
-
-
-
 Interview Answer for 4+ Years Experience
+A VPC is a logically isolated virtual network in AWS where we deploy and control our application resources. 
+--> In our environments we designed custom VPC with non-overlapping CIDR ranges and multiple Availability Zones for high availability. 
+--> We created public subnets for internet-facing load balancers and NAT Gateways, private application subnets for EC2 or EKS workloads, and isolated database subnets for RDS. 
+--> Internet Gateways provided direct internet connectivity for public resources, while NAT Gateways provided controlled outbound IPv4 internet access for private workloads. 
+--> We managed routing using separate public and private route tables, enforced resource-level security through stateful Security Groups and subnet-level controls through NACLs where required, and used VPC endpoints to privately access AWS services and reduce NAT traffic. 
+--> For connectivity across multiple VPCs and on-premises environments, we used VPC Peering, Transit Gateway, Site-to-Site VPN, or Direct Connect depending on the scale and requirements. 
+--> We also enabled VPC Flow Logs and used Reachability Analyzer for monitoring and troubleshooting network connectivity. The complete VPC infrastructure was provisioned through reusable Terraform modules with environment-specific CIDRs and separate state management.
 
-A VPC is a logically isolated virtual network in AWS where we deploy and control cloud resources. In our environments, we designed custom VPCs with non-overlapping CIDR ranges and multiple Availability Zones for high availability. We created public subnets for internet-facing load balancers and NAT Gateways, private application subnets for EC2 or EKS workloads, and isolated database subnets for RDS. Internet Gateways provided direct internet connectivity for public resources, while NAT Gateways provided controlled outbound IPv4 internet access for private workloads. We managed routing using separate public and private route tables, enforced resource-level security through stateful Security Groups and subnet-level controls through NACLs where required, and used VPC endpoints to privately access AWS services and reduce NAT traffic. For connectivity across multiple VPCs and on-premises environments, we used VPC Peering, Transit Gateway, Site-to-Site VPN, or Direct Connect depending on the scale and requirements. We also enabled VPC Flow Logs and used Reachability Analyzer for monitoring and troubleshooting network connectivity. The complete VPC infrastructure was provisioned through reusable Terraform modules with environment-specific CIDRs and separate state management.
-
-CIDR(Classless Inter-Domain Routing) Block
---------------------
-to specify an IP address range. or 
-Is used to define IP address range for cloud network(vpc) using Classless Inter-Domain Routing notation.When you create a VPC, you must specify an IP address range for the VPC in the form of a CIDR block.
+CIDR(Classless Inter-Domain Routing) Block :
+-----------------------------------------------------------
+to specify an IP address range. or Is used to define IP address range for cloud network(vpc) using Classless Inter-Domain Routing notation.
+When you create a VPC, you must specify an IP address range for the VPC in the form of a CIDR block.
 In AWS, allowed IPv4 range sizes are between a /16 (65,536 addresses) and /28 (16 addresses) --> in between u can give any number like /24 etc
 
 IPV4 is 32 bits 
@@ -3208,8 +3198,8 @@ AWS provides a set of IP address ranges designated for private use, which are sp
 192.168.0.0/16 (192.168.0.0 - 192.168.255.255)
 
 
-Subnet:subnetwork
-----------
+Subnet :   subnetwork
+-----------
 A subnet is a smaller IP range created inside a VPC.
 A subnet belongs to exactly one Availability Zone. for diff availability zones we need to create public and private subnets and  A VPC belongs to all Availability Zones in an AWS Region.
 We create subnets to organize and isolate resources, place resources across Availability Zones, and control routing.
@@ -3285,6 +3275,7 @@ A subnet is a range of IP addresses within a VPC, and each subnet belongs to a s
 The route table association decides the subnet public or private a public IP determines whether a particular resource can directly use the IGW for IPv4 internet connectivity.
 
 
+
 Internet Gateway
 -----------------------
 An Internet Gateway enables internet communication between resources in a VPC and the public internet. An Internet Gateway is attached to the VPC.
@@ -3356,8 +3347,6 @@ VPC Flow Logs
 DHCP Option Sets
 
 
-
-
 VPC Peering
 ----------------
 VPC Peering is a private network connection between two VPCs that allows resources in those VPCs to communicate using private IP addresses.
@@ -3423,8 +3412,6 @@ VPC Peering is a private network connection between two VPCs that allows resourc
 
 Transit Gateway
 
-
-
 create
 vpc,subnets(public and private),route table(public and private route tables),internet gateway(create and attach to our vpc)
 associate now 
@@ -3441,20 +3428,12 @@ Example:
 
 
 
+===================================================================================================================================================================
 
+Roboshop - Project :
+---------------------------
 
-
-
-
-	
-
-
-
-
-
-
-  
-I have created a roboshop-terraform-folder
+I have created a roboshop-terraform-proj
 created 01-vpc folder 
 created 02-sg folder..to create sg i need vpc id ..so these are in diff folders we can't get directly if we ryt both sg and vpc resource in same folder we can get directly
 once folder  is crossed that is diff proj we cant access for that we use ssm parameter store we an store that vpc id(basically store main variables) in the ssm parameter store and get/access to sg folder ..it is central configuration store and another point we can get the default vpc id but vpc we are creating through code that we cant access  we need to store vpc_id explicitly in central location
@@ -3651,20 +3630,7 @@ creating load balancer 2 nginx servers and security groups
 if we have multiple worker notes of same category ex catalogue 2 instances we have so we cannot configure 2 ip's in same dns i.e., catalogue.devopswitharun.online so definitely load balancer infront
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+===================================================================================================================================================================
 
 
 Load balancer:
@@ -4187,9 +4153,6 @@ Are there other deployment strategies besides Rolling Update?
 
 Which strategy is used by Auto Scaling Instance Refresh?
 Rolling Update. Instance Refresh is designed to replace instances gradually while maintaining service availability.
-
-
-
 
 
 deregistration_delay = 60 
