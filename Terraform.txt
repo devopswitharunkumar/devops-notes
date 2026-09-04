@@ -3136,18 +3136,20 @@ Same happens for QA, PREPROD and PROD. Only the variable values change.
 
 VPC (Virtual Private Cloud):
 -----------------------------------
-Amazon VPC (Virtual Private Cloud) is a logically isolated virtual network in AWS where we launch and manage resources such as EC2 instances, load balancers, RDS databases, and EKS clusters.
+VPC (Virtual Private Cloud) is a logically isolated virtual network in your AWS account where you can launch and run cloud resources such as EC2 instances, load balancers, RDS databases, and EKS clusters.
+Each VPC is defined by an IPv4 CIDR block range that specifies the private IP address range available to resources.
+You can control everything like IP address range, subnets, routing, and network access for your AWS resources. AWS VPC belongs to all Availability Zones in an AWS Region.
 
 Each VPC has its own:
 IP address range(CIDR range)
 Subnets
 Route tables
-Security Groups
-Network ACLs
 Internet Gateways
 NAT Gateways
-Endpoints
-DNS configuration
+
+Security Layers:
+Security Groups
+Network ACLs
 
 Think of a VPC as your private network boundary inside AWS.
 
@@ -3171,25 +3173,27 @@ A VPC is a logically isolated virtual network in AWS where we deploy and control
 --> For connectivity across multiple VPCs and on-premises environments, we used VPC Peering, Transit Gateway, Site-to-Site VPN, or Direct Connect depending on the scale and requirements. 
 --> We also enabled VPC Flow Logs and used Reachability Analyzer for monitoring and troubleshooting network connectivity. The complete VPC infrastructure was provisioned through reusable Terraform modules with environment-specific CIDRs and separate state management.
 
-CIDR(Classless Inter-Domain Routing) Block :
------------------------------------------------------------
-to specify an IP address range. or Is used to define IP address range for cloud network(vpc) using Classless Inter-Domain Routing notation.
+IP CIDR(Classless Inter-Domain Routing) Block Range :
+-----------------------------------------------------------------------
+Used to define IP address range for cloud network(vpc) using Classless Inter-Domain Routing notation.
+or 
+A CIDR block determines the network boundary and allocation capacity of our VPC architectures
 When you create a VPC, you must specify an IP address range for the VPC in the form of a CIDR block.
-In AWS, allowed IPv4 range sizes are between a /16 (65,536 addresses) and /28 (16 addresses) --> in between u can give any number like /24 etc
+In AWS, allowed IPv4 range sizes are between a /16 (65,536 addresses) and /24 (256 addresses) and/28 (16 addresses) --> in between u can give any number like /24 etc
 
-IPV4 is 32 bits 
+An IPv4 address is always exactly 32 bits long :
+A number between 0 and 32 that indicates how many bits of the IP address are used for the network portion and remaining bits are used for the host portion.
 
-A number between 0 and 32 that indicates how many bits of the IP address are used for the network portion. The remaining bits are used for the host portion.
 Example:
-
 10.0.0.0/16 --> 65,536 addresses we can allocate and 
-10.0.0.  --> network portion
-0            --> host portion
+10.0.0.  --> host portion    ---> individual machines that is hosts 
+0/16      --> network portion    ---> how many bits are locked for network
 
-10.0.0.0/16 provides a range of 10.0.0.0 to 10.255.255.255(65,356 IPs) -->  means 10^16 = 65,356 
+10.0.0.0/16 provides a range of 10.0.0.0 to 10.255.255.255(65,356 IPs) -->  means 2^16 = 65,356 total IP addresses.
 
-10.0.1.0/24  --> in 32 bits we gave 24 and now we have 8  --> 2 ^ 8 = 256 IPv4 addresses
+10.0.1.0/24  --> In 32 bits we gave 24 for network portion (32-24) and now we have 8 for host --> 2 ^ 8 = 256 IPv4 addresses
 AWS reserves five IPv4 addresses in each subnet, so 251 are available for resources in a /24.
+
 
 AWS provides a set of IP address ranges designated for private use, which are specified by RFC 1918 and are not routable over the internet. These CIDR ranges are:
 
@@ -3197,12 +3201,34 @@ AWS provides a set of IP address ranges designated for private use, which are sp
 172.16.0.0/12 (172.16.0.0 - 172.31.255.255)
 192.168.0.0/16 (192.168.0.0 - 192.168.255.255)
 
+The AWS 5-IP Reservation Rule (Interview Gold)
+You are 100% correct that AWS steals 5 IPs from every single subnet you create. 
+If you buy a /24 subnet (256 IPs), you can only use 251 IPs because AWS reserves these exact paths for internal infrastructure:
+.0 - Network Address.
+.1 - AWS VPC Router (Default Gateway).
+.2 - AWS DNS Server (Amazon Provided DNS).
+.3 - Reserved by AWS for future routing capabilities.
+.255 - Network Broadcast Address (AWS doesn't support broadcast, but reserves it anyway).
 
-Subnet :   subnetwork
+
+Subnet :   sub-network
 -----------
-A subnet is a smaller IP range created inside a VPC.
-A subnet belongs to exactly one Availability Zone. for diff availability zones we need to create public and private subnets and  A VPC belongs to all Availability Zones in an AWS Region.
+A subnet defines smaller IP range created inside a VPC that belongs entirely within a single Availability Zone (AZ). or logical subdivisions of a VPC’s IP address range 
+For diff availability zones we need to create public and private subnets and  
 We create subnets to organize and isolate resources, place resources across Availability Zones, and control routing.
+
+They divide large networks into smaller, isolated zones for better organization and control.
+Distributing subnets across multiple AZs ensures fault tolerance and operational continuity.
+
+1. Public subnet : network which routes the traffic from internet both inbound and outbound traffic through interner gateway
+This allows resources within this subnet to have public IP addresses and accept direct (inbound and outbound traffic) i.e., bi-directional traffic to and from the public internet.
+Bi-directional (Inbound + Outbound)
+Application Load Balancers (ALBs), Nginx Proxies, Bastion Hosts
+
+2. Private subnet: network which are completely isolated from direct internet access (i.e., inbound access) and communicate external internet(i.e., outbound access) via NAT gateway
+To allow backend applications and databases to securely pull external install packages or software updates or patches we route their outbound traffic through a NAT Gateway
+Outbound Only (Blocks unauthorized inbound)
+Backend Applications and Databases and NAT gateway deployed in public subnet
 
 VPC
 ├── Public Subnet
@@ -3219,12 +3245,7 @@ VPC
 
 
 2. What makes a subnet public or private?
-
-The subnet's route table determines whether the subnet is public or private.The name does not matter.
-
-You can name a subnet: public-subnet or any name 
-
-but if its route table does not have a route to an Internet Gateway, it is not actually a public subnet.
+The subnet's route table determines whether the subnet is public or private.The name does not matter. You can name a subnet: public-subnet or any name but if its route table does not have a route to an Internet Gateway, it is not actually a public subnet.
 
 Public subnet --->A subnet is considered as public when its associated route table contains a route to an Internet Gateway. 
 Ex:
@@ -3241,25 +3262,19 @@ Destination       Target
 
 Here there is no: 0.0.0.0/0 → Internet Gateway  --> Therefore, resources cannot directly communicate with the internet through an IGW.
 
-But private servers sometimes need internet access
+But private servers sometimes need internet access to download packages etc..
 Ex
-Suppose your application EC2 is in a private subnet and needs:
-
-yum install nginx or dnf update ---> The server needs outbound internet connectivity.
+Suppose your application EC2 is in a private subnet and need to install package : yum install nginx or dnf update ---> The server needs outbound internet connectivity.
 
 The private route table becomes:
-
 Destination       Target
 10.0.0.0/16       local
 0.0.0.0/0         NAT Gateway
 
 The subnet is still private.
-
 Why? Because it does not have a direct route to the Internet Gateway.
 
-The route is:
-
-Private Subnet → NAT Gateway → IGW
+The route is:  Private Subnet → NAT Gateway → IGW
 
 Public Subnet										                                           																 Private Subnet
 Direct default route to IGW	                                             														No direct default route to IGW
@@ -3278,10 +3293,11 @@ The route table association decides the subnet public or private a public IP det
 
 Internet Gateway
 -----------------------
-An Internet Gateway enables internet communication between resources in a VPC and the public internet. An Internet Gateway is attached to the VPC.
-Internet ------> Internet Gateway ------> VPC
-
-By default, resources inside VPC do not have direct internet connectivity.
+An Internet Gateway enables bi-directional internet communication between a VPC’s public subnets resources and the internet.
+An Internet Gateway is attached to the VPC and adding route (0.0.0.0/0) in public subnets route table allows instances in that subnet to access the internet. 
+AWS VPC can have exactly one Internet Gateway without it, instances cannot directly communicate with the public internet. By default, resources inside VPC do not have direct internet connectivity.
+It is scaled horizonatlly 
+Internet ------> Internet Gateway ------> resources available in VPC
 
 Compare this with a NAT Gateway:
 Internet Gateway → Attached to VPC
@@ -3289,26 +3305,29 @@ NAT Gateway        → Created inside a subnet
 
 One Internet Gateway attached to the VPC and can have diff Availability Zones to one internet gateway
 
-| Internet Gateway                                                           | NAT Gateway                                                                            |
+| Internet Gateway                                                          						 | NAT Gateway                                                                            |
 | -------------------------------------------------------------------------- | -------------------------------------------------------------------------------------- |
-| Attached to VPC                                                            | Created inside a subnet                                                                |
+| Attached to VPC                                                           				 | Created inside a subnet                                                                |
 | Used for direct internet connectivity                                      | Used primarily for outbound connectivity from private subnets                          |
 | Public subnet route points to IGW                                          | Private subnet route points to NAT GW                                                  |
 | Internet clients can reach properly configured public resources through it | Internet clients cannot initiate arbitrary connections to private instances through it |
 | AWS-managed and horizontally scaled                                        | AWS-managed and scalable                                                               |
-| No hourly IGW charge                                                       | Hourly + data processing charges                                                       |
+| No hourly IGW charge                                                       			| Hourly + data processing charges                                                       |
 | One IGW attached to a VPC at a time                                        | Multiple NAT Gateways can exist in a VPC                                               |
 
 
 Interview answer for your experience
 
-An Internet Gateway is an AWS-managed, horizontally scaled and highly available VPC component that enables communication between resources in a VPC and the public internet. We attach the Internet Gateway to the VPC and configure a default route, such as 0.0.0.0/0 → IGW, in the route tables associated with public subnets. Creating an Internet Gateway alone does not provide internet connectivity; the resource also requires appropriate public IP addressing, routing, Security Group rules, and Network ACL rules. In our architecture, internet-facing load balancers and NAT Gateways were placed in public subnets that had direct routes to the IGW, while application and database workloads remained in private subnets without direct Internet Gateway routes.
+An Internet Gateway is an AWS-managed, horizontally scaled and highly available VPC component that enables communication between resources in a VPC and the public internet. 
+We attach the Internet Gateway to the VPC and configure a default route, such as 0.0.0.0/0 → IGW, in the route tables associated with public subnets. 
+Creating an Internet Gateway alone does not provide internet connectivity; the resource also requires appropriate public IP addressing, routing, Security Group rules, and Network ACL rules. 
+In our architecture, internet-facing load balancers and NAT Gateways were placed in public subnets that had direct routes to the IGW, while application and database workloads remained in private subnets without direct Internet Gateway routes.
 
-NAT Gateway(Network Address Translation.)
--------------------
-A NAT Gateway allows resources in private subnets to initiate outbound IPv4 connections while preventing unsolicited inbound internet connections through the NAT Gateway.
+NAT Gateway(Network Address Translation) :
+------------------------------------------------------------
+NAT Gateway allows instances in private subnets to initiate outbound internet connections while preventing inbound internet connections through the NAT Gateway and enables secure communication with external services without exposing private resources info to the internet.
 or
-NAT Gateway provides or to enable outbound internet connectivity for private resources ex : ec2 (to download packages) without making those resources directly reachable from the internet. NAT Gateway must be created in a public subnet.
+NAT Gateway  enables outbound internet connectivity for resources present in private subnet --> ex : ec2 (to download packages) without making those resources directly reachable from the internet. NAT Gateway must be created in a public subnet and egress endpoints for private subnet.
 
 Private EC2 (ex Needs Internet to download packages)  ---> NAT Gateway(created in public subnet) ---> Internet Gateway  ---> Internet
 
@@ -3316,29 +3335,45 @@ Private EC2 (ex Needs Internet to download packages)  ---> NAT Gateway(created i
 
 How does NAT Gateway work?
 
-Suppose: Private EC2: 10.0.2.10
-The EC2 wants to access:  example.com
+Suppose: Private EC2: 10.0.2.10 and that wants to access:  example.com
 
 Interview answer for your experience
-A NAT Gateway is used to provide outbound IPv4 internet connectivity to resources in private subnets without exposing those resources directly to inbound internet connections. We deploy public NAT Gateways in public subnets, associate Elastic IP addresses with them, and configure private subnet route tables with a default route 0.0.0.0/0 → NAT Gateway. The public subnet containing the NAT Gateway has a default route to the Internet Gateway. In production environments, we generally deploy a NAT Gateway per Availability Zone and route each private subnet to the NAT Gateway in the same AZ for better availability and to avoid cross-AZ dependencies. We also use VPC endpoints for services such as S3 and DynamoDB where appropriate to reduce NAT Gateway traffic and cost.
+A NAT Gateway is used to provide outbound IPv4 internet connectivity to resources in private subnets without exposing those resources directly to inbound internet connections.
+We deploy public NAT Gateways in public subnets, associate Elastic IP addresses with them, and configure private subnet route tables with a default route 0.0.0.0/0 → NAT Gateway. 
+The public subnet containing the NAT Gateway has a default route to the Internet Gateway. 
+In production environments, we generally deploy a NAT Gateway per Availability Zone and route each private subnet to the NAT Gateway in the same AZ for better availability and to avoid cross-AZ dependencies. We also use VPC endpoints for services such as S3 and DynamoDB where appropriate to reduce NAT Gateway traffic and cost.
 
 
 process : from vpc to private subnet(inside that ec2):
-In our VPC, we have public subnets and private subnets. The Internet Gateway (IGW) is attached to the VPC, and the public subnet's route table has a route 0.0.0.0/0 → IGW, so resources in the public subnet can communicate with the internet when they have the required public IP and security rules. In the private subnet, we have EC2 instances without public IPs, so they cannot directly access the internet through the IGW. If the private EC2 needs to download packages like Nginx using yum install nginx, we create a NAT Gateway in the public subnet and assign an Elastic IP to it. Then, in the private subnet's route table, we add the route 0.0.0.0/0 → NAT Gateway. Now, when the private EC2 tries to download Nginx, the traffic goes from EC2 → Private Subnet Route Table → NAT Gateway in Public Subnet → Internet Gateway → Internet → Nginx Repository. The response comes back through Internet → IGW → NAT Gateway → Private EC2. In this way, the private EC2 can access the internet for downloading packages and updates, but the internet cannot directly initiate connections to the private EC2 through the NAT Gateway.
+In our VPC, we have public subnets and private subnets. The Internet Gateway (IGW) is attached to the VPC, and the public subnet's route table has a route 0.0.0.0/0 → IGW, so resources in the public subnet can communicate with the internet when they have the required public IP and security rules. 
+In the private subnet, we have EC2 instances without public IPs, so they cannot directly access the internet through the IGW. If the private EC2 needs to download packages like Nginx using yum install nginx, we create a NAT Gateway in the public subnet and assign an Elastic IP to it. 
+Then, in the private subnet's route table, we add the route 0.0.0.0/0 → NAT Gateway. Now, when the private EC2 tries to download Nginx, the traffic goes from EC2 → Private Subnet Route Table → NAT Gateway in Public Subnet → Internet Gateway → Internet → Nginx Repository. 
+The response comes back through Internet → IGW → NAT Gateway → Private EC2. In this way, the private EC2 can access the internet for downloading packages and updates, but the internet cannot directly initiate connections to the private EC2 through the NAT Gateway.
 
 
-Security Groups
-
+Security Groups :
+----------------------
 A Security Group is a stateful virtual firewall attached to supported resources/network interfaces, such as EC2 instances, load balancers, and RDS databases.
 
-Elastic IP
+A Security Group is a stateful virtual firewall that controls inbound and outbound network traffic for your EC2 instances. It operates at instance level.
+By default, everything is blocked. You can only write rules to explicitly allow traffic.
+Stateful means if you allow an inbound traffic request into your server (e.g., a user opening your website on port 80), the Security Group will automatically allow the response traffic to go back out to that user, regardless of what your outbound rules say.
 
+Elastic IP :
+--------------
 An Elastic IP is a static public IPv4 address allocated to your AWS account in a Region. Normal public IPv4 addresses may change after an EC2 stop/start. An EIP remains allocated until released.
 
+In our roboshop proj we gave elastic ip to NAT gateway
 
-Network ACLs
+Network ACLs(Access Control List) :
+---------------------------------------------
+It an optional layer of security for your VPC that acts as stateless, subnet-level firewall to control inbound and outbound traffic. Network ACLs operate at the subnet level.
+stateless : If you allow an inbound packet on port 80, you must explicitly write a corresponding outbound rule to let the response packet back out. If you forget, the traffic is dropped.
 
-Network ACLs operate at the subnet boundary.
+A NACL applies to every single resource inside an entire subnet
+Before a packet can even reach on an EC2 instance's Security Group, it must first pass through the subnet's Network ACL.
+NACLs allows you to write explicit Deny rules. This makes NACLs your primary weapon to block malicious traffic or blacklisted IP addresses at the front door
+Rules are numbered (e.g., 100, 200, 300). AWS processes them in strict numerical order, starting from the lowest number. The moment a packet matches a rule, evaluation stops.
 
 ENI — Elastic Network Interface
 VPC DNS
@@ -3346,15 +3381,27 @@ VPC Endpoints
 VPC Flow Logs
 DHCP Option Sets
 
+Security Group (SG) :
+--> Instance Level (Bound to the ENI/NIC)
+--> If you allow an inbound packet on port 80, you no need to explicitly write a corresponding outbound rule to send response packet back out.
+--> Supports Allow rules only
+--> OrderAll rules are evaluated simultaneously
+ 
+Network ACL (NACL) :
+--> Subnet Level (Bound to the Subnet boundary)
+--> If you allow an inbound packet on port 80, you must explicitly write a corresponding outbound rule to let the response packet back out. If you forget, the traffic is dropped.
+--> Supports both Allow and Deny rules
+--> Rules are processed sequentially by number
 
-VPC Peering
-----------------
+
+VPC Peering :
+-----------------
 VPC Peering is a private network connection between two VPCs that allows resources in those VPCs to communicate using private IP addresses.
-CIDRs must not overlap Should be diff cidr ip address for both vpc's and by default they cannot communicate automatically
+Traffic between peered VPCs stays within the AWS network and does not travel through the public internet, providing secure and high-speed communication
+CIDRs must not overlap Should be diff cidr ip address for both vpc's and by default they cannot communicate automatically and doesnt need NAT GW and IGW and LB etc...
 
-Requestor VPC and Acceptor VPC 
-when Requestor vpc initialises the peering connection to Acceptor vpc.Then the owner of the accepter VPC accepts the request.
-
+Process: There will be Requestor VPC and Acceptor VPC 
+when Requestor vpc initialises the peering connection to Acceptor vpc.Then the owner of the accepter VPC should accept the request.
 Creating and accepting the peering connection alone does not make the VPC resources communicate. You must configure routes and security rules.
 
 Example:
@@ -3367,50 +3414,167 @@ The application needs to connect to the database.
 instead of sending traffic through  
 Application EC2 ---> NAT Gateway / IGW --->. Public Internet ---> Database
 we establish VPC Peering:
-Now resources can communicate using private IP addresses by adding Database  VPC cidr ip in all/requires subnets route table in routes section in Application VPC  and same vide versa take Application VPC cidr ip and add it in Database  VPC's subnet's route table in routes section  
+Now resources can communicate using private IP addresses --> by adding Database vpc cidr ip's in all/required subnets route table in routes section in Application vpc and same vise versa take Application VPC cidr ip and add it in Database  VPC's subnet's route table in routes section  
 
 Another Ex:
---------------
+----------------
+Scenarion :
+---------------
+If VPC A is peered with VPC B, and VPC B is peered with VPC C, VPC A cannot talk to VPC C.
+To connect A, B, and C fully, you need three separate peering connections (A-B, B-C, A-C). As you add more VPCs, the number of connections grows exponentially ($N(N-1)/2$)
+By creating VPC conection in AWS console does not make traffic flow in bw them we must update the route tables in both the vpc's with routes then only they can communicate 
+or
 I have VPC-A,VPC-B,VPC-C now i have established peering connection bw
-VPC-A  ----peering--- VPC-B
+VPC-A  ----peered--- VPC-B
 VPC-B  ---peering---- VPC-C
 
 so here VPC- A cannot communicate VPC-C , to connect u need to establish connection
-VPC Peering does not support transitive routing.
-you can end up with many peering connections and route-table entries.
+VPC Peering does not support transitive routing. you can end up with many peering connections and route-table entries. At larger scale, companies commonly use AWS Transit Gateway instead.
 
-At larger scale, companies commonly use AWS Transit Gateway instead.
 
-We can establish connection 
-Same Region and Cross-Region Peering
-Same Region Peering
+We can establish connection Same Region and Cross-Region Peering Same Region Peering
 
-us-east-1 VPC
-       ↕
-us-east-1 VPC
+1. Sae Region  :
+		us-east-1 VPC
+			   ↕
+		us-east-1 VPC
 
-Inter-Region Peering
+2. Inter/cross-Region Peering : 
+		us-east-1 VPC
+			   ↕
+		ap-south-1 VPC
 
-us-east-1 VPC
-       ↕
-ap-south-1 VPC
-
-Same account and diff-account peering. VPC Peering can connect:
-
-Same AWS Account
-
-Account-A VPC-1 ↔ Account-A VPC-2
-
-Different AWS Accounts
-
-Account-A VPC ↔ Account-B VPC
+3. Same AWS Account : Account-A VPC-1 ↔ Account-A VPC-2
+4. Different AWS Accounts : Account-A VPC ↔ Account-B VPC
 
 Interview answer for your experience
+VPC Peering is a private network connection between two VPCs that allows resources to communicate using private IP addresses without requiring an Internet Gateway, NAT Gateway, VPN, or public IP addresses. 
+In our environment, we used VPC Peering for private connectivity between VPCs such as application and shared-services networks. After creating and accepting the peering connection, we configured routes in the relevant route tables on both sides and allowed only required traffic through Security Groups and NACLs. 
+We ensured that the VPC CIDR ranges did not overlap because overlapping CIDRs cannot be peered. 
+One important limitation is that VPC Peering is non-transitive and does not support edge-to-edge routing through a peer's NAT Gateway, Internet Gateway, or VPN connection. For environments with a small number of VPCs, peering is simple and cost-effective, while for larger hub-and-spoke networks with many VPCs and on-premises connectivity, we generally use Transit Gateway for centralized connectivity and routing.
 
-VPC Peering is a private network connection between two VPCs that allows resources to communicate using private IP addresses without requiring an Internet Gateway, NAT Gateway, VPN, or public IP addresses. In our environment, we used VPC Peering for private connectivity between VPCs such as application and shared-services networks. After creating and accepting the peering connection, we configured routes in the relevant route tables on both sides and allowed only required traffic through Security Groups and NACLs. We ensured that the VPC CIDR ranges did not overlap because overlapping CIDRs cannot be peered. One important limitation is that VPC Peering is non-transitive and does not support edge-to-edge routing through a peer's NAT Gateway, Internet Gateway, or VPN connection. For environments with a small number of VPCs, peering is simple and cost-effective, while for larger hub-and-spoke networks with many VPCs and on-premises connectivity, we generally use Transit Gateway for centralized connectivity and routing.
+
+Transit Gateway : 
+-----------------------
+AWS TGW is the managed networking service that acts as a one central point/hub to connect multiple vpc's, on-prime networks , VPNs, Direct Connect connections and other networks 
+It makes network management simple , scalable and secure..Basically it works like a router in a regional level 
+Transit Gateway is a regional resource not global. You can connect VPCs in same region to the TGW. And for connecting networks across regions, Transit Gateway peering can be used.
+
+In VPC peering --> Without TGW as the number of VPCs increases, the number of connections also increase each vpc so it becomes difficult to manage.
+								 In a multi-env this becomes complex   --->  (n * (n-1)/2)
+
+Ex:
+		
+							 VPC-1
+							   │
+							   │
+VPC-2 ─── Transit Gateway ─── VPC-3
+							   │
+							   │
+						  On-Premises
+
+Instead of creating many direct connections between VPCs, each VPC connects to the central Transit Gateway.
+
+. Transit Gateway
+. Attachments (VPC, VPN, DX, etc.)
+. Transit Gateway Route Tables		---> for routing 
+. Routes (static and propagated)
+. Route Propagation.
+. Association (to a route table)
+. RAM (Resource Access Manager)	---> to share TGW with other accounts 
+for cross-account sharing.
+
+What exactly connects to TGW? 
+TGW can have different attachments like --->  VPC , Site-to-Site VPN , Direct Connect Gateway , Connect attachment , Transit Gateway peering
 
 
-Transit Gateway
+Why do we need TGW?
+Suppose your company has 10 VPCs 
+--> Without TGW, you may need many VPC peering connections.
+--> with TGW:
+
+VPC-1 ─┐
+VPC-2 ─┤
+VPC-3 ─┤
+VPC-4 ─┼── Transit Gateway
+VPC-5 ─┤
+VPC-6 ─┤
+VPC-7 ─┤
+VPC-8 ─┤
+VPC-9 ─┤
+VPC-10─┘
+
+This is called a hub-and-spoke architecture. The major benefit is centralized connectivity and routing.
+Hub → Transit Gateway
+Spokes → VPCs/networks
+
+How does traffic actually flow?
+Suppose:
+VPC-A: 10.0.0.0/16
+VPC-B: 10.1.0.0/16
+EC2 in VPC-A wants to communicate with EC2 in VPC-B.
+
+Flow :  EC2 in VPC-A ---> VPC-A Route Table ---> Transit Gateway ---> TGW Route Table ---> VPC-B Attachment ---> VPC-B ---> EC2
+Both the VPC route table and TGW routing need to know where the destination network is.
+
+
+What is a TGW Attachment?
+An attachment is basically ---> connection between TGW and a network.
+VPC-A ---> VPC Attachment ---> TGW
+
+What is a TGW Route Table?
+The Transit Gateway needs to know: For this destination network, where should I send the traffic?
+
+| Destination    | Target           |
+| -------------- | ---------------- |
+| 10.0.0.0/16    | VPC-A attachment |
+| 10.1.0.0/16    | VPC-B attachment |
+| 10.2.0.0/16    | VPC-C attachment |
+| 192.168.0.0/16 | VPN attachment   |
+
+So if traffic arrives at TGW for: 10.1.0.25 ---> TGW looks at its route table and finds: 10.1.0.0/16 ---> VPC-B attachment Then it sends the traffic toward VPC-B.
+
+
+TGW Route Table vs VPC Route Table 
+1. VPC Route Table Controls traffic inside/from the VPC.
+		Example: 10.1.0.0/16 → TGW ---> This tells the VPC: "To reach 10.1.0.0/16, send traffic to TGW."
+2. TGW Route Table : Controls traffic after it reaches TGW ---> 10.1.0.0/16 → VPC-B attachment
+
+			VPC A route table ---> reaches TGW ---> looks for TGW Route Table ---> VPC-B
+
+
+Very important: TGW is not the same as Internet Gateway 
+Internet Gateway ---> used for VPC ↔ Internet (Ex:  EC2 → Internet Gateway → Internet)
+Transit Gateway --->  TGW = Network-to-network connectivity
+			VPC ↔ VPC
+			VPC ↔ On-Premises
+			VPC ↔ VPN
+			VPC ↔ other connected networks
+
+Flow :  Requestor VPC A sends traffic ---> traffic reaches to TGW ---> TGW uses route tables ---> based on the routes traffic routes to ---> Target VPC B or on-prime or other networks
+
+
+
+What is AWS Transit Gateway and have you worked with it?
+--> AWS Transit Gateway is a managed regional networking service that acts as a central hub for connecting multiple VPCs, on-premises networks, VPNs, and Direct Connect environments. 
+--> In a multi-VPC enterprise architecture, instead of creating many point-to-point connections, we use a hub-and-spoke model where VPCs attach to the Transit Gateway. Routing is controlled using Transit Gateway route tables and attachments. This simplifies network connectivity, centralized routing, and scalability.
+
+flow
+How Ec2 knows where to search the destination ec2 response 
+--> VPC-A --> we have EC2-A (10.0.1.10) --> wants to communicate with EC2-B (Private IP: 10.1.1.20 -- destination address) --> EC2-A creates a packet (contains destination details) --> EC2 checks in his own routing CIDR range (route table info) if not found it says it is outside of my network --> VPC-A route tables we configure TGW route --> Then the packet goes toward TGW --> TGW has its own route table it will check the matching Destination IP --> if ip matches So TGW sends the packet through the VPC-B attachment.
+
+or 
+
+flow 
+EC2-A (10.0.1.10) --->  Destination = 10.1.1.20 ---> VPC-A Route Table we have TGW ip (10.1.0.0/16) → TGW ---> Transit Gateway ---> Looks at destination IP ---> 10.1.1.20 matches (10.1.0.0/16) ---> TGW Route Table ---> 10.1.0.0/16 → VPC-B ---> EC2-B (10.1.1.20)
+
+Above example in content 
+--> When an EC2 instance wants to communicate with another network, the packet contains a destination IP address. 
+--> The source VPC route table determines that the destination network should be reached through the Transit Gateway. 
+--> Once the packet reaches TGW, the Transit Gateway checks its route table and finds the route whose destination CIDR matches the packet's destination IP. 
+--> That route points to the appropriate VPC or network attachment, so TGW forwards the packet there.
+
+===================================================================================================================================================================
 
 create
 vpc,subnets(public and private),route table(public and private route tables),internet gateway(create and attach to our vpc)
@@ -3442,6 +3606,8 @@ and we need to write/display that through outputs then only below code will work
 create a terraform resource code and vpc id should be displayed through outputs then only we can get if we dont put in outputs even resource also coud not be stored value 
 even through data source also we cannot get vpc_id which is created by us 
 
+Storing Configuration in SSM Parameter Store to use them in diff modulues :
+----------------------------------------------------------------------------------------------------
 resource "aws_ssm_parameter" "vpc_id" {
   name  = "/${var.Project_Name}/${var.Environment}/vpc_id"
   type  = "String"
@@ -3452,34 +3618,35 @@ output "vpc_id" {                                --> write it in main code where
   value = module.vpc-test.vpc_id
 }
 
-and the to access that in sg
+and the to access that in sg and to retrive we must need to expose in actual vpc module 
 
 data "aws_ssm_parameter" "vpc_id" {
   name = "/${var.Project_Name}/${var.Environment}/vpc_id"
 }
-in maintf 
+Access that in main.tf file
 vpc_id = data.aws_ssm_parameter.vpc_id.value 
 
 ex: scenario
-
 resource "aws_security_group" "roboshop-sg" {
   name        = "mongodb sg" 
   description = var.sg_description
-  tags = {
-  name = "mongodb"
+	  tags = {
+	  name = "mongodb"
+	  }
   }
-  }
-  with above resource block we created resource assume now i will change it to
+															#with above resource block we created resource assume now i will change it to
   resource "aws_security_group" "roboshop-sg" {
   name        = local.resource_name
   description = var.sg_description
-   tags = {
-  name = "mongodb"
-  }
+	   tags = {
+	  name = "mongodb"
+	  }
   }
  
-  name        = local.resource_name  ---> if i want to change ithis name terraform will delete this existing resource and create new resource but if i want to update tags name it will just update the existing
-  
+  name        = local.resource_name  ---> if i want to change this name terraform will delete this existing resource and create new resource but if i want to update tags name it will just update the existing
+
+So if the resource name if we want to change the created resource must be deleted and recreated with new resource name 
+But if resource name has flexitbilty to update in some cases it just updates like tags above 
   
 Sg:
 mongodb sg should only accept from catalogue and user 
@@ -3633,123 +3800,119 @@ if we have multiple worker notes of same category ex catalogue 2 instances we ha
 ===================================================================================================================================================================
 
 
-Load balancer:
-------------------
+Load balancer :
+--------------------
+Load Balancer (LB) is a service that sits between the client and your ec2 servers(either frontend or backend). It receives incoming requests and distributes them across multiple health servers eqully.
+Client talks only to the LB . LB decides which server should handle the request based o health and load and rules.
 
-A Load Balancer (LB) is a service that sits between the client and your servers. It receives incoming requests and distributes them across multiple backend servers eqully.
+LB distributes traffic equally to multiple servers
+LB will not send the traffic to unhealthy instances instead it will manage through healthy instances 
+LB forwards traffic to Target Group which has multiple Servers configured
+LB continuously monitors health of the servers using health checks and Supports for Auto Scaling 
+The load balancer uses a cookie to keep sending the same client to the same backend for a configurable duration.
 
-
-ex: users (from internet ) accessing  ----> server        --> here request directly goes to server
-
+ex: 
+1. Users (from internet ) accessing  ----> server        --> here request directly goes to server
 but in LB 
-
-users (from internet ) accessing  ---->    load balancer ---> server1 or 2 or 3
-request reaches to the load balancer and then load balancer decides the request goes to which server it decides based on health and based on any request serving by instances etcc...
-
+2. Users (from internet ) accessing  ----> load balancer ---> server1 or 2 or 3
 The client talks only to the load balancer. The load balancer decides which server should handle each request.
 
 Why do we need a Load Balancer?
-
-Imagine you have only one server ------------------->  10000 users ---- accessing --->Web Server
+Imagine you have only one server ------------------->  10000 users ----> accessing --->Web Server
 Problems:
 Server becomes overloaded.
 If the server crashes, the application goes down.
 Scaling requires manually replacing the server.
 
 With a load balancer:
-
-10000 users
-      |
-      |
- Load Balancer
-  /    |     \
-Web1 Web2 Web3
+		10000 users
+			  |
+			  |
+		 Load Balancer      ---> distributes the load across multiple servers 
+		  /    |     \
+		Web1 Web2 Web3
 
 Benefits: Better performance, High availability,Fault tolerance,Easy scaling
 
-imp : if any server failes it will not redirect any request to that ec2 ...it will manage all requests with remaining servers
+imp : if any server failes it will not redirect any request/traffic to that ec2 ...it will manage all requests with remaining servers
 
-flow :
-Client ------> DNS -----> Load Balancer -------> Target Group ----> EC2 Instances
+Flow : Client ------> Route53 DNS -----> Load Balancer -------> Target Group ----> EC2 Instances
 
 steps :
- user entered www.amazon.com  --> request goes to dns ALB DNS Name -->it resolves it to ip address (we will add load balancer dns name in route53 records)--->  Load Balancer (Receives every request.and it decides where it should be routed which server) --> Target Group (Contains backend server (ec2's ),frontend servers, databased servers)--> rules (where we configure path where it has to redirect )
+User entered www.amazon.com  --> request goes to Route 53 which has ALB DNS Name --> it resolves it to ip address (we will add load balancer dns name in route53 records) -->  Load Balancer (Receives every request  and it decides where it should be routed which server) --> Target Group (Contains backend server (ec2's ),frontend servers, databased servers) --> rules (where we configure path where it has to redirect )
 
+The LB never sends traffic directly to EC2s.It always forwards traffic to the Target Group. In target groups we will add instances based on category like frontend,backend or database etc
 
-The LB never sends traffic directly to EC2s.It always forwards traffic to the Target Group. iN target groups we will add instances based on category like frontend,backend or database etc
 
 Types of Load Balancers (AWS)
 -----------------------------------------
-1. Application Load Balancer (ALB)
-Layer 7
+1. Application Load Balancer (ALB) --->  Layer 7
+		Works with: HTTP,HTTPS ... Can route based on: URL,Path,Host,Headers
 
-Works with: HTTP,HTTPS
-Can route based on: URL,Path,Host,Headers
+2. Network Load Balancer (NLB) ---> Layer 4
+		Works on: TCP,UDP,TLS ---> Used when: Very high performance,Millions of requests,Gaming,Streaming
 
-2. Network Load Balancer (NLB)
-
-Layer 4
-
-Works on: TCP,UDP,TLS
-Used when: Very high performance,Millions of requests,Gaming,Streaming
-
-3. Gateway Load Balancer ---> Used for: Firewalls,IDS,IPS,Network appliances
-
-4. Classic Load Balancer -----> Old generation. Mostly replaced by ALB and NLB.
+3. Gateway Load Balancer Layer 3/4 ---> Used for: Firewalls,IDS,IPS,Network appliances
+4. Classic Load Balancer Layer 4/7 ---> It supports HTTP , HTTPS , TCP and SSL..Old generation. Mostly replaced by ALB and NLB. 
 
 
 Layer 4 vs Layer 7 diff
+----------------------------
+Layer 4 ---> 
+1. Transport Layer (TCP / UDP) 
+2. Only reads the destination IP and Port.and it Cannot inspect HTTP URLs.
+3. Static packet forwarding.
+4. Consumes minimal CPU and Scales to millions of requests per second.
+5. Passes raw encrypted packets down or terminates purely at the TCP level.
 
-Layer 4
-
-Looks only at
-
-IP
-
-Port
-
-Cannot inspect HTTP URLs.
-
-Layer 7
-
-Looks inside HTTP.
-
+Layer 7 --->
+1. Application Layer (HTTP / HTTPS)
+2. Reads URLs, Cookies, Headers, Paths.
+3. Dynamic smart routing (e.g., path-based).  (Ex: /ui , /app etc..)
 Example: GET /cart , GET /user , GET /payment ---> Can route based on paths.
+4. Slowerr than Layer 7 
+5. Handles SSL certificates natively, decrypting traffic at the load balancer gate.
+
 
 Why ALB for microservices?
-
 Because it supports path-based routing. i.e., Layer 7
-
 Health Checks : The LB continuously checks: Is server alive? we can configure when to check health while creating Load balancer
-
 Target Group : contains Ec2 instances for that particular group
-
 Listener : A Listener listens on a port.
-
 The load balancer uses a cookie to keep sending the same client to the same backend for a configurable duration.
 
-
-
-Load Balancing Algorithms:
-Round Robin – Requests are distributed one by one across servers.
-Least Outstanding Requests – Sends new requests to the server handling the fewest active requests.(serving less requests based on the load it will send more request to server which is dealing with less servers)
-Weighted Routing – Servers with higher weights receive more traffic.
-IP Hash (common in some load balancers like NGINX/HAProxy) – Same client IP tends to reach the same backend.
+Load Balancing Algorithms :
+-------------------------------------
+1. Round Robin – Requests are distributed equally across all servers (Server A, then B, then C, then back to A)
+2. Weighted Routing – Servers with higher weights receive more traffic.
+3. Least Outstanding Requests – Sends new requests to the servers which are handling less requests(if one server serving less requests compare to other severs based on the load it will send more request to server which is dealing with less servers)
+4. IP Hash (common in some load balancers like NGINX/HAProxy) – Same client IP tends to reach the same backend.
 
 AWS ALB primarily uses algorithms such as round robin and least outstanding requests depending on the target type and protocol.
 
-Round Robin Algorithm :
+1. Round Robin Algorithm :
 lets say i have 3 servers and 5 requests so --> 1st request to server 1 , 2nd request to server 2, 3rd request to server 3, 4th request to server 1, 5th request to server 2 if one server fails it will manage with 2 servers only
 
-This alogorham we can select --> go to target group --> in attributes -- edit --. u can select Round Robin or Least Outstanding Requests
-stickiness  ---> --> go to target group --> in attributes -- edit    --> we can make all requests roted to one server it will 1 day or in hrs only 
+2. Weighted Routing
+You assign weights to servers based on capacity. A t3.medium instance might have a weight of 3, while a tiny t3.micro has a weight of 1. The load balancer sends three requests to the medium server for every one sent to the micro server.
+
+3. Least Outstanding Requests or Least COnnections 
+The load balancer tracks active connections and automatically routes new users to whichever server is currently handling the least amount of active work. This is the best practice for heavy database queries or long-lived processing tasks.
+
+4. IP Hash :
+The load balancer uses a mathematical hashing function on the user's IP address to tie them to a specific backend server. 
+This ensures that a specific user always hits the exact same server, which is critical for legacy applications that store user login sessions in local server memory (Sticky Sessions)
+
+This alogoritham we can select in aws console --> go to target group --> in attributes -- edit --. u can select Round Robin or Least Outstanding Requests
+stickiness  ---> go to target group --> in attributes --> edit  --> we can make all requests roted to one server it will 1 day or in hrs only 
 The load balancer uses a cookie to keep sending the same client to the same backend for a configurable duration.
 
-How Application Load Balancers work
-Clients make requests to your application.
-The listeners in your load balancer receive requests matching the protocol and port that you configure.
-The receiving listener evaluates the incoming request against the rules you specify, and if applicable, routes the request to the appropriate target group. You can use an HTTPS listener to offload the work of TLS encryption and decryption to your load balancer.
-Healthy targets in one or more target groups receive traffic based on the load balancing algorithm, and the routing rules you specify in the listener.
+How Application Load Balancers work ?
+--> Clients make requests to your application.
+--> The listeners in your load balancer receive requests matching the protocol and port that you configure.
+--> The receiving listener evaluates the incoming request against the rules you specify, and if applicable, routes the request to the appropriate target group. 
+--> You can use an HTTPS listener to offload the work of TLS encryption and decryption to your load balancer.
+--> Healthy targets in one or more target groups receive traffic based on the load balancing algorithm, and the routing rules you specify in the listener.
 
 
 Common 4+ Years Interview Questions
@@ -3769,7 +3932,7 @@ A: On the ALB listener (typically port 443) using AWS Certificate Manager.
 Q: How does Auto Scaling work with ALB?
 A: New instances automatically register with the target group and start serving traffic only after passing health checks. Instances being terminated are deregistered gracefully.
 
-
+===================================================================================================================================================================
 
 create 2 ec2 instances and paste the below data inn user_data box while creation
 yum install nginx -y
@@ -3893,6 +4056,8 @@ amazon.devopswitharun.online         			 -- redirects to amazon proj
 local or git
 terraform-roboshop-infra-dev/06-catalogue folder main.tf for the above process
 
+===================================================================================================================================================================
+
 launch template:
 ---------------------
 "An AWS Launch Template is a reusable blueprint that stores the complete configuration required to launch an EC2 instance. 
@@ -3922,12 +4087,13 @@ The Launch Template defines how to create an EC2. The Auto Scaling Group decides
 
 once we deployed catalogue but in a week we want to new code push so we have  a versions in launch templates 
 
-autoscaling -- creates instances and it has a feature that it can place ec2 instances in particular target group also 
+Auto Scaling :
+------------------
+creates instances and it has a feature that it can place ec2 instances in particular target group also 
 
 autoscaling policy imp 
 
 What is an Auto Scaling Policy?
-
 An Auto Scaling Policy is a set of rules that tells the Auto Scaling Group when to add or remove EC2 instances.
 
 Think of it like a manager.
@@ -4185,6 +4351,8 @@ web-alb  --> web-dev.devopswitharun.online
 if we are giving 443 we must add certificate - in AWS we have ACM -- amazon certificate manager 
 so before creating load balancer we need to create certificate 
 
+===================================================================================================================================================================
+
 ACM (AWS Certificate Manager)
 ------------------------------------------
 AWS Certificate Manager (ACM) is a managed AWS service that provisions, stores, renews, and manages SSL/TLS certificates. These certificates are used to enable HTTPS communication between clients and AWS services such as Application Load Balancers, CloudFront, and API Gateway.
@@ -4334,7 +4502,7 @@ http://catalogue.app-dev.daws76s.online
 4. it will connect to and fetch products
 
 
-
+===================================================================================================================================================================
 
 Cloud Front :
 ---------------
