@@ -3896,14 +3896,14 @@ lets say i have 3 servers and 5 requests so --> 1st request to server 1 , 2nd re
 2. Weighted Routing
 You assign weights to servers based on capacity. A t3.medium instance might have a weight of 3, while a tiny t3.micro has a weight of 1. The load balancer sends three requests to the medium server for every one sent to the micro server.
 
-3. Least Outstanding Requests or Least COnnections 
+3. Least Outstanding Requests or Least Connections 
 The load balancer tracks active connections and automatically routes new users to whichever server is currently handling the least amount of active work. This is the best practice for heavy database queries or long-lived processing tasks.
 
 4. IP Hash :
 The load balancer uses a mathematical hashing function on the user's IP address to tie them to a specific backend server. 
 This ensures that a specific user always hits the exact same server, which is critical for legacy applications that store user login sessions in local server memory (Sticky Sessions)
 
-This alogoritham we can select in aws console --> go to target group --> in attributes -- edit --. u can select Round Robin or Least Outstanding Requests
+This alogoritham we can select in aws console --> go to target group --> in attributes -- edit --> u can select Round Robin or Least Outstanding Requests
 stickiness  ---> go to target group --> in attributes --> edit  --> we can make all requests roted to one server it will 1 day or in hrs only 
 The load balancer uses a cookie to keep sending the same client to the same backend for a configurable duration.
 
@@ -4059,33 +4059,31 @@ terraform-roboshop-infra-dev/06-catalogue folder main.tf for the above process
 ===================================================================================================================================================================
 
 launch template:
----------------------
-"An AWS Launch Template is a reusable blueprint that stores the complete configuration required to launch an EC2 instance. 
+-----------------------
+An AWS Launch Template is a reusable blueprint that stores the complete configuration/parameters required to launch an EC2 instance. 
 Instead of specifying the AMI, instance type, security groups, IAM role, storage, user data, and other settings every time we create an instance, we define them once in a Launch Template. 
-AWS services like Auto Scaling Groups use this template to launch identical EC2 instances automatically whenever required."
+AWS services like Auto Scaling Groups use this template to launch identical EC2 instances automatically whenever required.
 
-or
-"A Launch Template is a reusable EC2 configuration blueprint that stores all the parameters required to launch an EC2 instance. It ensures every instance is created with the same configuration and is commonly used by Auto Scaling Groups to automatically launch consistent, production-ready servers."
+It ensures every instance is created with the same configuration and is commonly used by Auto Scaling Groups to automatically launch consistent, production-ready servers.
 
 What information does a Launch Template store?
 It stores almost everything needed to launch an EC2 instance.
 AMI ID,Instance Type,Security Groups,IAM Instance Profile,Key Pair,User Data Script,Root Volume Size,EBS Configuration,Monitoring,Tags,Metadata Options,Network Interfaces,Shutdown Behavior
 
 What does it do?
-
-It does not create EC2 instances. Instead, it tells AWS: "Whenever you need a new EC2, create it exactly like this. AWS then follows the Launch Template and creates identical EC2 instances.
-
-Think of it as the complete EC2 configuration.
-
+It does not create EC2 instances. Instead, it tells AWS Auto scaling group :  Whenever you need to create a new EC2, create it exactly like this. AWS then follows the Launch Template and creates identical EC2 instances.
 
 Relationship with Auto Scaling :
 Launch Template ----> Stores EC2 Configuration ----> Auto Scaling Group fetches it ----> Launches EC2 Instances
 
-The Launch Template defines how to create an EC2. The Auto Scaling Group decides when to create or terminate EC2 instances(ex : we are doing based on CPU utilization).
-
-
+purposes :
+The Launch Template defines how to create an EC2. 
+The Auto Scaling Group decides when to create or terminate EC2 instances(ex : we are doing based on CPU utilization).
 
 once we deployed catalogue but in a week we want to new code push so we have  a versions in launch templates 
+
+
+
 
 Auto Scaling :
 ------------------
@@ -4123,14 +4121,13 @@ ASG launches:
 
           ALB
             |
- --------------------------
- |          |            |
+ ---------------------------
+ |          |            			|
 EC2-1     EC2-2      EC2-3
 
 Traffic is distributed. Later traffic reduces.
 
 CPU becomes -- 15%
-
 Policy says -- CPU < 20% -- Terminate 1 EC2 
 
 Now
@@ -4142,25 +4139,15 @@ Now
 EC2-1          EC2-2
 
 This is called
+Scale Out 	---> Adding EC2s
+Scale In 		---> Removing EC2s
 
-Scale Out --- Adding EC2s
-
-Scale In ---Removing EC2s
-
-Types of Scaling Policies
---------------------------------
+Types of Scaling Policies :
+---------------------------------
 1. Target Tracking Scaling (Most Common)
-Example
-
-Maintain CPU around 50%
-
-Suppose
-
-Current
-
-CPU = 80%
-
-AWS automatically launches EC2s until CPU comes back near 50%.
+Example :
+Maintain CPU around 50% .. Suppose Current CPU = 80%
+---> AWS automatically launches EC2s until CPU comes back near 50%.
 
 target_tracking_configuration {
   predefined_metric_specification {
@@ -4172,11 +4159,9 @@ target_tracking_configuration {
 
 AWS automatically maintains a target metric such as CPU utilization without manually defining separate scale-out and scale-in rules.
 
-2. Step Scaling
+2. Step Scaling : Here we define multiple thresholds.
 
-Here we define multiple thresholds.
-
-Example
+Example :
 
 CPU > 60%
 Add 1 EC2
@@ -4189,67 +4174,27 @@ Add 3 EC2
 
 Scale depends on severity.
 
-3. Simple Scaling
+3. Simple Scaling ---> Old approach.
 
-Old approach.
-
-Example
-
-CPU > 70%
-
-↓
-
-Launch one EC2
-
-↓
-
-Wait 5 minutes
-
-↓
-
-Check again
-
-Very basic.
+Example : CPU > 70% ---> Launch one EC2 ---> Wait 5 minutes ---> Check again.. Very basic.
 
 Mostly replaced by Target Tracking.
 
-4. Scheduled Scaling
+4. Scheduled Scaling : Useful when traffic is predictable.
 
-Useful when traffic is predictable.
-
-Example
-
-Every day
-
-Morning 9 AM
-
-Increase servers
-
-Desired = 8
-
-Night
-
-11 PM
-
-Reduce
-
-Desired = 2
-
-No CloudWatch needed.
-
-
+Example : Every day --> Morning --> 9 AM --> Increase servers --> Desired = 8 --> Night --> 11 PM --> Reduce --> Desired = 2 --> No CloudWatch needed.
 
 Now let's discuss Instance Refresh
 ---------------------------------------------
 
-Problem
------------
+Problem :
+-------------
 Suppose you have ------> Launch Template v1 & AMI = RedHat9 & Application Version = v1
 
 Running ---> EC2-1,EC2-2,EC2-3  ----------------> Everything works.
 
 Tomorrow
-Developer releases --->   Version 2. ----> You update Launch Template. ---->  Launch Template v2
+Developer releases --->   Version 2 ----> You update Launch Template ---->  Launch Template v2
 
 Question:
 Will existing EC2 update automatically?   Answer ---> No
@@ -4260,16 +4205,16 @@ Existing EC2s still run ---> Version 1
 How do we update them? -----> Instance Refresh.
 
 Instance Refresh:
----------------------
+----------------------
 Instance Refresh is an Auto Scaling feature that gradually replaces existing/old EC2 instances with new EC2 instances created from the latest Launch Template.
 
 Suppose ----> Launch Template v2
-contains --------> New AMI and bootstrap.sh and Application Version ------->  Instance Refresh creates new EC2s using v2.
+contains ----> New AMI and bootstrap.sh and Application Version ---->  Instance Refresh creates new EC2s using v2.
 
 To update them we have diff startegies:
 
 RollingUpdate :  Rolling Update is the default strategy used by Instance Refresh. Instead of replacing everything together Aws Replaces one/few old instance with new instance 
--------------------
+--------------------
 lets say assume we have currently running 4 instances if deployment 4 new instances has to be deployed and 4 old instances should be deleted
 
 so now RollingUpdate
@@ -4342,8 +4287,7 @@ traffic is reduced so now intsnces has to terminated except desired capacity but
 
 
 WEb-ALB:
-------------
-
+-------------
 create web-alb, and SG and listner at 443 at https
 
 web-alb  --> web-dev.devopswitharun.online 
@@ -4353,9 +4297,11 @@ so before creating load balancer we need to create certificate
 
 ===================================================================================================================================================================
 
+
 ACM (AWS Certificate Manager)
 ------------------------------------------
-AWS Certificate Manager (ACM) is a managed AWS service that provisions, stores, renews, and manages SSL/TLS certificates. These certificates are used to enable HTTPS communication between clients and AWS services such as Application Load Balancers, CloudFront, and API Gateway.
+AWS Certificate Manager (ACM) is a managed AWS service that provisions, stores, renews, and manages SSL/TLS certificates. 
+These certificates are used to enable HTTPS communication between clients and AWS services such as Application Load Balancers, CloudFront, and API Gateway.
 
 
 Example With out Certificate
@@ -4422,7 +4368,7 @@ Users ---> Route53 ---> web.arundevops.online ---> ALB ---> HTTPS ---> 443 Liste
 
 Certificate Validation:
 ---------------------------
- When creating ACM certificat ---> AWS asks ---> How do I know you own this domain ---> Usually DNS Validation.
+When creating ACM certificat ---> AWS asks ---> How do I know you own this domain ---> Usually DNS Validation.
 
 so we create CNAME record in Route53
 Example
@@ -4665,7 +4611,7 @@ i got error in this resource from terraform-roboshop-app-module used in 11-user 
 terraform taint -target="module.user.aws_lb_listener_rule.component_listner_rule"
 
 
-
+===================================================================================================================================================================
 
 
 
