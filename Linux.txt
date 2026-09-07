@@ -1,104 +1,147 @@
 Devops:
 =======
 Client --> A client is a system/application/browser/mobileapp/device that sends requests to a server to access data,services, applications, or resources over a network.
-Server --> A server is a system or software that receives client requests, processes them, and provides data/services/applications/resources over a network.
+Server --> A server is a system or software that receives client requests, processes them, and provides data/services/applications/resources or response to the client over a network.
 
-using protocols like HTTP, HTTPS, or TCP/IP.”
+using protocols like HTTP, HTTPS, or TCP/IP.
+HTTP - 80 
+HTTPS - 443
 
 windows
-OS 
+OS  --> The Operating System sits between the physical hardware and the software applications, making it easier for them to work together without needing to know low-level hardware details. or , which is the core software that manages a computer's hardware and software resources
+--> It talks directly to the computer parts—controlling the processor, saving files to your storage drive, and sending pictures to your screen.
+--> Runs Applications: It creates the environment needed for you to install and open apps like Google Chrome, WhatsApp, or Microsoft Word.
+--> Provides a User Interface: It gives you a visual way (like icons, menus, and text) to interact with the device instead of making you write complex computer code.
+--> Handles File Storage: It keeps track of where your photos, documents, and system files are stored so they do not get lost or mixed up.
 
+====================================================================================================================================================================
 
-SSH stands for Secure Shell.
-It is a secure way to connect remotely from one server to another server over a network or internet.
-or 
-“SSH is a secure protocol used to remotely connect and manage servers over an encrypted network connection.”
+SSH (Secure Shell) :
+-------------------------
+SSH is a secure network protocol used to connect and manage remote servers over an encrypted network connection.
+--> It allows developers and system administrators to log into a remote server's terminal to run commands and manage systems
+--> It enables secure file-sharing mechanisms like SFTP (SSH File Transfer Protocol) and SCP (Secure Copy Protocol) 
+--> It creates an encrypted "tunnel" to securely pass traffic from other applications across the network
 
-1)ssh key-gen -f <filename> --> it will generate the public key and privatekey
-2)ssh-rsa <publickey code> <laptopname> -->This line tells the server: “Allow the owner of the matching private key to authenticate/login.”
+Process :
+------------
+1)	ssh key-gen -f <filename> 							 --> it will generate the new public key and privatekey in particular loc in local based on laptop 				-f  --> File 
+2)	ssh-rsa <publickey code> <laptopname> --> This line tells the server: Allow the owner of the matching private key to authenticate/login. 
 
 We use ssh-rsa public keys for secure passwordless SSH authentication.
-When SSH connection starts, the server verifies the matching private key before allowing access.”
-SSH creates an encrypted tunnel so nobody can easily read the data.
+When SSH connection starts, the server verifies the matching private key before allowing access. It creates an encrypted tunnel so nobody can easily read the data.
 
-ssh username@server-ip
+ssh-rsa  --> it represents the SSH key and it indicates that the key was generated using the Rivest-Shamir-Adleman (RSA) algorithm
+rsa used for secure key exchange, digital signatures, and authenticating connections across the internet
+
+To Connect : 
+ssh username@Ec2-public-ip
 
 What Happens Internally:
------------------------
+----------------------------------
 1)SSH client starts connection on your machine
-2)Server checks identity i.e public keys
-3)Authentication happens --Server sends encrypted challenge.
+2)Server checks identity i.e public keys and private key selected while Ec2 creation 
+3)Authentication happens --> Server sends encrypted challenge.
 4)Secure encrypted connection is established -- when private key matches public key(✅ Authentication successful)
 5)Terminal access opens -- You get terminal access to server.
-Types:
-------
-1)Password Authentication
-ssh user@ipaddress  --> prompt for password u have to enter 
-2)SSH Key Authentication 
-ssh -i privatekey.pem ec2-user@<public ip>
 
-default ssh port is ---> 22
+Types :
+---------
+1)Password Authentication -----> using ssh username@ipaddress  --> prompt for password u have to enter 
+2)SSH Key Authentication   ------> using ssh -i privatekey.pem ec2-user@<public ip>				-i --> Identity
 
-3)ssh -i <private key> <user@private ip address> -->is used to securely connect to a remote server using SSH key-based authentication instead of passwords.”
+3)	And we will give a public key data in --> AWS console --> EC2 --> key pairs --> Actions --> import key pair and give name and paster public key content in that and save --> while creating EC2 select that key in key pair section --> if both public key and local private key matches then it will allow the connection 
 
-Step 1 — SSH Client Starts --> Your laptop starts SSH program. it reads private key
-Step 2 — Connection to Server --> connects/verify to -> 54.23.11.90 and prot -22((default SSH port))
-Step 3 — Server Sends Challenge --> server says “Prove you own the matching private key.”
-Step 4 — Private Key Verification --> my laptop use - mykey.pem (to generate encrypted response.)
-Step 5 — Server Checks Public Key --> Server already has matching public key inside:(ssh-rsa cmd)-- if succeeds --> ✅ Authentication successful
-Step 6 — Secure Session Created --> Encrypted SSH tunnel established --> You get terminal access.
+SSH default  port is ---> 22
+
+4)ssh -i <private key> <username@private ip address> 
+--> is used to securely connect to a another remote server(like databases which has onlyprivate ip's ) using SSH key-based authentication instead of passwords from one remote server not from local
+
+Step 1 —> SSH Client Starts 				--> Your laptop starts SSH program. it reads private key
+Step 2 —> Connection to Server 		--> connects/verify to -> 54.23.11.90 and prot -22((default SSH port))
+Step 3 —> Server Sends Challenge 	--> server says “Prove you own the matching private key.”
+Step 4 —> Private Key Verification  	--> my laptop use - mykey.pem (to generate encrypted response.)
+Step 5 —> Server Checks Public Key 	--> Server already has matching public key inside:(ssh-rsa cmd)-- if succeeds --> ✅ Authentication successful
+Step 6 —> Secure Session Created 	--> Encrypted SSH tunnel established --> You get terminal access.
 
 
-Absolute path --> Complete/full path from the root directory(it always starts with /(root))
-Relative path --> Path relative to your current directory-- It does NOT start with /. -- projects/app/file.txt --> Because system starts searching from current location.
+
+====================================================================================================================================================================
+
+Types of paths :
+---------------------
+Absolute path 	--> Complete/full path from the root directory(it always starts with /(root))
+Relative path 	--> Path relative to your current directory --> It does NOT start with /. --> projects/app/file.txt --> Because system starts searching from current location.
 
 pwd --> present working directory(give current location ur in that path)
-cd --> change directory (move between directories)
-# --> root directory (u r in root directory)
-$ --> ur a normal user
+cd 	--> change directory (move between directories)
+# 		--> root user (u r in root directory)
+$ 		--> ur a normal user
 
-$sudo su - --> enter into root access
+$sudo su - 		--> enter into root user
 
-COMMANDS
-========
-uname(unix name): to print certain system information
-----------------
-“uname command is used to display Linux system information and kernel information.”
 
-#uname - Shows OS/kernel name.
-uname/uname -s		OS or kernel name
-uname -a	All system info
-uname -r	Kernel release
-uname -v    Kernel version
-uname -n	Hostname/node name
-uname -m	Machine hardware name
-uname -o    print the operating system
-uname -s    kernel name
-uname -p    processor name
+COMMANDS :
+-------------------
+1. uname(Unix Name) :
+-----------------------------
+uname command is used to display/print Linux and unix env's system information about Operayting System and hardware information
 
-man (manual):
-------------
-“man command is used to view the manual/documentation of Linux commands.”
- Ex: man <cmd>
+Options :
+uname -a					--> Prints total system info (kernel name, hostname, release version, architecture, and OS)						-a or -all
+uname/uname -s		--> prints the kernel name
+uname -r					--> prints the kernel release
+uname -v    				--> prints the kernel version 
+uname -n	 				--> prints network Hostname/node name
+uname -o    				--> print the operating system	
+uname -m					--> print the machine hardware name						(ex: x86_64)
+uname -p    				--> processor name
+
+
+2. man (manual) :
+-----------------------
+man command is used to view the manual/documentation of Linux or unix commands. It is similar to help 
+ Ex: man <cmd>   --->  this will open a full documentation page explaining every single option for the given command.
+			ex: man uname   --> display everything about uname and options it has 
+		help  --> Instantly prints a 10-line summary on your screen u can quickly see 
+		man --> Opens the full system manual to read the complete technical documentation  (give deep detailed information about that)
+		
+3. ls (List) :
+-------------
+list all the files and subdirectories contained within your current directory
+
+ls			--> prints list of all files and folders and sorts in alphabetical order (A-Z by default)
+ls -r 	--> prints list of all files and folders and sorts in reverse alphabetical order (Z-A)
+ls -l		--> list all files and folders in Long detailed format like detailed info    (ex: -rw-r--r-- 1 arun users 1200 May 18 file.txt)   -h --> human readable way 
+ls -a		--> Show hidden files and folders (filenames and folders starts with .)  	- mostly these files are configurations adn environment settings files
+ls -A 	--> it doesnt show . and .. files and directories 
+ls -lt		--> sort based on latest time modified file will be on top(Shows files inside all subdirectories also)  newest on top 
+ls -ltr   --> sort the files which are oldest on top 
+ls -R		--> list subdirectories recursively
+s -lh     --> print Human readable file sizes 
+ls -d		--> list directories themselves, not their contents
+ls -i		 --> print inode number or print the index number of each file
+ls -la	 --> hidden and all info details reg file
+ls -s 	 --> This prints a number next to every file
+
+ls /home/arun --> list specific folder  
+
+inode (index Node) :  
+---------------------------
+It is a hidden data structure in Unix and Linux filesystems that stores all the metadata (information) about a file or folder, except for its name and the actual file content.
+Every time file is created it gets assigned a unique inode number contains file type(file or directory or link etc.), permission , ownership, file size, Timestamps and Data points 
  
-ls(list): used to list files and folders/directories 
---------
-ls/ls -r	List files
-ls -l		Long detailed list (ex: -rw-r--r-- 1 arun users 1200 May 18 file.txt)
-ls -a		Show hidden files (filename starts with .)- mostly these files are configurations adn environment settings files
-ls -lh		Human readable sizes
-ls -lt		Sort by latest modified file will be on top(Shows files inside all subdirectories also.)
-ls -R		Recursive listing
-ls -d		Show directory itself
-ls -i		Show inode number
-ls -al		hidden and all info details reg file
-ls /home/arun --> list specific folder files
  
-==========================================
+Ex:   ls -i   --> Displays the secret inode numbers right next to your filenames.
+		df -i  --> Shows how many inodes you have used on your hard
+		stat filename --> Displays the entire raw contents of a specific file's inode block (size, permissions, links, timestamps).
+ 
+====================================================================================================================================================================
 
+4. touch : 
+-------------
+Used to create empty files if file name not exists or it updates file timestamps of a file if already that filename exists 
 
-touch --> used to create empty files or update file timestamps of a file
-------
 Ex :1)  touch <filename>    --> create single file
 If file does NOT exist:
 ✅ New empty file created
@@ -123,8 +166,8 @@ ex: mkdir -p java/projects/data ---> Create Nested Directories if java/projects 
 
 5)mkdir -m 777 public  	  ---> Create Directory With Permissions
 
-cat(concatenate)--> is used to display, create, append, and combine file contents
----------------
+cat(concatenate) --> is used to display, create, append, and combine file contents
+----------------------
 1)cat <filename> --> shows file contents
 2)cat > filename --> create if file not exists and add the content to the file
 3)cat >> filename --> content will append to the existing content at the end 
