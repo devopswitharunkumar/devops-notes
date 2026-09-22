@@ -4,44 +4,79 @@ cut vs awk
 VI vs VIM 
 useradd vs adduser
 dnf vs yum 
+TCP and UDP 
+
 
 Devops:
 =======
-Client --> A client is a system/application/browser/mobileapp/device that sends requests to a server to access data,services, applications, or resources over a network.
+Client  --> A client is a system/application/browser/mobileapp/device that sends requests to a server to access data,services, applications, or resources over a network.
 Server --> A server is a system or software that receives client requests, processes them, and provides data/services/applications/resources or response to the client over a network.
 
 using protocols like HTTP, HTTPS, or TCP/IP.
 HTTP - 80 
 HTTPS - 443
 
-windows
-OS  --> The OS is a software that sits between the physical hardware and the software applications it handles both of them, making it easier for them to work together without needing to know low-level hardware details. or , which is the core software that manages a computer's hardware and software resources
---> It talks directly to the computer parts—controlling the processor, saving files to your storage drive and Manages computer resources such as CPU, memory, and files.
---> Runs Applications: It creates the environment needed for you to install and open apps like Google Chrome, WhatsApp, or Microsoft Word.
---> Provides a User Interface: Acts as an interface between user and hardware
+====================================================================================================================================================================
+
+Operating System (OS) :
+--------------------------------
+OS --> windows or Linux 
+
+OS  --> The OS is a software that sits between the physical hardware and the software applications it manages both of them to work together without needing to know low-level hardware details(meaning applications can ask to "save a file" without needing to know how a physical storage drive works) or which is the core software that manages a computer's hardware and software resources
+--> It interacts directly with physical computer parts to controlling the processor cycles, saving data files to your storage disk and Manages computer resources such as allocating CPU, partitioning memory, and tracks storage files.
+--> It creates the stable, isolated environment needed for you to install and run apps like Google Chrome, WhatsApp, or Microsoft Word without them crashing each other.
+--> Provides a User Interface: It Acts as an interactive interface between user and hardware (translating human inputs into system commands)
 --> Handles File Storage: It keeps track of where your photos, documents, and system files are stored so they do not get lost or mixed up.
+
+Compiler or interpreters converts the human text into 0s and 1s. Once code is already turned into 0s and 1s,the OS acts as the manager to load and run those binary instructions on the physical hardware chips
+In linux --> Bash acts as the interpreter 
+The Interpreter (Bash): Acts as the command-line interface environment. It takes your typed input, interprets what you want, maps it to the right pre-compiled binary, and tells the kernel to run it.
+The Kernel: The ultimate core that loads those binary 0s and 1s into RAM and runs them on the physical CPU.
 
 Kernel :
 ----------
-A kernel is the core computer program inside an operating system that acts as a bridge between a computer's hardware and its software
-functionalities:
---------------------
-Resource Management 
-Process Management
-Memory Management
-Device Control
+A kernel is the core computer program inside an operating system that acts as a bridge between a computer's hardware and its software applications.
+
+functionalities : 
+Resource Management(CPU) 	--> Splits up precious computer power, like CPU time and network speed, fairly among running programs.
+Memory Management 				--> Controls the computer's RAM, assigning space to each app while preventing programs from crashing or reading each other's private data. 
+Device Control 								--> Uses device drivers to talk directly to hardware peripherals like mice, keyboards, and displays
+Process Management 				-->  Decides which program runs, when it runs, and how long it gets to use the processor
 Security
 
-
-Kernel is part of OS it is not a total OS 
+Kernel is part of OS it is not a total OS (This i sin kernel space)
 What the Kernel Does (The Core Operations) : The kernel stays hidden in the background and handles the raw, physical tasks: 
-Talking directly to the hardware (CPU, RAM, hard drives).
+Talking directly to the physical hardware (CPU, RAM, hard drives).
 Deciding which app gets to use the processor next.
 Making sure apps don't steal memory from each other.
 
-What the Rest of the OS Does (The User Experience) 
-User Interface (UI) , File Manager , System Utilities and Command Terminal.
+What the Rest of the OS Does (The User Space Experience) 
+Shell / Command Line Interface (CLI), Graphical User Interface (GUI) ,  Initialization & Service Managers , System Utilities/Libraries (API layer) and System Daemons & Standard Utilities.
 The OS is the complete package that you interact with. The kernel is the engine under the hood doing the deep technical work. You need both for a computer to function!
+
+====================================================================================================================================================================
+
+Daemon --> A daemon is a background process in Linux that runs continuously without user interaction to handle system tasks like log collection (rsyslogd), job scheduling (crond), or network connections (sshd).
+
+System Management & Core Operations
+1. systemd manages the processes: It is the master system manager (PID 1) that starts, stops, and monitors all background daemons on your server.
+2. crond / atd: The time-based job schedulers that execute automated background backup or cleanup scripts.
+
+Networking & DNS Daemons
+1. sshd manages secure remote login: It is a single worker daemon whose only job is to listen for incoming secure shell (SSH) connections so you can access the server remotely.
+2. NetworkManager: Dynamically configures network interfaces, IP routing tables, and Wi-Fi connections.
+
+Logging & Monitoring
+rsyslogd / syslogd: The main system logger that streams text-based kernel and application logs into /var/log/.systemd-journald: Collects structured, binary execution data from systemd service units.
+
+Storage & File Systems
+dockerd / containerd: The orchestration runtimes that manage execution contexts, namespaces, and cgroups for containers.
+nfsd / rpcbind: Handles Network File System exports, allowing external servers to mount local storage over the network.
+
+To list all running daemons (services)
+systemctl list-units --type=service --state=running
+
+
 ====================================================================================================================================================================
 
 SSH (Secure Shell) :
@@ -53,8 +88,42 @@ SSH is a secure network protocol used to connect and manage remote servers over 
 
 Process :
 ------------
-1)	ssh key-gen -f <filename> 							 --> it will generate the new public key and privatekey in particular loc in local based on laptop 				-f  --> File 
-2)	ssh-rsa <publickey code> <laptopname> --> This line tells the server: Allow the owner of the matching private key to authenticate/login. 
+1)	ssh key-gen -f <filename> 							 --> used to generate new public key and private key in particular loc in local based on laptop and default RSA algorithm uses to build key				-f  --> File 
+
+We have two diff types of Algorithms to create/build key pairs 
+1) RSA  			--> In old linux distributions like Ubuntu 20.04 or older CentOS boxes this is the default algorithm if u dont mention in command (Ex:  ssh key-gen -f <filename> 	)
+2) Ed25519 	--> In modern linux distributions they made this as default algorithm (In updated Ubuntu, RHEL, Arch, or macOS)
+
+RSA stands for  			--> Rivest-Shamir-Adleman (RSA)
+Ed25519 stands for 		--> Edwards-curve Digital Signature Algorithm using Curve25519 and named after the large prime number used in its math (2²⁵⁵ - 19)
+
+OpenSSH changed its official default algorithm from RSA to Ed25519.
+
+ssh-keygen -t rsa -f ~/.ssh/devopsrsa		--> You are explicitly forcing the system to use the RSA cryptographic algorithm to build the key pair			-t = type 
+ssh-keygen -t ed25519 -f ~/.ssh/devops
+
+Diff b/w RSA and Ed25519
+Ed25519 is the modern standard because it is 
+significantly faster, uses Elliptic Curve Cryptography (Curve25519) math to calculate, more secure, and uses much shorter keys (only 68 characters) and 256 bits (fixed length) compared to legacy RSA, which requires massive 3072 or 4096-bits key sizes to achieve equivalent security and uses calculation on Prime Number Factorization and it is slower and Very long block of text (~700 characters).
+
+If you wanted to add "devops" as a comment/label:			ssh-keygen -t rsa -C "devops"				-C -- comment flag
+-C "devops": Appends the text label devops to the end of the public key file, making it easy to identify when looking inside server configuration files. It basically works like a tag for a specific project or user 
+
+ssh-keygen -t rsa -C "devops"     --> In this command we didn't gave file name so it will create 
+For RSA default names 			--->  like id_rsa (The private key) and id_rsa.pub (The public key) and add devops in end text of public key 
+For Ed25519 default names 	--->  like id_ed22519 (The private key) and id_ed22519.pub (The public key) and add devops in end text of public key  (-t ed22519 give like this )
+Both files will be automatically saved inside your user account's hidden SSH directory at ~/.ssh/ (which maps to the full path /home/username/.ssh/id_rsa).
+
+ssh-keygen -t rsa -C "devops" -f ~/.ssh/devops    --> it will create a public and private files with name devops and add a comment in the end of public key
+ssh-keygen -t ed22519 -C "devops" -f ~/.ssh/devops
+
+
+2)	ssh-rsa <public key code> <laptopname> 				--> This line tells the server : Allow the owner of the matching private key to authenticate/login. 
+	ssh-ed22519 <public key code> <laptopname>   	--> for Ed25519
+
+U need to execute this command in remote server if u didn't provide/selected a imported key pair while creating EC2 instance --> create ec2 --> select AMI and instance type  --> select key pair --> select SG --> create EC2  
+Provide using AWS console --> AWS EC2 section --> look for Key pairs --> Actions --> select Import key pair -> give name and public key code created using ssh-keygen in that box and create key pair --> u need to select this kay pair while creating EC2 instance 
+In remote server It will store in : ~/.ssh/authorized_keys
 
 We use ssh-rsa public keys for secure passwordless SSH authentication.
 When SSH connection starts, the server verifies the matching private key before allowing access. It creates an encrypted tunnel so nobody can easily read the data.
@@ -63,6 +132,14 @@ ssh-rsa  --> it represents the SSH key and it indicates that the key was generat
 rsa used for secure key exchange, digital signatures, and authenticating connections across the internet
 
 To Connect :  ssh username@Ec2-public-ip
+
+If u do using this command and not selected while creating EC2 -->  ssh-rsa <public key code> <laptopname>
+Processif u r running or logging in server for 2nd time or more :
+1. ssh username@server_ip
+2. ssh-rsa <public key code> <laptopname>
+3. Logout and login the server
+
+If logging in first after creating the server u need to do : 1) login using password 2) run ssh-rsa or ed22519 3) logout and login no need password login using key based  4) after logging in do disable password authentication in this /etc/ssh/sshd_config file and enable PubkeyAuthentication
 
 
 Types :
@@ -78,21 +155,29 @@ SSH default  port is ---> 22
 --> is used to securely connect to a another remote server(like databases which has onlyprivate ip's ) using SSH key-based authentication instead of passwords from one remote server not from local
 
 Step 1 —> SSH Client Starts 					--> Your laptop starts SSH programYour and reads your local private key
-Step 2 —> Connection to Server 			--> connects to the target IP address -> 54.23.11.90 on prot - 22((default SSH port)) 
+Step 2 —> Connection to Server 			--> connects to the target IP address -> 54.23.11.90 on prot - 22(default SSH port)
 Step 3 —> Server Checks Public Key 	--> Before generating a challenge, your laptop sends its private key ID. The server looks inside its ~/.ssh/authorized_keys file to ensure that matching public key exists. 
 Step 4 —> Server Sends Challenge 		--> If the server finds the key, it generates a random piece of text (a challenge), encrypts it using your public key, and sends it back to your laptop
 Step 5 —> Private Key Verification  		--> my laptop use - mykey.pem (to generate encrypted response.) or Your laptop uses your secret privatekey.pem to decrypt the challenge and sends the unencrypted response back to the server
 Step 6 —> Secure Session Created 		--> The server verifies your response matches. ✅ Authentication is successful, and you are granted terminal access
 
 
+To work this password less authentication u need to do some change in 
+sudo vi /etc/ssh/sshd_config    --> in this file u  need to change and search for below words in that config file 
+
+PasswordAuthentication no									--> in production this passwd login/authentication will be completely blocked 
+PubkeyAuthentication yes 										--> if u want to authenticate using key this must be mentioned as --- yes 
+
 
 ====================================================================================================================================================================
 
 Types of paths :
 ---------------------
-Absolute path 	--> Complete/full path from the root directory(it always starts with /(root))
+Absolute path 	--> Complete/full path from the root directory(it always starts with /(root) 
+				Ex: ssh -i /c/devops/devops.pem username@ip address
 Relative path 	--> Path relative to your current directory --> It does NOT start with /. --> projects/app/file.txt --> Because system starts searching from current location.
-
+				Ex: ssh -i devops.pem username@ip address
+				
 pwd --> present working directory(give current location ur in that path)
 cd 	--> change directory (move between directories)
 # 		--> root user (u r in root directory)
@@ -100,10 +185,18 @@ $ 		--> ur a normal user
 
 $ sudo su - 		--> enter into root user
 
-Sudo --> Superuser Do
-su  --> Switch User
-- --> means it tells the system to simulate a fresh login .. it changes ur working directory to root directory(/root) 
+Sudo 	--> Superuser Do
+su  		--> Switch User
+			---> means it tells the system to simulate a fresh login.. it changes ur working directory to root directory(/root) 
+			
+Ways to enter into root user :
+---------------------------------------
+sudo su - or sudo -i 																					It prompts for your current user's password. If you are listed in the /etc/sudoers file the system logs you into the root shell
+su -																												It prompts for the actual root account's password. sudo is not required
+ssh root@ip address																				Direct SSH Root Login
+sudo <command>			Ex: sudo systemctl restart nginx				single-command execution
 
+====================================================================================================================================================================
 
 COMMANDS :
 -------------------
@@ -130,31 +223,44 @@ man command is used to view the manual/documentation of Linux or unix commands. 
 		help  --> Instantly prints a 10-line summary on your screen u can quickly see 
 		man --> Opens the full system manual to read the complete technical documentation  (give deep detailed information about that)
 		
+$ history 	-->  Is used to display a numbered list of all previously executed commands in your current terminal session.		
+						   Bash writes these commands to a hidden file in your home directory called ~/.bash_history
+		
 3. ls (List) :
 -------------
 list all the files and subdirectories contained within your current directory
 
-ls			--> prints list of all files and folders and sorts in alphabetical order (A-Z by default)
-ls -r 	--> prints list of all files and folders and sorts in reverse alphabetical order (Z-A)
+ls			--> displays list of all files and folders and sorts in alphabetical order (A-Z by default)
+ls -r 	--> displays list of all files and folders and sorts in reverse alphabetical order (Z-A)
 ls -l		--> list all files and folders in Long detailed format like detailed info    (ex: -rw-r--r-- 1 arun users 1200 May 18 file.txt)   -h --> human readable way 
 ls -a		--> Show hidden files and folders (filenames and folders starts with .)  	- mostly these files are configurations adn environment settings files
-ls -A 	--> it doesnt show . and .. files and directories 
-ls -lt		--> sort based on latest time modified file will be on top(Shows files inside all subdirectories also)  newest on top 
-ls -ltr   --> sort the files which are oldest on top 
-ls -R		--> list subdirectories recursively
-s -lh     --> print Human readable file sizes 
-ls -d		--> list directories themselves, not their contents
-ls -i		 --> print inode number or print the index number of each file
-ls -la	 --> hidden and all info details reg file
-ls -s 	 --> This prints a number next to every file
+ls -A 	--> it doesnt show . and .. files and directories and remaining . hidden folders and files will be displayed except . and ..
+ls -t		--> sort based on latest time modified file will be on top(Shows files inside all subdirectories also)  newest on top 
+ls -tr    --> sort the files and directories based on time modified which are oldest on top 
+ls -R		--> list subdirectories recursively												-R  --> Recursive List.	
+				  It is used to list not only the files in your current directory, but also all files inside every subdirectory, sub-subdirectory, and nested folder
+s -lh     --> displays Human readable file sizes 	
+ls -d		--> list directories themselves, not their contents									-d = Directory
+	ls -d *     			--> To list everything (files and folders) without opening them
+	ls -d .* *				--> To list absolutely everything including hidden ones
+	ls -d */				--> To list ONLY the directories (folders)
+ls -i		 --> displays inode number or displays the index number of each file and directories
+ls -la	 --> display hidden directories along with all detailed info about file or directory 
+ls -s 	 --> This displays a number next to every file and that number -- represents the actual size of the file allocated on the disk measured in filesystem blocks GNU Coreutils.
+
+	0		--> means 0 bytes and 4 means 4 bytes 
 
 ls /home/arun --> list specific folder  
+If u dont mention r in any command like ls -la --> everything will be displayed in alphabetical a-z order only 
+
+cd ..      	--> go to 1 step back 
+cd ../..		--> goes to 2 steps back foler 
 
 inode (index Node) :  
 ---------------------------
-It is a hidden data structure in Unix and Linux filesystems that stores all the metadata (information) about a file or folder, except for its name and the actual file content.
-Every time file is created it gets assigned a unique inode number contains file type(file or directory or link etc.), permission , ownership, file size, Timestamps and Data points 
- 
+It is a hidden data structure in Unix and Linux filesystems that stores all the metadata (information) about a file or directories, except for its name and the actual file content.
+Every time file or folder is created it gets assigned a unique inode number contains file type(file or directory or link etc.), permission , ownership, file size, Timestamps and Data points 
+
  
 Ex:   ls -i   --> Displays the secret inode numbers right next to your filenames.
 		df -i  --> Shows how many inodes you have used on your hard
@@ -164,31 +270,31 @@ Ex:   ls -i   --> Displays the secret inode numbers right next to your filenames
 
 4. touch : 
 -------------
-Used to create empty file if file does not exists or it updates timestamps of a file if file already exists with that name.
+Used to create empty file if file does not exists it will create new file or it updates timestamps of a file to current timestamp if file already exists with that name.
 
 Ex :1)  touch <filename>    --> create single file
 If file does NOT exist: ✅ New empty file created
 
-If file already exists: ✅ current timestamp gets update for the existing file 
+If file already exists: ✅ current timestamp gets update for the existing file to current timestamp and updates in inode metadata
 When touch is executed on an existing file, Linux updates the file’s timestamps in the inode metadata to the current system time.
 
 2)touch file1.txt file2.txt file3.txt --> create multiple files at a time 
 
 5. mkdir(make directory) : 
 -----------------------------------
-It Is used to create directories/folders
+It Is used to create empty directories
 Ex: 
-1)mkdir <folder name>    ---> create single  directory
+1)mkdir <folder name>    ---> create single directory
     
-2)mkdir folder1 folder2 folder3 --> create multiple directories
+2)mkdir folder1 folder2 folder3 --> create multiple empty directories
 
 3)mkdir -p <dirname>      ---> creates parent directories				-p -- parents 
-ex: mkdir -p java/projects/data ---> Creates Nested Directories/folders if java/projects folders not present them also it will create automatically along with data folder
+ex: mkdir -p java/projects/data ---> Creates Nested Directories/folders if java/projects folders not present it also creates java/projects folder automatically along with data folder inside projects folder 
 		mkdir /java/projects/data --> if java/projects/ folder not present then command fails 
---> The primary reason to use the -p is to prevent the command from failing. Means if folder exist it will ignore the command to create folder if not created it will create new folder 
+--> The primary reason to use the -p is to prevent the command from failing. Means if folder exists it will ignore the command to create folder if directory not exists it will create new directory 
 		/java -- it tells to the system look into root directory  .... java/ -- look it in normal directory
 		
-4)mkdir -v demo           --->-v verbose --> It displays a message for every directory created. --> o/p: mkdir: created directory 'demo'
+4)mkdir -v demo           --->  -v verbose --> It displays a message for every directory created. --> o/p: mkdir: created directory 'demo'
 
 5)mkdir -m 777 <folder name>  	  ---> Create Directory With Permissions		  -m -- mode 					---> 777  means --> User/Owner,Group and Others have all R,W,X access all of them 
 	-m --> It allows you to explicitly set the file permissions (read, write, and execute access) for the new folder at the exact moment you create it
@@ -198,17 +304,19 @@ ex: mkdir -p java/projects/data ---> Creates Nested Directories/folders if java/
 --> is used to view, create, and combine file contents
 Primiarly used for displaying the contents of a text file directly in the terminal without opening a separate text editor
 
-1)cat <filename> --> displays file content on the terminal
-2)cat > filename --> it will create a new file if file not present and store the content we entered and if file already exist it will override the existing content with out new content 
-3)cat >> filename --> it will create a new file if not present and store the content we entered and if file already exist content will be append to the existing content at the end 
-4)cat file1 file2 --> it can display	 both files content side by side basically displays the content of multiple files 
-5)cat file1 file2 > merged.txt --> file will create a new file if not present with both files content (i.e., combined content) will be added to that file 
-6)cat -n notes.txt--> it will show line numbers of content
-7)cat file_name1 >> file_name2 --> add the content of one file to the end of another file without overwriting its existing data
+1)cat <filename> 			--> displays file content on the terminal
+2)cat > filename 			--> it will create a new file if file not present and store the content we entered in terminal and if file already exist it will override the existing content with new content 
+3)cat >> filename 		--> it will create a new file if not present and store the content we entered in terminal and if file already exist content will be append to the existing content at the end 
+4)cat file1 file2 				--> it can display both files content side by side basically displays the content of multiple files 
+
+5)cat file1 file2 > merged.txt 			--> file will create a new file if not present with both files content (i.e., combined content) will be added to that file 
+	cat file1 file2 >> merged.txt 		--> append the content 
+6)cat file_name1 >> file_name2 	--> add the content of one file to the end of another file without overwriting its existing data
+7)cat -n notes.txt								--> it will show line numbers of content
 8)Open Files Whose Names Start with a J 
-		cat J*   --> open all files whose filename starts with J 
-		cat J*.txt --> open all .txt files whose filename starts with J 
-9)cat -A sample.txt  --> used to make non-printing characters visible in the output.
+		cat J*   		--> open all files whose filename starts with J and display the content in a combined manner and file can be in any format whether it .txt or other formats 
+		cat J*.txt 	--> open all .txt files whose filename starts with J  and display the content in a combined manner and files should be in only .txt format 
+9)cat -A sample.txt  						--> used to make non-printing characters visible in the output.
 10) Highlight End of Each Line by displaying $ Using option -E  --> cat -E file.txt
 
 CAT/LESS
@@ -225,14 +333,25 @@ CAT/LESS
 
 *In production environments we use options like -r and -f carefully because deletion is permanent and incorrect usage can impact systems severely.
 
-1) rm filename -> delete file with content/without content
-2) rm file1.txt file2.txt  --> delete multiple files
-3) rm -r projectsfolder  --> delete directory with file content/empty directories
+Deletes only files not directories :
+1) rm <filename> 				--> delete only files with content or without content 
+2) rm file1.txt file2.txt  		--> delete multiple files at a time
+3) rm  -f file.txt 					-->  force delete without confirmation       -f = force
+
+Diff bw rm and rm -f 
+Above em <filename> and rm -f <filename> --> both serves the same purpose that is delete the files but  
+rm <filename> will  throw the error if file not exists like --> cannot remove 'filename.txt' : No such file or directory and if file exists it will delete the file 
+rm -f <filename> will not throw error --> instead if file exists it will remove the file and if file not exists it will ignore the command silently doesnt through any error 
+
+For both files and directories 
+4) rm -r <directoryname>  	--> delete directory or file with files has content or empty files or empty directories
 	-r --> recursive deletion means it will delete folder,subfolders and files inside folders  -r =recursive
-4) rm  -f file.txt -->  force delete without confirmation       -f = force
-5) rm -rf <folder>   --> Deletes everything inside immediately.
-6) rm -rf /    --> This attempts to delete entire Linux filesystem
-7) rm -ri -> it will ask for conformation before deleting the each file       -i = interactive
+5) rm -rf <folder>   				--> Deletes everything inside directories and subdirectories recursively
+
+Diff bw rm -r and rm -rf  same like above files it will do for directories 
+
+6) rm -rf /    							--> This attempts to delete entire Linux/root filesystem
+7) rm -ri 									--> it will ask for confirmation before deleting the each file       -i = interactive mode 
 
 internally
 Removes file entry from directory
@@ -241,17 +360,20 @@ Marks disk blocks as free
 
 File becomes inaccessible.
 
+rm 		--> works to delete only files but 
+rm -r 	--> works to delete both files and directories
+
 
 8. rmdir(remove directory) :  
 -------------------------------------
-It is used to remove only empty directory.
+It is used to remove only empty directories.
 Ex : rmdir <folder name>    --> deletes onlt if the folder is empty 
 if directory is not empty it will show error like ==>  rmdir: failed to remove 'projects': Directory not empty
 
 Difference Between rmdir and rm -r
 ------------------------------------------------
-rmdir	Removes empty directory only
-rm -r	Removes non-empty directory and empty directories
+rmdir	--> Removes empty directory only
+rm -r	--> Removes non-empty directory and empty directories both
 
 9. cp(copy) : 
 ----------------
@@ -259,11 +381,11 @@ used to copy files and directories from one location to anaother location
 
 *In production environments, options like -r and -p are commonly used for recursive copying and preserving file metadata during backups and deployments
 Ex : 
-1)cp <source> <destination>  --> cp file1.txt backup.txt --> to copy only files not folders from one loc to another location                                                           
-2)cp app.log /home/arun/logs/ ---> copy with same file	name ... if u want to change the name after/log/application.log changed name 
-3)cp -r project backup_project   --> recursive copy folders,subdirectories and files from one project folder to another folder
-4)cp -i file.txt backup.txt  --> Asks before overwriting:
-5)cp -v file1.txt backup.txt  --> output : 'file1.txt' -> 'backup.txt'  --> it will display the message like output or Shows you exactly what is being copied in real-time, printing the progress to your terminal screen.
+1)cp <source> <destination>  		--> cp file1.txt backup.txt --> to copy only files not folders from one loc to another location                                                           
+2)cp app.log /home/arun/logs/ 	--> copy with same file name ... if u want to change the name after /logs/application.log changed name so file name will changed 
+3)cp -r <source directory name> <destination directory name>   	--> recursive copy directories,subdirectories inside directory and files from one project folder to another folder
+4)cp -i file.txt backup.txt  				--> Asks before overwritin
+5)cp -v file1.txt backup.txt  			--> output : 'file1.txt' -> 'backup.txt'  --> it will display the message like output or Shows you exactly what is being copied in real-time, printing the progress to your terminal screen.
 6)cp -p nginx.conf nginx.conf.bkp --> means same timestamp,permissions and ownership(of source file) will be copied to nginx.conf.bkp(destination file also)
 		Preserves:
 			timestamps
@@ -284,48 +406,53 @@ rename --> with in the same folder if we perform mv command it will act as renam
 *In production environments it is commonly used during deployments, log rotations, backups, and configuration management.
 
 Ex : mv <source> <destination>
-1)mv file1.txt file2.txt    
---> it will just rename file because file1.txt and file2.txt which we are creating(file2.txt) in the same location so it will just rename the file it will not move if we are giving diff location in destination so it will move the file
-2)mv app.log /home/arun/logs/ --> Move File to Another Directory with same file name 
-3) mv test project  --> rename directory
+1) mv file1.txt file2.txt    		--> with in same directory it will just rename the file and same timestamp will maintain which has previous 
+--> it will just rename file because file1.txt and file2.txt which we are creating(file2.txt) in the same directory location so it will just rename the file it will not move if we are giving diff location in destination so it will move the file
+2) mv app.log /home/arun/logs/ --> Move File to Another Directory with same file name and same timestamp
+		if u want diff name in /home/arun/logs/ new folde u can give ---> mv app.log /home/arun/logs/application.log 
+3) mv testdirectory devdirectory  --> it will just rename directory name to new name 
+4) mv testdirectory devdirectory/  --> testdirectory will move to devdirectory with same name and if u want new name devdirectory/testingdir
 
 Difference Between cp and mv
-cp	Copies file
-mv	Moves/renames file
+cp	Copies file 						--> both previous file location and current file location file will exists both places 
+mv	Moves/renames file 	--> file will be moved to new location and copy of file in previous location will be removed 
 
 ====================================================================================================================================================================
 
 
 1. grep(Global Regular Expression Print) :        
 -------------------------------------------------------
-is a pre-installed linux utility used to search for specific text and find patterns or regular expressions and filter files, logs, and command outputs.
+is a pre-installed linux utility used to search for specific text/words inside a file and find patterns or regular expressions matching and filter files, logs, and terminal outputs.
 It scans text line-by-line and prints every line that matches your criteria.
 
-Syntax : grep [options] "pattern" filename
+Syntax : grep [options] "word or pattern" filename
 
-Ex: grep <"word"> <filename>
+Ex: grep <word to find> <filename>
 
 1)grep "ERROR" app.log --> it will search for only ERROR word in app.log file and it is case sensitive 
-(ex: only ERROR and ERROR123 etc... not error/Error/Error123 etc..)
+(ex: only ERROR and ERROR123, WEERROR, 123ERROR etc... will be shown but not error/Error/Error123 etc..) ... ERROR this word should match even before or after it has characters also it will display
 grep devops app.log --> it will display devops/devops123/devopserts but not display Devops/Devops123/DEVOPS etc...
 
 2)grep -i error app.log --> it will search for error word in app.log file and it is not case sensitive it will show either error and ERROR words in file
-   ex: error123,error,ERROR,Error etcc.. -->  it will show all which has error word
+   ex: error123,error,ERROR,Error, qweerror, 123Error etcc.. -->  it will show all which has error word and even that word has after and before some characters display also					-i = ignore case 
    
-3)grep -w devops samplefile.txt --> it will display exact word match devops ex : devops exact match not devops123 or devopssec etc...
+3)grep -w devops samplefile.txt --> it will display exact word match devops ex : devops exact match not devops123 or devopssec, 123devops etc... only devops word will display
 
 		grep -iw devops samplefile.txt --> it will search for exact word but ignore case 
 			ex : like devops,DEVOPS etc but not like devops12e 
 	  
 4)grep -n ERROR app.log --> show line numbers --> 2:ERROR Database failed
 
-5)grep -v INFO app.log --> Exclude matching lines means Shows all lines except INFO line.
+5)grep -v INFO app.log --> Exclude word matching lines means Shows all lines except INFO word matching lines.      -v = invert matching
+				it will display even ERROR and ERROR123, WEERROR, 123ERROR etc. like this also not exact word 
 
-6)grep -r database <folder name> --> Searches all files recursively.       if u r in same folder where files/folders exists use .  it is current working directory
+6)grep -r databaseword <folder name> --> it will Search databaseword in all files present in given folder recursively.       if u r in same folder where files/folders exists use .  it is current working directory
 
-grep -r devops grepfile.txt prod2.txt  --> display both files data 
+	grep -r devops grepfile.txt prod2.txt  --> display the word lines present both files data 				-r = recursive
 
 7)grep -c ERROR app.log --> count matches means it will count the ERROR words in a file and give count number like ERROR,ERROR123 not Error,error etc.. not count case sensitive words 
+			it will count the how many times that word appeared in a file or logs so it will just display the count number instead of lines that work appeaed 
+			Ex:  only ERROR and ERROR123, WEERROR, 123ERROR etc...				same like grep ERROR app.log -- it display lines and -c display no of lines 
 
 ps -ef | grep nginx
 cat app.log | grep ERROR
@@ -336,14 +463,19 @@ cat app.log | grep ERROR
 Advanced Context Matching
 	-A n: Print n lines After the match.
 	-B n: Print n lines Before the match.
-	-C n: Print n lines of Context (both before and after).
+	-C n: Print n lines of Context (both before and after).			-C (capital) = context 
 cmd :
-		grep -A 3 "Exception" crash.log
+		grep -A 3 -B 2 "Exception" crash.log    	--> pring 3 lines After word matched and 2 lines Before word matched 
+		grep -C 2 ERROR app.log						--> prints 2 lines after INFO word present line and 2 lines before INFO word present line
 
+grep -e ERROR -e INFO app.txt  --> it will search an give only lines which has this 2 words 
+grep -l ERROR app.log  --> 
 
 2. piping ( | ) : 
 -------------------
-is used to send/pass the output of one command as input to another command using the | operator
+Piping is used to pass the output of one command as input to another command using the pipe(|) operator
+or
+Basically one command output will became input of another command and kernel creates temporary data stream. So command 1 writes output to stdout(standart output) and pipe operator redirects that output as input stdin(standard input ) to command 2 and go on if anothe command is there 
 
 *It enables efficient command chaining for filtering, processing, and automating tasks, and internally works through inter-process communication between stdout and stdin.
 
@@ -359,20 +491,26 @@ Efficient and fast.
 --
 Internally (Important for Interview)
 Pipe creates: 
-inter-process communication (IPC)
+inter-process communication (IPC)		--> is a set of kernel mechanisms that allows separate running processes to safely share data, synchronize activities, and pass messages to one another without crashing the system.
 Kernel creates temporary data stream:       stdin : input, stdout: normal output, stderr: error output
 stdout of command1 → stdin of command2      ==> stdout → stdin
 
+About stderr 
+By default, the pipe operator | only redirects stdout to stdin. It completely ignores stderr (Standard Error, File Descriptor 2)
+If command1 throws an error message, that error will bypass the pipe symbol and print directly error to your terminal monitor, rather than being passed into command2.
+To pipe both standard output and error messages together into your next command, we can use the |& operator
+   Ex:	systemctl status nginx |& grep "failed"		# Pipes both normal output AND crash errors to grep
+
 1. Search Running Process    --> 
 ps -ef | grep nginx
-ps -ef --> lists all processes.
-grep nginx --> filters nginx processes from group of process.
+ps -ef 			--> lists all processes
+grep nginx --> filters the word nginx processes from group of process.
 
-2. View Errors in Logs --> cat app.log | grep ERROR
+2. View ERROR in Logs --> cat app.log | grep ERROR  -- this creates extra process of cat		or grep ERROR app.log  
 
-3)Check Open Ports --> netstat -tulpn | grep 8080
+3)Check Open Ports --> netstat -tulpn | grep 8080    or 	ss -tulnp | grep 8080
 
-4)cat app.log | grep ERROR | wc -l  --> Read log | Filter ERROR | Count lines														wc -l  --> word count --lines 
+4)grep "ERROR" app.log| wc -l  --> Filter ERROR word from logs | Count lines	 					wc -l  --> word count and -l for --lines 
 
 
 3. Wget(Web get) : 
@@ -384,15 +522,15 @@ Ex :
 1)wget <URL>  --> wget https://example.com/file.zip --> it will download a file.zip in current directory with the same name
 2)Wget -O app.zip https://example.com/file.zip --> file/zip will be saved with diff name in current working directory (saved as app.zip)
 3) wget -c largefile.iso --> Continues interrupted download. or resume download -c = continue/resume
-If a large file download gets interrupted by a network issue, you can resume right where it left off instead of restarting from scratch
+If a large file download gets interrupted by a network issue or other issues, you can resume where it left off instead of restarting/downloading from scratch/starting
 4) wget -b https://example.com/bigfile.zip --> Runs in backgnround.
 5) wget -q  <URL> --> Suppresses output(when u run this in terminal it wont print anything like msg )
 
 diff :
 ------
  when u run below command
-   wget url --> it will show some msg on terminal and
-   wget -q url --> when u run same with -q that msg will not print in terminal it shows directly entre diff command 
+   wget url 			--> it will show some msg on terminal and
+   wget -q url 		--> when u run same with -q that msg will not print in terminal it shows directly entre diff command 
 
 6) wget -m https://example.com   --> You can recursively download a webpage along with all its images, CSS, and internal links for offline viewing   
 7) wget --limit-rate=500k <URL>
@@ -417,38 +555,50 @@ wget https://get.jenkins.io/war/latest/jenkins.war		 		 	--> Download Jenkins WA
 wget https://dl.k8s.io/release/bin/linux/amd64/kubectl	 	--> Download Kubernetes Binary
 wget http://artifact-server/app.jar                      							--> Download Deployment Artifact
 
+
+
 4. curl(Client URL) :
 --------------------------
-used for transferring data to or from a server using protocols like HTTP and HTTPS. or talking directly to a web server from terminal.
-It is also primarly built for downloading files curl is designed to interact with almost any network protocol (HTTP, HTTPS, FTP, SFTP, etc.) and widely used for testing APIs and web endpoints.
+used for transferring data system and a server using diff protocols like HTTP and HTTPS and It is also primarly used for downloading/fetching web content and it interact with almost any network protocol (HTTP, HTTPS, FTP, SFTP, etc around 25 protocols) and widely used for testing APIs(Rest API's) and sending/uploading or receiving data over the network.
 
-It is a command-line tool used to: send/transfer HTTP/HTTPS requests,interact with APIs,transfer data,download/upload files,test end point services
-* In DevOps it is widely used for API testing, health checks, service validation, automation, and interacting with REST endpoints.”
+Syntax : curl https://example.com
 
-Ex: curl <url> --> Fetches webpage/API response in html format
+By default, executing the curl command it will fetch the raw response/content/data in HTML or JSON or plain text from the server/browser and display the text content (like raw HTML, JSON, or plain text) directly on your current terminal  (stdout)
 
-curl -L -o /tmp/user.zip https://roboshop-builds.s3.amazonaws.com/user.zip
+It is a command-line tool used to send/transfer HTTP/HTTPS requests,interact with APIs,transfer data,download/upload files,test end point services
+* In DevOps it is widely used for API testing, health checks, service validation, automation, and interacting with REST endpoints.
 
-1) curl -O https://example.com/file.zip  --> curl won't save a file by default. You must use a capital -O to save it using the default filename from the URL 
-			This command downloads the file and saves it with the same name as in the URL
-		note : if we dont give -O  --> it will print the data on terminal directly or command will retrieve the HTML content of the specified URL and display it in the terminal.
-2) curl -o custom_name.zip https://example.com/file.zip --> it will download the file and rename the file to new name 
-3) curl -C -O https://example.com/file.zip  -->  This option resumes download which has been stopped due to some issues like internet inturupted where it stopped from there only it resumes the download	
-3) curl -L https://google.com --> If a URL redirects to another page (like HTTP to HTTPS) it wont automatically follow re directs automatically we need to use -L option we force to redirect 
-4) curl -I https://example.com   --> Fetches headers only (HTTP HEAD request).
+Commands : 
+----------------
+1) curl -O https://example.com/file.zip  --> curl won't save content to a file by default. You must use a capital -O to save it using the default/same name from the URL 
+			This command downloads the content feom server browser and saves it with the same name as in the URL			-O  means original filename
+		note : if we dont give -O  --> it will display the data on terminal directly or command will retrieve the HTML or JSON or plain text content of the specified URL 
+		
+2) curl -o <custom_name.zip> https://example.com/file.zip --> it will download the content and saves it to the specific file/whatever format called mentioned in command 
 
-5) Send an API Request / POST Data (-X and -d) --> curl -X POST -d "param1=value1&param2=value2" https://example.com
+3) curl -C https://example.com/file.zip  -->  This option continues/resumes download which has been stopped/interupted due to network issues or other and useful at the time of downloading large files
 
--d -- data 
--X <method type>  -- to mention which type of method it is 
+3) curl -L https://google.com --> If a URL redirects to another page (like HTTP to HTTPS) it wont automatically follow re-directs we need to use -L option we force to redirect 
+			and curl -L -o /tmp/user.zip https://roboshop-builds.s3.amazonaws.com/user.zip 
+4) curl -I https://example.com   --> Fetches only HTTP response headers (HTTP HEAD request).
 
-6) curl -i https://example.com --> Includes the HTTP response headers in the output.
-7) curl -s https://example.com --> silent mode 
-8) curl -# https://example.com --> simple progress bar
-9) curl --limit-rate 1000K -O ftp://speedtest.tele2.net/1MB.zip
-10) curl -u {username}:{password} -O ftp://test.rebex.net/readme.txt    --> curl also provides options to download files from user authenticated FTP servers. 
+5) Send an API Request / POST Data (-X and -d) --> curl -X POST -d "name=arun&course=devops" https://example.com/post
 
-11) If you want to upload a file to a server  --> curl -T uploadfile.txt https://example.com/upload/
+Get Request --> curl -X GET https://api.sampleapis.com/coffee/hot%3C/span>
+
+-d -- data 	-- to send form data or payload 
+-X <method type>  -- to mention which type of method it is like POST, GET, DELETE, PATCH, PUT etc...
+
+6) curl -i https://example.com --> Includes the HTTP response and headers in the output. or To see both HTTP headers and response body 
+7) curl -s https://example.com --> silent mode (hides progress meter). To get clean output without progress bar
+8) curl -# https://example.com --> shows a percentage in simple progress bar
+9) curl --limit-rate 1000K -O ftp://speedtest.tele2.net/1MB.zip			--> 
+10) curl -u {username}:{password} -O ftp://test.rebex.net/readme.txt    --> curl also provides options to download files from user authenticated FTP servers. anf to access endpoints that require username and password
+
+11) curl -T uploadfile.txt https://example.com/upload/  --> If you want to upload local file to a destination serverinternally uses PUT method --> -T - Transfers
+And If you want to append an already existing FTP file you can use the -a or --append option.
+
+12) curl -H "Authorization : Bearer token https:example.com/headers --> used to add/pass custom headers (auth, content-type etc)
 
 some other uses : 
 	sending a mail 
@@ -463,10 +613,22 @@ Mainly download files			API/data transfer tool
 Better for recursive downloads	Better for REST/API calls
 Simpler downloading				More flexible
 
-curl won't save a file by default. You must use a capital -O to save it using the filename from the URL 
-wget save the file by default name u no need to mention   
 
-internally:
+Diff Bw CURL and WGET :
+---------------------------------
+CURL will fetch the content from  server/browser by default display content on the terminal(stdout) if no option mentioed 
+curl won't save a content to a file by default and . You must use a capital -O to save it using the filename from the URL 
+We can use curl for API testing and automation like Sending POST requests, headers, and payloads.
+Cannot recursively download a whole folder structure
+It supports mutiple HTTP, HTTPS, FTP, SFTP, SCP, LDAP, SMTP, etc. around 25 types of protocols 
+
+wget downloads the content and save to a file by default with default name(like an .html, .zip, or .tar.gz file) u no need to mention 
+File Fetching: Downloading massive installation packages, scripts, or zips.
+Can recursively download a whole folder structure.
+It only supports HTTP, HTTPS, and FTP.
+
+
+internally curl will do :
 Resolves DNS
 Connects to server
 Sends HTTP/HTTPS request
@@ -476,14 +638,17 @@ Prints output to terminal
 
 5. cut :          
 ---------
-used to extract specific fields/words/columns or character positions from files or command outputs.
- 
+used to extract specific parts of each line  of a file or input given in terminal (stdin). we can extract data based on byte position, character position, or fields separated by a delimiter. 
+
+used for text processing and data filtering 
+
 ex: cut [options] file 
 
 options :
-	-d --> Delimiter
-	-f	 --> Field number
-	-c	 --> Character position
+	-d --> Delimiter				ex: space or tab and custom characters 
+	-f	 --> Field number in a file 
+	-c	 --> Character position			--> extracts characters
+	-b --> byte positions   					--> specific byte positions from each line
 
 suppose example.txt file has
 101:Arun:DevOps
@@ -501,15 +666,58 @@ ex:
 			or echo "DevOps" | cut -c 1-3  		o/p: Dev --> extract multiple characters 
 now i want to extract 2nd column first 3 characters from file 
 		cut -d ":" -f 2 emp.txt | cut -c 1-3      ---> o/p : Aru Joh Mik
-4)cut -d ":" -f 2 cutcmd.txt | cut -c 2 or  echo "Linux" | cut -c 2     --> extract single character
-5) echo linux:dev:test | cut -d ":" -f 2  --> op: dev no file name because we used echo command
+4)cut -d ":" -f 2 emp.txt | cut -c 2  --> o/p : r o i                                        or  echo "Linux" | cut -c 2     --> extract single character o/p : i 
+5) echo linux:dev:test | cut -d ":" -f 2  --> op: dev   --> no file name because we used echo command
 
 Note :  cut -d ":" -f 2 -c 1-2 file.txt -- it will not work mixing all of them in one command or you cannot mix character selection (-c) with delimiter/field selection (-d and -f) in a single cut command.
 Solution : cut -d ":" -f 2 file.txt | cut -c 1-2
 
+-b, --bytes: Extract by Byte Position
+cut -b 2,3 emt.txt			--> o/p :  01 02 03			--> selects the 2nd, and 3rd bytes
+cut -b 1-3, 5-7 emt.txt 	--> o/p : 101Dev 102AWS 103Lin     -- it skips : because we didnt gave 4 number 			1-3 extracts bytes from position 1 to 3 and 5-7 extracts bytes from position 5 to 7
+cut -b 1- emt.txt 				--> o/p : 101:Arun:DevOps 102:John:AWS 103:Mike:Linux 			--> 1- means from byte 1 to the last byte
+cut -b -3 emt.txt 				--> o/p :  101 102 103							--> extract from byte 1 to byte 3
+
+-c -- characters : extract characters 
+cut -c 2,5,7 emt.txt  	--> o/p : 0Dv 0AS 0Ln    --> selects characters at positions 2, 5, and 7
+cut -c 1-7 emt.txt		--> o/p : 101:Dev 102:AWS 103:Lin
+cut -c 1- emt.txt			--> o/p : 101:Arun:DevOps 102:John:AWS 103:Mike:Linux 
+cut -c -5 emt.txt			--> o/p : 101:A 102:J 103:M
+ 
+Space is not considered  as delimiter in UNIX.
+file data :  
+Andhra pradesh 
+madhya pradesh
+india
+assam 
+
+-f  -- fields 
+cut -f 1 emt.txt   --> o/p : Andhra pradesh madhya pradesh india assam    --> it prints this because space is not considered as delimeter and we r not using -d " "  it doesnt consider space 
+cut -d " " -f 1 emt.txt  --> o/p : Andhra madhya india assam    here we set that space as delimeter 
+cut -d " " -f 1-2 emt.txt  --> o/p : Andhra pradesh madhya pradesh india assam 
+
+cut --complement -d " " -f 1 emt.txt   --> it is reverse to -f means o/p : pradesh pradesh so here Andhra and madhya and india and assam will not print because all of them are 1st position 
+cut --complement -c 5 emt.txt   --> it will print all characters except 5th character  o/p : Andha pradesh madha pradesh indi assa   --> see output properly  basically 5th character excludes 
+
+cut -d ":" -f 1,2 emt.txt --output-delimiter='%'  -->  space is replaced by % in output in terminal 
+o/p : 
+Andhra%pradesh 
+madhya%pradesh
+india
+assam 
+
+cat state.txt | head -n 3 | cut -d ' ' -f 1 > list.txt
+
+sed -n '3p' emt.txt | cut -d ":" -f 2      --> 2nd column name in only on 3rd line   o/p : Mike
+or 
+head -n 3 emt.txt | tail -n 1 | cut -d ":" -f 2    o/p : Mike 			both are same 
+
 6. awk :
 -----------
-text-processing utility used for pattern scanning, field extraction, filtering, and report generation.
+It is a text-processing utility command used to analyze, filter, and manipulate data such as logs, CSV files, and command output.
+It works by scanning input line by line and performing actions based on patterns and fields.
+Supports conditions, loops, and built-in functions
+
 or
 awk is a powerful text-processing tool used for filtering,searching,extracting columns,reporting,pattern matching,data manipulation
 
@@ -524,17 +732,27 @@ emp.txt file
 102 John AWS 60000
 103 Mike Linux 55000
 
-1) awk '{print}' emp.   -> print entire file 
-2) awk '{print $1,$2}' emp.txt --> print specific columns      o/p: 101 Arun 102 John 103 Mike
+1) awk '{print}' emp.txt   -> print entire file content									--> this command equals to cat emp.txt
+2) awk '{print $1,$2}' emp.txt --> print specific columns ex 1, 2 columns       		o/p: 101 Arun 102 John 103 Mike
 
 		$1	First column
 		$2	Second column
 		$3	Third column
 		$0	Entire line
+		-F 	Fieldd Seperator 						Capital F 
+		 NR   (Number of Records)		--> used to add line numbers to each line basically display line mumbers 
+		 NF   (Number of Fields)
+		 RS   (Record Separator)
+		 OFS (Output Field Separator)
+		 ORS (Output Record Separator)
 
-3) awk '{print $NF}' emp.txt --> print last column   NF --> No of fields        o/p 5000 60000 55000
+3) awk '{print $2, $NF}' emp.txt --> print from 2nd column and last column(NF)   NF --> No of fields        o/p 5000 60000 55000
 4) awk '$4 > 55000 {print $2}' emp.txt --> Conditional Filtering   --> print employee names where salary > 55000  o/p : john
 5) awk -F ":" '{print $2}' emp.txt --> using delimeter 
+
+awk 'NR==3, NR==6 {print NR,$0}' employee.txt 		--> it displays content from line no 3 to 6 in a file and print entine line because of $0 and NR means display line numbers 
+$ awk 'END { print NR }' geeksforgeeks.txt  --> To count the lines in a file 
+$ awk 'length($0) > 10' geeksforgeeks.txt 	--> Printing lines with more than 10 characters
 
 | Variable | Meaning             |
 | -------- | ------------------- |
@@ -553,16 +771,45 @@ grep			Search lines
 cut				Extract simple columns
 awk				Advanced text processing
 
+awk -F ':' {print $2, $3} emp.txt  		--> Arun DevOps John AWS Mike Linux  
+Scenario : Using -f (Program File Option) -- we can write command in a spacific file and use that file in terminal 
+File 1: The Data File (employees.txt)
+Arun DevOps Senior 95000
+John AWS Associate 75000
+Mike Linux Engineer 85000
+
+File 2: The Action Script (salary_print.awk)     --> inside file i have below command 
+{ print $1, "has salary", $4 }
+
+Now in terminal : awk -f salary_print.awk employees.txt   --> 
+o/p Arun has salary 95000
+John has salary 75000
+Mike has salary 85000
+--> injects your custom text string "has salary", appends the value in Column 4 ($4),
+
+Using -v (Variable Assignment Option)
+awk -v msg="Employee Details:" 'BEGIN {print msg}'
+
+awk -v limit=90000 '$4 > limit {print $1, $4}' employee.txt				--> o/p : Arun DevOps Senior 95000
+or 
+aws '$4 > 90000 {print $1, $4}' employee.txt 
+
+
+Built-In Variables In Awk
+awk '/DevOps/ {print}' employee.txt   
+loops concept : 
+$ awk 'BEGIN { for(i=1;i<=6;i++) print "square of", i, "is",i*i; }'      --> To print the squares of first numbers from 1 to n say 6
+$ awk '{ if($3 == "Senior") print $0;}' geeksforgeeks.txt     --> To find/check for any string present in any specific column
 
 7) head : 
 ------------
-Display the first few lines of a file i.e.,by default first 10 lines 
+It is used to display the first few lines of a file i.e.,by default first 10 lines 
 
 for log checking,config validation,quick file inspection
 
 Ex: 
 1) head filename   --> by default 10 lines 
-2)head -n 5 app.log or head -2 file.txt  --> first 5 lines
+2) head -n 5 app.log or head -2 file.txt  --> first 5 lines
 3) head -c 20 file.txt --> first 20 characters/bytes from first line in a file 
 
 head -n 2 file.txt | tail -n 1 | cut -c 1-10 	--> Get the first 10 characters of the 2nd line in a file only
@@ -583,8 +830,8 @@ for live log monitoring,troubleshooting,application debugging
 3)tail -c 20 file.txt --> first 20 characters/bytes from a file and from first line 
 
 Live Log Monitoring (VERY IMPORTANT)
-tail -f app.log ---> Continuously displays new log
- entries in real time.   -f = follow
+tail -f app.log ---> Continuously displays new log or to see live logs 
+entries in real time.   -f = follow
 tail -f /var/log/app.log
 tail -f /var/log/nginx/access.log
 tail -f app.log | grep ERROR
@@ -595,7 +842,7 @@ tail -f app.log | grep ERROR
 
 1) Find :
 -----------
-find is used to search files and directories based on name, size, type, permissions, owner, modified time, etc.
+find is used to search files and directories based on diff criteria like name, size, type, permissions, ownership, modified time, etc.
 or
 find command is used to search files and directories recursively in Linux based on different criteria like name, type, size, permissions, ownership, and modified time.
 
@@ -603,8 +850,8 @@ syntax : find <path> <condition> <action>
 options :
 -----------
 Name basis :
-	find /home -name test.txt                      	--> find file by name --> in /home directory it will search for a file called test.txt
-	find /var/log -name "*.log"                    	--> find files by extension
+	find /home -name test.txt                      	--> find file by name --> in /home directory it will search for a file called test.txt and displays it
+	find /var/log -name "*.log"                    	--> find files by extension it will search for .log files in log folder and display all files 
 	find / -iname nginx.conf                          	--> in root directory it will search for nginx.conf file and it is case sensitive -i 
 
 Type basis :
@@ -622,7 +869,7 @@ user basis :
 	find /home -user roboshop                        --> find files based on owner 
 
 Permission basis :
-	find /home -perm 777                               			--> find based on permissions
+	find /home -perm 777                               	--> find based on permissions
 
 Time basis :
 	find /app -mtime -1 						   			--> find files modified less than 1 day old
@@ -635,7 +882,7 @@ combined conditions :
 1. To delete old log files :
 	find /var/log -name "*.log" -mtime +30 -delete 		--> Find .log files older than 30 days and delete
 2. Files greater than 1 GB	
-	find / -type f -size +1G                       								--> Find files larger than 1 GB.(Production Use)
+	find /home -type f -size +1G                       					--> Find files larger than 1 GB(Production Use) in home directory 
 3. Find files modified less than 10 mins ago 	
 	find /var/log -mmin -10                        							--> Find Logs modified within last 10 minutes
 4. Find files modified 15 days ago (older than 15 days file it will not consider files modified time to 15 days)
@@ -660,18 +907,18 @@ combined conditions :
 
 2) LESS :
 -----------
-less is used to view/read the contents of a file page by page without opening the entire file into memory.
+less is used to view/read the contents of a file page by page without opening the entire file into memory/terminal.
 or
 less is a Linux file viewer command used to read large files efficiently page by page. Unlike cat, it does not load the entire file output onto the terminal and provides navigation, searching, and live log viewing capabilities, making it useful for troubleshooting production logs.
 EX:
 less <filename> --> It opens the file in read-only viewer mode.
 
-3. VI Editor -->  VI --> Visual Editor  
+3. VI Editor(Visual Editor)   --> it is used to open the file and edit the text/content of that file 
 
 4. vim(VI Improved) :   Advanced version of VI editor 						 VIM --> Visual Editor Improved 
 ----------------------------
-Vim is a terminal-based text editor widely used for editing configuration files, scripts, and deployment manifests directly on servers. It operates mainly in normal, insert, and command modes.
-or Notepad inside Linux terminal, but much more powerful.
+Vim is a terminal-based text editor widely used to edit configuration files, scripts i.e., .sh files, and deployment manifests i.e., yaml files directly on servers. It operates mainly in normal, insert, and command modes.
+It is like Notepad inside Linux terminal, but much more powerful.
 
 
 Why DevOps Engineers Use Vim
@@ -684,9 +931,7 @@ troubleshooting production systems
 quick server changes
 
 Ex:
-vim filename --> 
-1.if exist enter directly into file 
-2.If file does not exist:✅ Vim creates new file and entyer into inside file.
+vim <filename> -->  if exist enter directly into file or If file does not exist Vim creates new file and enter into inside file.
 
 Vim Modes (VERY IMPORTANT)
 
@@ -697,13 +942,78 @@ Normal Mode			--> Navigation/commands(copy/delete/search) -- default mode when v
 Insert Mode				--> Typing/editing                         			 -- i to enter into insert mode. and Now you can edit content inside that 
 Command Mode		--> Save/quit/search etc..						 -- Esc :w :wq :q :q!
 
+keys to use after entering into file using vim 
+i 		--> insert mode so we can edit the context like add or remove text 																						h 	--> courser moves to left 
+A		--> automatically switches you into Insert Mode at the end of the line(courser will present at line end )						l	--> courser moves to righ 
+x		--> deletes the single character directly under the cursor																										k	--> courser moves to up  and j --> courser moves to down 
+dw	--> deletes from the cursor position to the end of the current word 						o	--> it opens a brand new blank line below your current line like after enter we get new line in notepad like that
+dd 	--> delete entire line where courser present and saves it in temp buffer 																				$ 	--> courser instantly moves to end of current line 
+yy  	--> copy the entire current line where courser present into copy buffer																				gg --> courser jumps immeadiately to first line top of file 	
+0		--> courser will go to the start of current line 																															G	 --> courser jumps immeadiately to last line bottom of file 	
+u		--> undo last change/newly added data 																																		:20 --> Jumps the cursor directly onto Line 20 of the document file
+X  	--> used as backspace key 																																								a	--> appends text exactly one character to the right of your cursor position
 
+p 			--> Pastes the copied/deleted line or word directly below the current cursor line exactly 1 time
+10p 	--> Take the copied content and paste right below the courser 10 times sequentially 
+n			--> Jumps forward to the next highlighted search match
+N			--> Jumps backward to the previous highlighted search match.
 
+press 
+1. esc  : come out of insert mode and enters into command mode 
+2. esc: q 		--> quit 					  --> just come out of file     imp : if there is an unsaved text it wont quit it shows error 
+3. esc: wq 	--> save & quit        --> save all the newly added changes to disk and come out of the file
+	or 
+	shift+ZZ	--> It instantly saves your file and exits the editor without needing to type the colon (:) or Enter 
 
-====================================================================================================================================================================
+4. esc: q!  or shift+Z	--> forcefully quit   --> come out of the file forcefully without saving or discarding newly added/inserted edited text 
+5. esc: set nu or set number 	  --> display the numbers for each line in a file left side of the screen.
+6. ecs: set noun or set noletter 	(i.e., no number)	--> remove the line numbers in a file or hides the numbers and comes to starnard view 
 
+shift+gg 			 				--> courser will go first line at the top of the file
+shift+g or G					--> cursor instantly to the last line at the bottom of the file
+:/<word to search> 		--> to search a particular word forward from your current position(where courser present from top) down to the bottom
+:?<word to search> 		--> to search a particular word backword from your current position(where courser present from bottom) down to the bottom 
+:noh 								--> Temporarily clears the visual color highlighting from your last search.							-- noh stands for nohlsearch
 
+/ 			--> to replace new word in that particular line where courser is sitting 
+%			--> to replace new word in whole file
 
+Commands : 
+:/arun - search from top and :?arun - search word from bottom of the file 
+
+:s/<word to find>/<word to replace>/      --> it will only replace the word where courser present on that line and only first occurence in that line from courser position 				s -- Substitute
+	Ex file content : Hi Arun this is devops Course and Aws course  --> my course is in this line and at devops word now i want to replace course with technology 
+				Ex: :s/course/technology		--> Hi Arun this is devops technology and Aws course  -- i have two course words but it replaces only first occurence
+:s/<word to find>/<word to replace>/g 	--> it willl replace all words present in that line i.e., all occurences not in total file where courser is sitting on that line 				g -- Global flag 
+		Ex file content : Hi Arun this is devops course and Aws course
+		:s/course/technology			o/p : Hi Arun this is devops technology and Aws technology
+
+:%s<word to find>/<word to replace>/g		-->  replace new word in whole file 
+:%s/old word/new word/gc							--> Replaces across the entire file but asks for confirmation (c) before every change.
+
+:2s/course/technology     --> to replace the new word in 2nd line          2 - line number 
+
+I have this in a file 
+Line 1: [INFO] System boot up sequence initiated.
+Line 2: [ERROR] Database connection failed.
+Line 3: [INFO] Heartbeat check sent to service.
+Line 4: [ERROR] Core authentication service crashed.
+Line 5: [INFO] Background workers running cleanly.
+Line 6: [ERROR] Critical storage threshold breached.
+
+Search Command : 		:/ERROR
+if i press n it jumps to line 4 and if i press again jumps to line 6 in forward direction 
+if i press N it jumps to line 4 and if i press again N jumps to line 2 in backward direction 
+
+Search Command : 		:?ERROR
+if i press n it jumps to line 4 and if i press again jumps to line 2 in backward direction 
+if i press N it jumps to line 4 and if i press again N jumps to line 6 in farward direction
+
+===================================================================================================================================================================
+
+Another Part 
+
+===================================================================================================================================================================
 
 File Permissions :  
 -----------------------
@@ -712,7 +1022,7 @@ or
 Linux permissions control access to files and directories using read, write, and execute permissions for owner, group, and others. 
 Commands like chmod and chown are used to manage permissions and ownership, which are critical for system security and controlled access in production environments.
 or
-Who can access like user/owner, group, others and what actions(read, write, or execute) they can perform on that files and directories
+Who can access like user/owner, group, others and what actions(read, write, or execute) they can perform on files and directories
 
 Permission Groups :
 ---------------------------
@@ -730,15 +1040,24 @@ Execute	     x						1							Run file/script					Enter/Acess the directory using 
 
 Indication :
 ---------------
--rw-r-xr-- 				--> - => file type means it indicats it is file or dir  and rwx --> owner related permissions and rw- --> user related r-- => others related and r-x -- group related
+-rw-r-xr-- 				--> - => file type means it indicats it is file or dir rw- --> user/owner related permissions and r-x -- group related permissions and r-- => others related 
 if permissions starts with 
 - 		--> file                     	  ex: -rwxr-xrw-
 d 		--> directory                ex: drwxr-x--x
-l 		--> symboliclink(symlink)					   ex: lrwxr-x--x
-c 		--> Character Device Files 
-b		--> Block Device Files
-p		--> Named Pipes / FIFOs
-s		--> Socket Files
+l 		--> symbolic link(symlink)					   ex: lrwxr-x--x
+
+b		--> Block Device Files							
+					--> represents hard drives, SSDs, and USB sticks like To store data in massive chunks. When the computer needs to save a content or a database, it uses a block device file (like /dev/sda) to dump data onto the physical disk plates
+					Ex: /dev/tty , /dev/null , /dev/urandom
+c 		--> Character Device Files 					
+					--> Character device files handle data streaming(The Live Stream) character-by-character (one byte at a time) in real time or Hardware that streams data instantly, one letter/byte at a time, without saving it to a disk
+					Ex: /dev/sda , /dev/nvme0n1 , /dev/loop0
+p		--> Named Pipes / FIFOs			-->	A permanent one-way tunnel between two separate apps on the same computer	
+					--> Ex:  To pass data from App A to App B without wasting disk space. App A pours data into the pipe file, and App B drinks it out from the other side. The data never actually saves to the hard drive, keeping the server fast.
+					Ex: /run/systemd/initctl/fifo    -- log forwarding Pipelines
+s		--> Socket Files			--> communication bw two loacl apps For high-speed app communication
+					Ex: when you run Docker commands, your terminal needs to talk to the background Docker engine. They use a socket file (/var/run/docker.sock) to chat back and forth instantly inside the system's RAM, completely skipping your network card (like nginx and docker to communicate/chat)
+					Ex: /var/run/docker.sock  and /var/run/php/php-fpm.sock
 
 numeric way adding permission :
 --------------------------------------------
@@ -755,8 +1074,9 @@ Symbolic way :
 --------------------
 + 			--> Add Permissions 
 - 			--> Remove Premissions
-=			--> set exactly 
+=			--> set exactly 				Ex: chmod u=w file.txt    --> im telling linux that I want the user to have only Write permission except that Clear out everything else(removes all permissions if alreay exists )
 
+Types to perform operations
 chmod 		--> Change mode					--> used to modify the access permissions of a file and directories 
 chown  		--> change Ownership			--> udes to change ownership of a file and directories
 
@@ -764,9 +1084,9 @@ Syntax :
 1. chmod <type of user or group or others>:<type of permission> <file or directory name>
 2. chown <user>:< group> <file or directory>
 
-chown(Change Mode) :
+chmod (Change Mode) :
 -------------------------------
-Used to change the permission o a file or directory 
+Used to change the permission of a file or directory 
 
 Syntax : 	chmod <type of user,group, others> : <type of permission> <file or directory name>
 
@@ -781,14 +1101,14 @@ chmod u+x script.sh 													--> it will update execute (x) permissions for 
 Imp : 
 chmod ug+r -R <folder name>  									--> it will update the permission for directory along with inside files also   -R --> recursively	
 
-chown(change ownership) :
+chown(Change Ownership) :
 -------------------------------------
-when we create a user, group will be created automatically with the same name. so if we want to change group we can use the chown.
+ when we create a user in linux default group will be created automatically with the same name of user. so if we want to change group we can use the chown.
 
 syntax : chown <user>:<group> file.txt          
 
-Scenarios : 
---------------
+Scenarios Examples : 
+---------------------------
 1. If u want to change both user and group of a file or directory 
 		command : chown arun:devops file.txt     -->		arun will be added to devops group         
 
@@ -821,7 +1141,7 @@ Scenarios :
 		command :		chgrp devops /app
 
 3. Recursive Change --> Change all files inside directory aloong with directory 
-		command : 		chgrp -R devops /app                      ---> -R --> Recursive (directory + inside files)
+		command : 		chgrp -R devops /app              										        ---> -R --> Recursive (directory + inside files)
 
 chgrp vs chown :
 -----------------------
@@ -840,12 +1160,13 @@ It usually represents
 		
 --> When a file has an s in its permission string, it means a user running that file will temporarily gain the privileges of the file's owner or group, rather than running it with their own account privileges.
 
-Where Does the s Appear?
+Where Does the 's' Appear?
 The s replaces the standard execute (x) position in the ls -l permission string
+
 1. SUID (s in the User section)	: The program runs with the privileges of the file owner.
-	-rwsr-xr-x
-2. SGID (s in the Group section)	:  The program runs with the privileges of the file group.
-	-rwxr-s--x
+	-rwsr-xr-x					--> chmod u+s file.txt
+2. SGID (s in the Group section)	:  The program runs with the privileges of the file group. All users in group they can have temporary root previlages
+	-rwxr-s--x			--> chmod g+s directoryname
 
 Capital S vs. Lowercase s :
 s 	-->  Means the execute permission (x) is also active     Ex : rws  --> rw + x + SUID
@@ -863,8 +1184,8 @@ ex : rwsr-xr-x
 1) When another user executes file: process runs with file owner permissions(root permissions ) instead of current user permissions
 		Set SUID: chmod u+s filename
 2) Process runs with: file’s group permissions instead of user's primary group.
-ex : chmod g+s project   --> ✅ all new files inherit directory group automatically.	
-Set SGID: chmod g+s filename / chmod g+s dirname/
+ex : chmod g+s <directory>   --> ✅ all new files inherit directory group automatically.	
+Set SGID for file : chmod g+s <filename>  or for folder : chmod g+s dirname/
 
 Using Numeric Mode : In this we get 4 numeric digits 
 		1. 4 = SUID
@@ -873,9 +1194,11 @@ Ex:
 chmod 4755 script.sh   						# Sets SUID (4) + User rwx (7) + Group r-x (5) + Others r-x (5)
 chmod 2775 shared_dir/ 					# Sets SGID (2) + User rwx (7) + Group rwx (7) + Others r-x (5)
 
+So we give temporary permission for file and directory using 's' ryt so temporary means it doesnt have the timer that temporary preivilages exists until the runned program is running whether it is running in 2 seconds or 2 hrs once program is ends and closes your root privileges vanish instantly and  You return to being a normal, restricted user
+or u need to do manually remove using chmod u-s file.txt if u give first like chmod u+s file.txt
 
 
-Numeric Values
+Numeric Values for s special permissions 
 | Permission | Value |
 | ---------- | ----- |
 | SUID       | 4     |
@@ -893,93 +1216,135 @@ SUID allows execution with file owner privileges, while SGID allows execution wi
 These are commonly used for controlled privilege escalation and shared access management in Linux systems.
 
 
-====================================================================================================================================================================
+===================================================================================================================================================================
+
 
 user management :
 --------------------------
-useful for Creating, modifying, deleting, and managing user accounts and groups in Linux systems. And their permissions(like who can login and what files they can access)
-Only root users can create or modify or delete the users or groups
+useful for Create, modify, delete and managing user and groups in Linux systems and assigning their permissions(like who can login and what files they can access) ana manageing passwds and logins
+Only root users can create or modify or delete the users or groups and user will have id like structured Unique Identifiers (UIDs) 
 
-User Management related commands:
-1. Create a User
-Ex: 	1. $ useradd <name>   --> create user but here permissions denied error because it is a normal user 			useradd is low-level
-		2. Do sudo su - then below command
-		3. # useradd <name> 		--> create user with given name -->  only root user can add/create the user    	#root user
+Types of users : 
+Root User (Superuser)	: Has full and unrestricted control/access over the system. Always assigned a UID of 0
+System Users					: Created automatically by software appln's and background processes Ex: nginx , mysql etc.. They run services safely without human interaction and typically hold UIDs 1–999.
+Regular Users			 		: User accounts are created for everyday tasks they have limited system privileges and hold UIDs 1000 and above
+Sudo User							: Regular user with temporary admin rights via the sudo command. Common in modern systems.
+Guest User						: Temporary users with minimal privileges. Changes are not saved after logout. (desktop environment specific)
 
-sudo su - --> enter into root access or sudo useradd <name>  
-
-2. Modify User 
-	sudo usermod -s /bin/bash alice
-3. Delete User 
-	userdel -r <username>				(use -r to remove home directory)
-4. Change Password 
-	passwd ramesh --> ask to set the password for ramesh user 
 	
 Types of Important files :
 ---------------------------------
-/etc/passwd 						--> all user entries available in this file or Stores basic user account details (Username, User ID/UID, Group ID/GID, Home directory path, and default login shell).
-/etc/group 						--> will get list of groups present or Contains all group names, their system GIDs, and the list of user accounts belonging to each group
-/etc/shadow 					--> is used to store user passwords in an encrypted hashed format	or Securely holds encrypted user passwords and password expiration rules (readable only by root).
-/etc/ssh/sshd-config  		--> enables password authentication 
+uses info :
+/etc/passwd 			--> all user entries available in this file or Stores basic details of all user accounts (Username, UID, GID, Home directory path, and default login shell and full name of the user) and globally readable(any user can ready )
+/etc/shadow 					--> used to store encrypted user passwords in an hashed format and password expiration policies (readable only by root)
+													like Encrypted passwords, last passwor change date, Password expiration and inactivity rules and Account expiration settings
+groups info :
+/etc/group 						--> displays list of groups present in their system GIDs, and the list of users belonging to each group and globally readable and only shows local groups saved directly on that specific machine
+/etc/gshadow 					--> secure group passwds and admin info same like /etc/shadow but it is for groups (stores like Encrypted group passwords, group admin info , group members) 
 
-getent group  					-->This prints all group entries, which can be large and hard to read.
+preivilage control : 
+/etc/sudoers			--> this file is used to define which users and groups can run commands with root privileges using the sudo command on the terminal
 
-What Happens Internally
-Linux:
-Creates user entry in:/etc/passwd
-Creates password hash in:/etc/shadow
-Assigns UID
-cat /etc/passwd
+User Home Directory Setup
+/etc/skel/		: Directory containing default configuration files copied to a new user’s home directory
 
-3) id <user> --> To display ID of a user and will get like user,groupid etc..
+Logs and Auditing : 
+/var/log/auth.log : Records authentication-related events
+
+/etc/ssh/sshd-config  		--> to enables password authentication 
+
+getent group  					-->List all groups on the system.					getnet --> get entries
+queries all configured network directory services  alongside local files
+
+getnet group groupname  --> Search for one specific group
+
+What Happens Internally when u want to create new user 
+step 1 : Creates user and it write entry in:	/etc/passwd
+step 2 : Creates password hash in:/etc/shadow
+step 3 : Assigns UID to user 
+cat /etc/passwd	--> u can see all the above details in this file 
+
+User Management related commands :
+1)Create and delete user Accounts
+1. Create a User
+Ex: 	1. $ useradd <name>   --> create user but here permissions denied error because it is a normal user 			useradd is low-level
+		2. Do sudo su - then below command
+		3. # useradd <name> 		--> create user with given name -->  only root user can add/create the user    	#root user\
+		or
+		sudo useradd -m -s /bin/bash john		--> Creates a home directory and specifies bash as the default shell and creates user and if u dont provide home 
+		-m  --> it also Create Home Directory along with user creation     /home/john 
+		-s /bin/bash			--> set bash to run commands  
+
+		--> -m  =  option stands for "make home directory"
+		When you use the low-level useradd command, it creates a new user but does not create their home folder/directory (/home/username) by default.
+		Adding the -m option forces the system to automatically generate that directory and populate it with default configuration files (like .bashrc)
+
+useradd john 
+if i dont use -s /bin/bash by default /bin/sh or /bin/bash
+Ubuntu / Debian:   --> /bin/sh
+RHEL / CentOS: 	  --> /bin/bash
+
+Ex: sudo useradd -m <username>
+What this command does:
+Creates the user account bob.
+Automatically creates the directory in home -- /home/bob.
+Copies starter configuration files into /home/bob so the user has a working terminal profile upon their first login.
+
+2. Delete User 
+	userdel -r <username>				 (-r ensures to remove home directory also)
+3. Change Password 
+	passwd ramesh --> ask to set the password for ramesh user or if admins forgot passwords they can reset's password
+
+
+2) Modifying and Inspecting Accounts
+1. Modify User 
+	sudo usermod -s /bin/bash alice
+	or 
+	sudo usermod -aG dev john	--> it will append the john user to the secondary group dev without removing user	 from existing groups
+2. id <user> 			--> Displays the active UID, GID, and group attachments for an account.
+3. sudo chage -E 2026-12-31 contract_user	--> chage: Adjusts password aging and account expiration dates basically it Sets a hard account expiration date
+
+
 4) sshd -t /etc/ssh/sshd-config      --> check for the syntax of the file if there is any mistakes it will display
   
   If incase u modified anything in this file do -----> systemctl restart sshd
    
 Managing Groups :
 -------------------------
-1. Create a group:
-		#groupadd <devops>  
-2. Add a user to a group (Append mode):
-		sudo usermod -aG developers <username>
+1. Create a user group :      #groupadd <group name>  
+2. Add a user to a secondary group (Append mode):
+		sudo usermod -aG <groupname> <username>
 
 Note : if u forgot to give -a  it will remove the user from all other groups they belong to!
 
 3. Remove a user from a particular group:	sudo gpasswd -d <user> <group>
 		sudo gpasswd -d ramesh developers
 		
-to change the group of the particular user ---> usermod -g <groupname> <username>
-ex: 		#usermod -g devops ramesh -->  
-			  usermod -aG devops ramesh -->      
+4. to change the group of the particular user ---> usermod -g <groupname> <username>
+ex: 		# usermod -g devops ramesh 	-->  add user to the primary group
+			# usermod -aG devops ramesh 	-->  add user to the secindary group   
 
 user will be added to diff groups based on options
-		-g == > primary group 
-		-G = secondary group     
+		-g == > primary group 	--> Every linux user is assigned with one primary group and by default group name is same as user name and When a user creates a file, the group ownership of that file is automatically set to their primary group.
+		-G = secondary group     	--> A user can be a part of multiple secondary groups and These groups provide extra access to files, folders or services commonly team-based access or system-level permissions
 		-a ==> append 
 
 chown (change ownership):It is used to change the user and group ownership of files, directories, and only root user can do the changes because they only have sudo previlages
 
-1) chown master file1.txt    --> Change the Owner/user of a File
-2) chown :group1 file1.txt --> Change the Group of a File
-3) chown  ramesh:devops <file>  -->Change Owner and Group of a File
-4) chown --reference=greek1 greek2 ---> Copy Ownership from One File to Another (--reference) 
-5) chown master:group greek2 greek3 --> Change Owner and Group of Multiple Files
+1) chown master file1.txt   				--> Change the Owner/user of a File								master --> username
+2) chown :group1 file1.txt	 				--> Change the Group of a File
+3) chown  ramesh:devops <file>  		-->Change user and Group of a File
+4) chown --reference=greek1 greek2 ---> Copy Ownership from One File to Another (--reference) 			it copies owner of greek1 file and set same user to greek2
+5) chown arun:group greek2 greek3 --> Change Owner and Group for Multiple Files
 
 
-6) userdel <username> --> delete particular user from linux system and to delete user --> first user has to remove from the group then only u can delete user
+6) userdel ramesh --> delete particular user from linux system and it will not delete the home directory of ramesh  (to delete home directory also use -r )
+To delete user --> first user has to remove from the group then only u can delete user
+
 7) groupdel devops  --> delete the particular group
 
---> -m  =  option stands for "make home directory.
-When you use the low-level useradd command, it creates a new user but does not create their home folder (/home/username) by default.
- Adding the -m option forces the system to automatically generate that directory and populate it with default configuration files (like .bashrc)
 
-Ex: sudo useradd -m <username>
-What this command does:
-Creates the user account named bob.
-Automatically creates the directory /home/bob.
-Copies starter configuration files into /home/bob so the user has a working terminal profile upon their first login.
-
-Dual Behavior: useradd vs. usermod
+Dual Behavior: useradd vs usermod
 Depending on which command you are using, the -m option acts slightly differently
 
 1. With useradd (Creating a user)
@@ -994,15 +1359,28 @@ sudo usermod -d /new/home/path -m bob
 Note :
 If you prefer a tool that handles this automatically without needing to remember flags, use adduser instead of useradd. The adduser command is an interactive script that creates the home directory, sets the password, and creates the folder all in one step without needing the -m option.
 
+awk -F':' '{ print $1}' /etc/passwd     --> list all users 
+
+In this file /etc/passwd content format is like 
+username : x : user id : user group id : : /home/username : /bin/bash 
+
+To change userid 	    			--> sudo usermod -u new_id  username
+To change groupid				--> sudo usermod -g  new_group_id username
+Change Login Name			--> usermod -l new_login_name old_login_name
+Change Home Directory		--> usermod -d new_home_directory_path username
+
+Multiple failed login attempts can lock user accounts. So to unlock suing usermod : 
+sudo usermod -U username				--> This command unlocks the specified user account.
+
 ===================================================================================================================================================================
 
 
 process management (ps) :				      ps - (process status)
 -----------------------------------
-A process is a running instance of a program in Linux.Process management involves monitoring(CPU, memory, and system performance), controlling(process priority and execution), managing, and terminating processes using commands like ps, top, kill, and nohup
+A process is a running instance of a program in Linux.Process management involves monitoring(CPU, memory, and system performance), controlling(process priority and execution), managing, and terminating processes etc
 when we run 10 commands it will create 10 processes
 
-1. ps : The ps command displays information about running processes. It shows process ID, status, and resource usage.
+1. ps : The ps command displays information about only running processes. It shows process ID, status, and resource usage.
 --------
 /proc 		--> 
 
@@ -1013,6 +1391,8 @@ Linux reads process information from /proc file.Each running process has entries
 2)ps -ef 			--> displays all users running processes and background and system wide processes along with full detailed info   
 			-e = show all process in current machine/system  
 			-f = shows full detailed info of each process
+			ps -ef --forest 						-->  Displays all processes in tree/hierarchy format with parent-child relationships.
+
 
 $pwd - present working directory
 
@@ -1034,9 +1414,8 @@ java    			--> child of bash
 | `u`    | User-oriented detailed output            |
 | `x`    | Include background/no-terminal processes |
  
-Tosee Processes belongs to Specific user 
+To see Processes belongs to Specific user 
 7)ps -u <username> 			--> Shows processes belonging to specific user.
- ps -ef --forest 						-->  Displays all processes in tree/hierarchy format with parent-child relationships.
  
  ps -ef | grep java , ps -ef | grep jenkins
  
@@ -1052,7 +1431,7 @@ Daemon		Background service process
 2. Kill :
 ---------
 Kill command used to send signal to the processes 
-		Ex: restart processes,stop processes,terminate or to kill the running process(background process)
+		Ex: restart processes,stop processes,terminate or kill the running process(background process)
 		
 kill does NOT directly “kill” process but it always sends signal to process stop gracefully,ignore signal, terminate immediately depending on signal type.
 
@@ -1075,15 +1454,15 @@ SIGSTOP			19			Pause process
 SIGCONT		18			Continue paused process
 
 Examples:
-SIGTERM	:	 kill 2345 				same as kill -15 2345 
-SIGKILL		:    kill -9 1234 --> no shutdown directly force kill or Immediately terminates process.
-SIGHUP 		:    kill -1 1234 --> Reload/restart config
+SIGTERM	:	 kill -15 2345 				same as kill 2345 
+SIGKILL		:    kill -9 1234 	--> no shutdown directly force kill or Immediately terminates process.
+SIGHUP 		:    kill -1 1234 	--> Reload/restart config
 SIGSTOP		:    kill -19 1233 --> Pause process
 SIGCONT	:    kill -18 2133 --> Continue paused process
 
 kill 			--> kill using PID
-pkill 		--> Kill using process name      ex : pkill nginx				--> partial match names 
-killall 		--> Kill all matching names	 ex: killall nginx 				-- exact match names
+pkill 		--> Kill using process name      ex : pkill nginx				--> if process name matches partially like nginxdev or ngin it will kill 
+killall 		--> Kill all matching names	 ex: killall nginx 				--> process name must match exactly
 
 pkill fire
 Finds and terminates any process name containing the word "fire" (e.g., firefox, firewalld).
@@ -1287,6 +1666,8 @@ If i didnt gave nginx.repo in etc/yum.repos.d/nginx.repo
 2 scenarios will happen --> It installs successfully using your OS's built-in repositories and The command fails with an error Error: Unable to find a match: nginx
 
 dnf repolist  or dnf repolist -v or ls -l /etc/yum.repos.d/  -> to see already existing repos list
+
+
 ===================================================================================================================================================================
 
 Service management : 
