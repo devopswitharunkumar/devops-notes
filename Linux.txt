@@ -143,6 +143,19 @@ Processif u r running or logging in server for 2nd time or more :
 If logging in first after creating the server u need to do : 1) login using password 2) run ssh-rsa or ed22519 3) logout and login no need password login using key based  4) after logging in do disable password authentication in this /etc/ssh/sshd_config file and enable PubkeyAuthentication yes
 
 
+3. ssh-copy-id user@server  -- it will copy your local public key to the remote server and location is ~/.ssh/authorized_keys file. Only public key 
+	U can run this command any where in laptop It will automatically search for .ssh folder in users folder present in your laptop and copies to key remote server But if u want to explicitly mention in command 
+
+Command 		:   ssh-copy-id -i /home/arun/mykeys/scb-key.pub ec2-user@10.0.1.20							-i → specify which public key to copy
+							You can execute that command from any directory.
+
+4. Troubleshoot/debug SSH connection
+	ssh -v user@server --> It prints detailed information about the SSH connection process like troubleshooting why issue is happening while connecting 		-v -verbose mode 	
+
+	Ex: Suppose ssh ec2-user@10.0.1.20 we run this but if u get error like this Permission denied (publickey). u can run this it will display the detailed issue 
+	For more debugging 
+	ssh -vv user@server and ssh -vvv user@server
+
 Types :
 ---------
 1)Password Authentication -----> using ssh username@ipaddress  --> prompt for password u have to enter 
@@ -984,7 +997,6 @@ combined conditions :
 | `-exec`   | Run command          |
 
 
-
 2) LESS :
 -----------
 less is used to view/read the contents of a file page by page without opening the entire file into memory/terminal.
@@ -993,9 +1005,22 @@ less is a Linux file viewer command used to read large files efficiently page by
 EX:
 		less <filename> --> It opens the file in read-only viewer mode.
 
-3. VI Editor(Visual Editor)   --> it is used to open the file and edit the text/content of that file 
 
-4. vim(VI Improved) :   Advanced version of VI editor 						 VIM --> Visual Editor Improved 
+3) more : displays a file's content one screen at a time like page by page, useful for reading large files
+------------
+ex: more /var/log/messages
+
+cat application.log --> print on the terminal
+
+| more           | less               |
+| -------------- | ------------------ |
+| Older command  | Advanced           |
+| Mainly forward | Forward + backward |
+| Less features  | Search, navigation |
+
+4. VI Editor(Visual Editor)   --> it is used to open the file and edit the text/content of that file 
+
+5. vim(VI Improved) :   Advanced version of VI editor 						 VIM --> Visual Editor Improved 
 ----------------------------
 Vim is a terminal-based text editor widely used to edit configuration files, scripts i.e., .sh files, and deployment manifests i.e., yaml files directly on servers. It operates mainly in normal, insert, and command modes.
 It is like Notepad inside Linux terminal, but much more powerful.
@@ -3175,10 +3200,6 @@ Soft links are separate files with their own inode that store the path of anothe
 
 ===================================================================================================================================================================
 
-
-
-
-
 1) lsblk stands for list block devices.
 		used to display disks, partitions, and other block storage devices attached to a system
 		
@@ -3196,7 +3217,10 @@ Ex :
 		Ex : sudo umount /data
 3. Permanent mount : If you want it to automatically mount after reboot, add an entry to      like systemctl enable 
 		Ex : /etc/fstab 
+		fstab  -> File Systems Table.
 sudo mount -a  --> mounts all filesystems listed in /etc/fstab that are not already mounted
+
+===================================================================================================================================================================
 
 3) CronJob : 
 ----------------
@@ -3204,7 +3228,7 @@ A Cron job is a scheduled task in Linux that automatically executes a command or
 
 Syntax : <MINUTE> <HOUR> <DAY-OF-MONTH> <MONTH> <DAY-OF-WEEK> <COMMAND>
 
-Ex : 0 2 * * * /opt/scripts/backup.sh				--> Runss backup.sh script every day at 2:00 AM.
+Ex : 0 2 * * * /opt/scripts/backup.sh				--> Runs backup.sh script every day at 2:00 AM.
 		0    → minute								valid : 0-59
 		2    → hour									valid : 1-23
 		*    → every day of month 			valid : 1-31
@@ -3215,7 +3239,7 @@ Cron 		: Cron is the scheduling service/mechanism that runs scheduled tasks. And
 				  Cron continuously runs in the background and checks scheduled entries
 CronTab : Crontab is the configuration file/interface where we define those scheduled tasks	like above example 
 
-Flow : Cron --> Scheduler --> Reads crontab (it is a file where we define task time ) --> Finds task whose time matches --> Executes command/script
+Flow : Cron/crond --> Scheduler --> Reads crontab file (it is a file where we define task time ) --> Finds task whose time matches --> Executes command/script
 
 How cron works : 
 Suppose we configure : 0 2 * * * /opt/scripts/backup.sh
@@ -3225,7 +3249,7 @@ Linux Server -----> cron/crond -----> Reads crontab(file) -----> Checks current 
 Crontab command : 	
 crontab ls  -->  list crontab files 					-l -- list 
 crontab -e --> edit crontab files 					-e -- edit 
-crontab -r -- > To remove all cron jobs for your current user      -r -- remove It removes the user's crontab
+crontab -r --> To remove all cron jobs for your current user      -r -- remove It removes the user's crontab
 
 
 Most important Cron examples : 
@@ -3233,6 +3257,7 @@ Most important Cron examples :
 */5 * * * * /opt/scripts/test.sh						Every 5 minutes
 */10 * * * * /opt/scripts/test.sh					Every 10 minutes
 0 * * * * /opt/scripts/test.sh							Every 1 hr 
+0 */2 * * * /opt/scripts/test.sh	    				Every 2 hours
 0 2 * * * /opt/scripts/backup.sh					Every day at 2 AM 
 30 23 * * * /opt/scripts/cleanup.sh		 		Every day at 11:30 PM
 0 3 * * 0 /opt/scripts/backup.sh      				Every Sunday at 3 AM
@@ -3246,6 +3271,20 @@ Special shortcuts :
 @monthly
 @yearly
 
+@reboot /opt/scripts/test.sh     	→  Run when system boots
+@hourly /opt/scripts/test.sh     	→  Run once every hour
+@daily /opt/scripts/test.sh      		→  Run once every day
+@weekly /opt/scripts/test.sh     	→  Run once every week
+@monthly /opt/scripts/test.sh    	→  Run once every month
+@yearly /opt/scripts/test.sh			→ Run once every year
+
+@daily /opt/scripts/test.sh      		→  equivalent to  0 0 * * * /opt/scripts/test.sh  runs at 12:00 AM (midnight) every day 0 means 12 only 
+
+Store Location :
+
+System crontab 	--> /etc/crontab
+System cron files  --> /etc/cron.d/
+User crontab	--> /var/spool/cron/ or /var/spool/cron/crontabs/
 
 /etc/crontab       
 cat /etc/crontab  --> Its format includes an additional user field
@@ -3254,27 +3293,28 @@ Ex : 0 2 * * * <username> /opt/scripts/backup.sh
 
 
 user crontab vs root crontab
-user's crontab  --> 
-crontab -e
-Syntax : MINUTE HOUR DAY MONTH DAY-OF-WEEK COMMAND   Ex : 0 2 * * * /script.sh
-root's crontab --> sudo crontab -e 	
-Syntax : MINUTE HOUR DAY MONTH DAY-OF-WEEK USER COMMAND   Ex : 0 2 * * * <username> /script.sh
+user's crontab  :
+	To edit  :  crontab -e
+	Syntax : MINUTE HOUR DAY MONTH DAY-OF-WEEK COMMAND   Ex : 0 2 * * * /script.sh
+root's crontab  :
+	To edit  :  sudo crontab -e 	
+	Syntax : MINUTE HOUR DAY MONTH DAY-OF-WEEK USER COMMAND   Ex : 0 2 * * * <username> /script.sh			
 
 Where Cron jobs are commonly used in DevOps projects : 
-1. Log cleanup : 0 1 * * * /opt/scripts/cleanup-logs.sh
+1. Log cleanup : 0 1 * * * /opt/scripts/cleanup-logs.sh				-- every day at 1:00 AM
 inside file we have content like -- > find /var/log/myapp -type f -mtime +7 -delete       so Delete files older than 7 days.
 
-2. Backup jobs : 0 2 * * * /opt/scripts/backup.sh
+2. Backup jobs : 0 2 * * * /opt/scripts/backup.sh				-- every day at 2:00 AM
 file content :
 #!/bin/bash
 tar -czf /backup/app-$(date +%F).tar.gz /opt/app/data
 
-3. Database backup : 0 1 * * * /opt/scripts/mysql-backup.sh
+3. Database backup : 0 1 * * * /opt/scripts/mysql-backup.sh				-- every day at 1:00 AM
 file content : mysqldump -u backup_user -p'password' appdb > /backup/appdb.sql
 
-4. Temporary file cleanup : 0 3 * * * /opt/scripts/cleanup-temp.sh
+4. Temporary file cleanup : 0 3 * * * /opt/scripts/cleanup-temp.sh				-- every day at 3:00 AM
 
-5. Disk monitoring : */10 * * * * /opt/scripts/disk-check.sh
+5. Disk monitoring : */10 * * * * /opt/scripts/disk-check.sh				-- every 10 mins
 file content : df -h 
 and send an alert if disk usage exceeds a threshold.
 script : 
@@ -3291,7 +3331,7 @@ In a mature production environment, though, you'd usually use Prometheus/CloudWa
 6. Archive old data 
 
 
-Cron + Shell Script : 0 2 * * * find /var/log/app -type f -mtime +7 -delete
+Cron + Shell Script : 0 2 * * * find /var/log/app -type f -mtime +7 -delete						-- every day at 2:00 AM
 create a script : /opt/scripts/cleanup-logs.sh
 in that : 0 2 * * * /opt/scripts/cleanup-logs.sh
 
@@ -3313,7 +3353,7 @@ stderr ─┘
 
 
 Both Error and output save into diff  file 
-0 2 * * * /opt/scripts/backup.sh >> /var/log/backup.log 2>> /var/log/backup-error.log  -- both Standard output (stdout) saves to /var/log/backup.log and stderr saves to /var/log/backup-error.log
+0 2 * * * /opt/scripts/backup.sh >> /var/log/backup.log 2>> /var/log/backup-error.log  -- Standard output (stdout) saves to /var/log/backup.log and stderr saves to /var/log/backup-error.log
 
 Cron and PATH : You can define variables in your crontab
 export PATH=/usr/local/bin:/usr/bin:/bin
@@ -3333,9 +3373,25 @@ Check logs : journalctl -u crond
 Redirect output : 0 2 * * * /opt/scripts/backup.sh >> /var/log/backup.log 2>&1
 
 
-flock : If one instance is already running The next Cron job will wait untill it completes once over job2 will run 
+flock : If one instance is already running cronjob The next Cron job will wait untill 1st one completes once over job2 will run 
 Job 1 --> lock acquired --> running
 Job 1 --> lock already exists  --> doesn't run
+
+
+*/5 * * * * flock -n /var/run/cleanup.lock /opt/scripts/cleanup-logs.sh
+
+flock → obtains a lock
+-n → non-blocking; if another process already has the lock, exit immediately
+/var/run/backup.lock → lock file
+/opt/scripts/backup.sh → command to run
+
+/var/run/cleanup.lock is basically a lock file used by flock .. When the script starts, flock opens the lock file and places a kernel-managed file lock on it. and it can be empty file also 
+
+Ex : we have a 1st job at 10:00 AM runs at every 5 mins and we also have job 2 and runs every 5 mins but 1st job takes time to run as 12 mins so 2nd job is skipped and it will not automatically run 
+If we use -n jobs will be skipped and will not run even 1st job done 
+
+If you want the second job to wait dont use :  (-n ) then it waits untill 1st job finishes and once done job 2 will start 
+if we use -n --> while running 1st job and if job 2 is skipped it will not run even 1st job completes
 
 
 Cron + AWS : Suppose an EC2 server needs to perform some cleanup : 0 3 * * * /opt/scripts/cleanup.sh
@@ -3408,15 +3464,7 @@ Customer --> Payment Request --> Payment Service --> Database
 
 
 
-===================================================================================================================================================================
-13)SSH Advanced : ssh-copy-id user@server -- copy key
-ssh -v user@server --> debug ssh
-
-
-
-Service not starting : systemctl status nginx
-journalctl -u nginx : ✅ Port not listening
-ss -tulpn/netstat -tulpn : ✅ Application unreachable
+==================================================================================================================================================================
 
 Flow:
 
@@ -3442,11 +3490,16 @@ concepts
 
 
 
-
-
 Network Advanced Troubleshooting commands :
+----------------------------------------------------------------
 1. traceroute --> shows the network path/hops packets take from your server to a destination, useful for finding where network latency or connectivity problems occur.
 		Ex : traceroute google.com
+		
+traceroute is used to troubleshoot network connectivity and latency by showing the hops between the source and destination
+
+where nslookup google.com -- resolves google.com to ip 
+nslookup is mainly used to troubleshoot DNS resolution by checking how a hostname resolves to an IP address.
+
 2. tcpdump : captures and analyzes network packets on an interface, useful for troubleshooting traffic, ports, protocols, and connectivity issues.
 		Ex : sudo tcpdump -i eth0 port 80
 
@@ -3462,6 +3515,8 @@ tcpdump = What network traffic is actually happening?
 
 nc -zv google.com 443 --> Tests whether your server can establish a TCP connection to HTTPS port 443.
 
+Both nc and telnet can be used to test TCP port connectivity. nc is the more versatile and commonly preferred utility in modern DevOps troubleshooting, while telnet is an older utility.
+
 4. check Load Average and server uptime: uptime
 uptime → shows how long the Linux system has been running, current time, logged-in users, and system load average.
 Ex : uptime 
@@ -3474,7 +3529,7 @@ iostat
 5. Memory Troubleshooting : vmstat
 vmstat 2 : Check: CPU,RAM,IO wait
 
-vmstat shows system performance statistics such as CPU, memory, processes, swap, and I/O.
+vmstat(Virtual Memory Statistics) : shows system performance overall statistics such as CPU, memory, processes, swap, and I/O.
 
 Ex :  vmstat 1 -- Displays statistics every 1 second.
 
@@ -3511,16 +3566,48 @@ journalctl -u nginx -f  --> View logs for the nginx service and Continuously fol
 journalctl -u nginx --since "1 hour ago"  --> View nginx logs from the last hour
 journalctl -b  --> View logs from the current boot.
 journalctl -p err --> Show error-level logs.
+Common priorities :
+		emerg   → Emergency
+		alert   → Alert
+		crit    → Critical
+		err     → Error
+		warning → Warning
+		notice  → Notice
+		info    → Informational
+		debug   → Debug
 
 Practical DevOps use : journalctl -u nginx 
 
+-u → Unit / Service
+-p → Priority
+-b → Boot				-- Shows logs from a particular system boot.
+journalctl -b -1			-- previous boot 
+journalctl -b -2			-- 2 boots ago 
+
+journalctl -u nginx -p err				--> Show nginx error logs.
+journalctl -u nginx -b					--> Show nginx logs from the current boot.
+journalctl -u nginx -b -1				--> Show nginx logs from the previous boot.
+journalctl -p err -b						--> Show error-level logs from the current boot.
+journalctl -u nginx -p err -b		--> Shows nginx error-level logs from the current boot.
 
 
-ulimit : 
+
+ulimit : 	Used to view or set resource limits for the current shell/process.				ulimit = User Limits
 ----------
-
-lsof :
+ulimit -a 		-- show all limits 
+ulimit -n			-- for open files 
+O/P : 1024 		-- Meaning the process can have up to 1024 open file descriptors under that limit.
+	
+lsof :		List Open Files
 -------
+Used to find which processes have files, sockets, ports, etc. open.
+
+Ex : 
+lsof -i :8080								--> display all the details about port 8080 is attached to like PID, port, command and listening etc..
+ls -p <pid> 									--> 	Shows files/resources opened by PID 2456.
+lsof /var/log/application.log	--> Shows which process has that log file open.
+
+Real DevOps example: If an application is showing "Too many open files", use ulimit -n to check the file-descriptor limit and lsof -p <PID> to investigate what the process has open.
 
 
 du(disk usage) :  It displays how much disk space files and directories are using
@@ -3535,11 +3622,10 @@ if --max-depth=2	--> Ex:  /var/log/app
 
 4. du -ch                                            --> shows grand total disk usage 
 
-sort	: 	Arrange file content in alphabetical or numerical order.
+sort	: 	Sort the file content in alphabetical(A-Z or Z-A) or numerical order.
 -------
-ex: 
-cat names.txt
-names.txt has content like 
+Ex 1 : sort in a A-Z alphabetical order 
+names.txt File has content : cat names.txt
 		ramesh
 		arun
 		suresh
@@ -3552,87 +3638,82 @@ o/p:
 		ramesh
 		suresh
 
-Reverse Sorting (z-a)
+Ex 2 : sort in a reverse order (Z-A) alphabetical order
 
 sort -r names.txt  --> same values above printed like backward    suresh ramesh mahesh arun\
 
-Numeric Sorting
-Ex : file has data 
+Ex 3 : sort Numeric order 
+file has data 
 		10
 		5
 		100
 		20
 normal sort :  sort numbers.txt
-	10
-	100
-	20
-	5           --> because it sorts like text 
+			10
+			100
+			20
+			5           --> because it sorts like text 
 correct way:
-sort -n numbers.txt
-o/p:
-5
-10
-20
-100
+Command : sort -n numbers.txt
+			o/p:
+				5
+				10
+				20
+				100
 
-Sort and Save Output --> sort names.txt -o names.txt
+Ex 4 : Sort and Save Output 
+Command : sort names.txt -o names.txt				-o - output 
 
-Sort by Column
-employees.txt below content present
-Arun 50000
-Ramesh 40000
-Suresh 60000
+Ex 5 : Sort by Column
+employees.txt file has below content present
+	Arun 50000
+	Ramesh 40000
+	Suresh 60000
 
-Sort by salary:
-sort -k2 employees.txt
+Sort by salary : sort -k2 employees.txt
+Sort by name : sort -k1 employees.txt
 
 
-uniq :
+uniq :	Remove/counts or display duplicate adjacent lines.
 --------
-Remove/counts or display duplicate adjacent lines.
+Ex 1 : 
+1)cat names.txt	-- File has below content 
+	arun
+	arun
+	ramesh
+	suresh
+	suresh
 
-Example:
-1)
-cat names.txt
-content:
-arun
-arun
-ramesh
-suresh
-suresh
+Command :  uniq names.txt  			 --> remove duplicate names
+		o/p:
+			arun
+			ramesh
+			suresh
 
-uniq names.txt   --> remove duplicate names
-o/p:
-arun
-ramesh
-suresh
-
-2)important: uniq removes only nearby duplicates means 
-only deletes this side by side:
-arun
-arun
-ramesh
-suresh
-suresh
+Ex 2 : IMP : uniq removes only nearby duplicates means only deletes this side by side like below :
+	arun
+	arun
+	ramesh
+	suresh
+	suresh
 
 it will not delete if data is like below
-arun
-ramesh
-arun
-suresh
+	arun
+	ramesh
+	arun
+	suresh
 
-for that we can use sort option it will sort the data like above nearby and give o/p to uniq
+for that we can use sort option -- it will sort the data like above nearby and give o/p to uniq then uniq will remove those words 
 
-sort file.txt | uniq 
-
+Command :  sort file.txt | uniq 
 now o/p:
-arun
-ramesh
-suresh
+	arun
+	ramesh
+	suresh
 
-Count Duplicate Lines     --> sort file.txt | uniq -c
-Show Only Duplicate Lines --> uniq -d file.txt
-Show Only Unique Lines    --> uniq -u file.txt
+Ex 3 : Count Duplicate Lines     		--> sort file.txt | uniq -c
+Ex 4 : Show Only Duplicate Lines	 	--> uniq -d file.txt
+Ex 5 : Show Only Unique Lines    		--> uniq -u file.txt
 
 
 
@@ -3659,21 +3740,16 @@ Ex : locate nginx.conf
 
 quota : 	quota tells you how much disk space a user/group is allowed to use and how much they are currently using
 ----------
-quota -u <username>                                -u -- user
+Ex : quota -u <username>            -u -- user
 
-WC(word count) :    Used to count lines,words,characters,bytes
-------------------------
-ex: wc file.txt
-cat users.txt
-
-content:
-
-Arun DevOps
-Ramesh AWS
-Suresh Linux
-
-command :
-wc users.txt --> o/p: 3 6 32 users.txt
+wc(word count) :   Used to count lines,words,characters and bytes
+-----------------------
+content of file users.txt:
+	Arun DevOps
+	Ramesh AWS
+	Suresh Linux
+Ex : 1
+command : wc users.txt --> o/p: 3 6 32 users.txt
 means 
 3  → lines
 6  → words
@@ -3686,18 +3762,6 @@ wc -c users.txt   	--> Count bytes
 
 ex:  cat /etc/passwd | wc -l
 
-more : displays a file's content one screen at a time like page by page, useful for reading large files
---------
-ex: more /var/log/messages
-
-cat application.log --> print on the terminal
-
-| more           | less               |
-| -------------- | ------------------ |
-| Older command  | Advanced           |
-| Mainly forward | Forward + backward |
-| Less features  | Search, navigation |
-
 nano :  It is a command-line text editor used to create and edit(directtly on the terminal) files
 --------
 Ex : nano test.txt 
@@ -3707,88 +3771,64 @@ strings :
 It extracts and displays readable text (strings) from binary or non-text files
 Ex : strings /bin/ls 
 
+
 tar(Tape Archive) :  It is used to Combine multiple files/directories into a single archive file.
 ------------------------
 imp :  tar alone does not compress.
 
+Syntax : tar [OPTIONS] <tar file name> <folder to tar>  
+
 example : we have a directory called /app in that we have diff files
 /app
+	file1.txt
+	file2.txt
+	logs/
 
-file1.txt
-file2.txt
-logs/
-
-Create tar archive   ---> tar -cvf app.tar /app   -->  it creates app.tar
-
--c = create
--v = verbose(show files)
--f = filename
-
-Extract tar file --> tar -xvf app.tar     --> -x = extract
-View tar content --> tar -tvf app.tar
-
-tar with compression (.tar.gz)
-ex: tar -czvf app.tar.gz /app
--c create
--z gzip compress
--v show process
--f filename
-
-Extract tar.gz
-tar -xzvf app.tar.gz
+Ex 1 : Create a .tar archive   													--> tar -cvf app.tar /app                              -c = create archive -v = verbose(show msg on terminal) -f = specify archive filename
+Ex 2 : Extract a .tar file 		 													--> tar -xvf app.tar     									-x = extract
+Ex 3 : List contents inside of a .tar file & doesnt extract  	--> tar -tvf app.tar										-t - list contents 
+Ex 4 : Create a compressed (.tar.gz) 										-->  tar -czvf app.tar.gz /app              			-c - create archive , -z - gzip compression , -v - verbose , -f - specify archive filename
+Ex 5 :Extract tar.gz 																	--> tar -xzvf app.tar.gz									-x - extract archive , -z - gzip compression , -v - verbose , -f - specify archive filename
 
 Real example:
 -------------
-Backup : tar -czvf backup.tar.gz /var/log
-Restore: tar -xzvf backup.tar.gz
+Backup create 	: tar -czvf backup.tar.gz /var/log
+Extract  				: tar -xzvf backup.tar.gz
 
 Zip : used to Compress files/directories into .zip archive.
 -----
+Syntax : zip <zip file name> <folder/file name wanted to zip>
+
 Eample:
-1)Compress single file ---> zip app.zip app.log
-before : app.log After : app.log and app.zip --> original remains 
-2)Compress directory
-     zip -r app.zip /app       --> recursive means include inside files also
-Extract zip ---> unzip app.zip
-
-ex: unzip -o app.zip --> -o : overwrite old files 
-
-
-tar
-Create: tar -cvf backup.tar /app
-Extract: tar -xvf backup.tar
-Compress: tar -czvf app.tar.gz /app
-Extract: tar -xzvf app.tar.gz
+1)Compress single file --> zip app.zip app.log/										--> before : app.log After : app.log and app.zip --> original remains 
+2)Compress directory 	--> zip -r app.zip /app       									--> recursive means include inside files also
+3)Extract zip ---> unzip app.zip
+4)Overwrite already existing files/folders --> unzip -o app.zip  			--> -o overwrite old files/folders  
 
 
 gzip : gzip compresses files using gzip algorithm. mostly used for logs and backups
 -----
 ex:
-1)gzip app.log --> creates app.log.gz file and Original file removed (i.e., app.log)
+1)gzip app.log 					--> creates app.log.gz file and Original file will be removed (i.e., app.log)
+2)gzip -k app.log				--> To Keep original file also 																		-k -- keep the original file
+	now both will exist:
+		app.log
+		app.log.gz
 
-2)To Keep original file 
-gzip -k app.log
-now :
-app.log
-app.log.gz
+3)Extract gzip 					--> gunzip app.log.gz o/p : app.log
 
-Extract gzip ---> gunzip app.log.gz o/p : app.log
+tar vs zip vs gzip :
+-----------------------
+| 					Feature 	     |          tar 	         | zip  |           gzip 		|
+|-----------------------------|-------------------|------|--------------------|
+| Archive multiple files| Yes 					 | Yes | No(single file) |
+| Compression 				 | No by default | Yes | Yes 				    |
+| Original removed 		 | No 					 | No  | Yes 					|
+| Extension 					 | .tar 			     	 | .zip | .gz 	  				|
 
-tar vs zip vs gzip
-
-Very important interview question.
-
-| Feature | tar | zip | gzip |
-|-|-|-|
-| Archive multiple files | Yes | Yes | No(single file) |
-| Compression | No by default | Yes | Yes |
-| Original removed | No | No | Yes |
-| Extension | .tar | .zip | .gz |
-
-gzip
-Compress: gzip app.log
-Creates: app.log.gz
-
+tar = archive/package files
+gzip = compress a file
+zip = archive + compress files together
 
 Common DevOps Usage
 --------------------
@@ -3800,11 +3840,11 @@ Count errors       : grep ERROR app.log | wc -l
 
 Interview Short Answer:
 ------------------------
-wc     → count lines, words, bytes
-more   → read large files page wise
-tar    → archive multiple files/directories
-zip    → archive + compress files into .zip
-gzip   → compress single file into .gzDevops
+wc     		→ count lines, words, bytes
+more   	→ read large files page wise
+tar    		→ archive multiple files/directories
+zip    		→ archive + compress files into .zip
+gzip   		→ compress single file into .gzDevops
 
 
 ===================================================================================================================================================================
