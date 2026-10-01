@@ -1098,10 +1098,10 @@ esc:?<word to search> 		--> to search a particular word backword from your curre
 Commands : 
 :/arun - search from top and :?arun - search word from bottom of the file 
 
-:s/<word to find>/<word to replace>/      --> it will only replace the word where courser present on that line and only first occurence in that line from courser position 				s -- Substitute
+:s/<word to find>/<word to replace>/      --> On each and every line file has it will only replace the first occurence word on that line where from courser position 				s -- Substitute
 	Ex file content : Hi Arun this is devops Course and Aws course  --> my course is in this line and at devops word now i want to replace course with technology 
-				Ex: :s/course/technology		--> Hi Arun this is devops technology and Aws course  -- i have two course words but it replaces only first occurence
-:s/<word to find>/<word to replace>/g 	--> it willl replace all words present in that line i.e., all occurences not in total file where courser is sitting on that line 				g -- Global flag 
+				Ex: :s/course/technology/		--> Hi Arun this is devops technology and Aws course  -- i have two course words but it replaces only first occurence
+:s/<word to find>/<word to replace>/g 	--> On each and every line it willl replace all words present in that line i.e., all occurences not in total file where courser is sitting on that line 				g -- Global flag 
 		Ex file content : Hi Arun this is devops course and Aws course
 		:s/course/technology			o/p : Hi Arun this is devops technology and Aws technology
 
@@ -3240,13 +3240,22 @@ Ex :
 3. Permanent mount : If you want it to automatically mount after reboot, add an entry to      like systemctl enable 
 		Ex : /etc/fstab 
 		fstab  -> File Systems Table.
-sudo mount -a  --> mounts all filesystems listed in /etc/fstab that are not already mounted
+sudo mount -a  --> mounts all filesystems listed in /etc/fstab that are not already mounted even after reboot the server
 
 ===================================================================================================================================================================
 
 3) CronJob : 
 ----------------
 A Cron job is a scheduled task in Linux that automatically executes a command or script at a specified time or interval.
+or
+Cron is a Linux scheduler used to automate recurring tasks. 
+Cron daemon runs in the background and executes commands or scripts based on the schedule configured in crontab. 
+It is commonly used for backups, monitoring, log cleanup, and automation jobs
+
+• Cron/crond: The scheduler system.
+• Crontab: The schedule file (Cron Table).
+• Cron Job: The individual scheduled task.
+
 
 Syntax : <MINUTE> <HOUR> <DAY-OF-MONTH> <MONTH> <DAY-OF-WEEK> <COMMAND>
 
@@ -3255,22 +3264,30 @@ Ex : 0 2 * * * /opt/scripts/backup.sh				--> Runs backup.sh script every day at 
 		2    → hour									valid : 1-23
 		*    → every day of month 			valid : 1-31
 		*    → every month						valid : 1-12
-		*    → every day of week			valid : 0-7 				1 - monday , 2 - tuesday , 3 - wednesday , 4 - thursday , 5 - Friday , 6 - saturday , 0 or 7 - sunday 	--> where Sunday is commonly represented by 0 or 7
+		*    → every day of week			valid : 0-7 			1 - monday , 2 - tuesday , 3 - wednesday , 4 - thursday , 5 - Friday , 6 - saturday , 0 or 7 - sunday 	--> where Sunday is commonly represented by 0 or 7
 		
-Cron 		: Cron is the scheduling service/mechanism that runs scheduled tasks. And the service is provided by cron or crond 
-				  Cron continuously runs in the background and checks scheduled entries
+Cron/crond : Cron is the scheduling service/mechanism that runs scheduled tasks. And the service is provided by cron or crond 
+					  Cron continuously runs in the background and checks scheduled entries
+					  cron scheduler acts as a silent, automated assistant for a Linux system. Its primary job is to run commands or scripts automatically at specific dates, times, or recurring intervals without needing any human intervention
 CronTab : Crontab is the configuration file/interface where we define those scheduled tasks	like above example 
 
 Flow : Cron/crond --> Scheduler --> Reads crontab file (it is a file where we define task time ) --> Finds task whose time matches --> Executes command/script
 
-How cron works : 
+How Cron Scheduler Works works : 
 Suppose we configure : 0 2 * * * /opt/scripts/backup.sh
+1. Wakes Up Every Minute: --> The cron daemon (crond) runs constantly in the background and "wakes up" exactly at the start of every single minute to check the clock
+2. Scans the schedule files: --> It reads the configuration files (crontabs) belonging to all users and the system itself
+3. Matches the time: 			 --> It compares the current system time with time fields defined in your cron job 
+4. Executes the tsak: 			 --> If the current time matches the schedule, it runs the assigned command or script silently in the background
+5. Logs and Outputs: 			 --> If the command produces any text output or errors, cron will either log it to a system file or try to email it to the owner of the task so they know it ran
 
 Linux Server -----> cron/crond -----> Reads crontab(file) -----> Checks current time -----> 02:00 AM? -----> /opt/scripts/backup.sh -----> Backup
 
 Crontab command : 	
 crontab ls  -->  list crontab files 					-l -- list 
+				(adds or changes tasks)
 crontab -e --> edit crontab files 					-e -- edit 
+				(shows you what tasks are currently defined without changing them)
 crontab -r --> To remove all cron jobs for your current user      -r -- remove It removes the user's crontab
 
 
@@ -3635,14 +3652,15 @@ Real DevOps example: If an application is showing "Too many open files", use uli
 du(disk usage) :  It displays how much disk space files and directories are using
 ---------------------
 Ex : 
-1. du -sh /var/log								--> Shows the total size of /var/log in human-readable format.							-s -- size and -h - human readable
-2. du -sh *											--> Shows the size of each file/directory in the current directory.
-3. du -h --max-depth=1 /var			--> Shows disk usage of each directory directly under /var
+1. df -hT  			--> command used to check disk space usage and display filesystem types in a human-readable format(KB,MB,GB etc..).
+2. du -sh /var/log								--> Shows the total size of /var/log in human-readable format.							-s -- size and -h - human readable
+3. du -sh *											--> Shows the size of each file/directory in the current directory.
+4. du -h --max-depth=1 /var			--> Shows disk usage of each directory directly under /var
 							--max-depth → controls how many directory levels du goes inside while showing disk usage
 if --max-depth=1	--> Ex:  /var/log     
 if --max-depth=2	--> Ex:  /var/log/app     
 
-4. du -ch                                            --> shows grand total disk usage 
+5. du -ch                                            --> shows grand total disk usage 
 
 sort	: 	Sort the file content in alphabetical(A-Z or Z-A) or numerical order.
 -------

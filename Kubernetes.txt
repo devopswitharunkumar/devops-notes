@@ -11,6 +11,7 @@ EBS vs EFS
 ALB vs ELB vs NLB 
 LTM vs GTM 
 
+Cron vs Kubernetes CronJob
 
 
 

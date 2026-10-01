@@ -1,37 +1,40 @@
-Projectconfigguration:
----------------------
-create a server in cloud platform
-install pgrming languages like java,nodejs,python called packages
-download code/appln
+Project Configuration :
+------------------------------
+create a server i.e., EC2 in cloud platform like AWS 
+install programming languages like java,nodejs,python called packages
+download code/appln from code repositories 
 create directories and users
-install dependencies and .service files 
+install dependencies and *.service files 
 start server 
 
-if developer push new features code of an applicatio
+if developer push new features code of an application
 development/release
 --------------------
 developer will push new code to the repo and tell the location
-stop the serverremove old code and language packages and backup old codedownload new code developer pushed 
+stop the server and remove old code and language packages  
+backup old code and download new code which is pushed by developer
 start the server
 
-manual process;
-downtime,time consuming,manual mistakes,trouble shooting,who did mistakes and repeated work
+manual process in linux :
+downtime , time consuming , manual mistakes , trouble shooting , who did mistakes we dont know and repeated work everytime
 
+====================================================================================================================================================================
 
+Shell :
+--------
+Shell is a command-line interpreter that acts as a bridge/interface between the user and the kernel(i.e., OS). It receives commands from the terminal entered by users,  interprets them and executes them into instructions/programs or operations that the operating system. shell provides a way for users to interact with the operating system using commands. Without the shell, the system cannot understand human-readable commands
 
-Shell_Scripting:
-----------------
-Shell scripting is writing a sequence of Linux commands in a file to automate tasks. and powerful way to automate tasks
-or 
+Basically Interprets and validates user commands and Converts commands into system calls and Executes built-in and external programs and Displays output or error messages on terminal and Provides scripting capabilities
+
+Shell Scripting :
+--------------------
+Shell scripting allows users to combine/write multiple commands into a single file and execute them as a program, enabling structured task automation and system control.
+or
 A shell script is essentially a text file containing a series of commands that the shell can interpret and execute with extension .sh
 
-shell -> The shell is a command-line interpreter that acts as a bridge between the user and the kernel. It receives commands from the terminal, interprets them and translates them into instructions that the operating system can execute.	
+It is widely used in DevOps for automation tasks such as deployments, monitoring, backups, service management, and infrastructure administration.
 
-
-“Shell scripting is the process of automating Linux command execution by writing commands inside executable script files, commonly using Bash shell. It is widely used in DevOps for automation tasks such as deployments, monitoring, backups, service management, and infrastructure administration.”
-
-advantages
-Automate Repetitive Tasks
+advantages : Automate Repetitive Tasks
 
 | Benefit        | Explanation                |
 | -------------- | -------------------------- |
@@ -41,30 +44,113 @@ Automate Repetitive Tasks
 | Consistency    | Avoid human mistakes       |
 
 
+Shebang(#!/bin/bash )
+#!/bin/bash --> called shebang line means execute script using bash shell (it is a specific version of shell we also have sh, zsh and dash) 
+1 -- it tells the OS which interpreter to use to run the code 
+2 -- It must be the first line of a file (1st character and 1st line) and If there is even a single blank line or space before it, the system will not recognize it as a shebang
+3 -- If #!/bin/bash appears anywhere else in the script (like line 10), it is treated as a regular comment because it starts with a #
 
-#!/bin/bash --> called shebang line means execute script using bash shell
+To check the syntax errors of script file without actually running any of the code 	--> bash -n /path/to/your/script.sh			-n -- noexec  no execution
+		Normally shebang tells the system how to execute the script, but not to explicitly check for syntax errors without running the code, you use the -n flag directly with the bash command in your terminal and  It uses the bash binary installed on your system, completely ignoring the shebang line inside the file for that check
+		It only checks the structure like if condition missing keywords like end of if and for and done and Quotes given properly or not etc.. it wont check spelling mistakes even in commands
+bash -v script.sh --> Prints the raw code exactly as written in the file before running it.
+bash -x script.sh --> 
 
-to check the syntax of our shelll script , we need to give the location of bash(/bin/bash)
-shebang is the first ine in shell script that we used to give the location of the bash 
-shell script == bash script
-except first line if u get #!/bin/bash in diff line where ever u get it is a commentn 
-
-
-| Variable | Meaning                 |
-| -------- | ----------------------- |
-| `$0`     | Script name             |
-| `$1`     | First argument          |
-| `$#`     | Number of arguments     |
-| `$?`     | Previous command status |
-| `$$`     | Current process ID      |
+$0      --> prints Script/file name      
+$1,$2,$3      --> prints First, second and third positional arguments
+$#      --> prints Number of positional arguments    
+$@     --> all positional arguments
+$?      --> prints exit status  of the previous/most recent executed command
+$$      --> prints Current shell  PID   
+$!       --> last started background process PID
+$RANDOM	--> it generates a psuedo random number 
 
 To run shell script file --> sh <script file name>.sh
 
 
+====================================================================================================================================================================
 
+Variables :
+--------------
+Variables is like we can store the value and use when ever required 
+variable names cannot start with a number and No spaces around =, if we give shell interprets it as command 
+
+
+1. String variable 					: app_name="payment-service"   Ex : echo "Hello this is $app_name"
+2. Number variable 		  		: count = 10  Ex : echo "$count"  or echo $((count + 5)) o/p : 15
+3. Arithmetic variables 		: a=10 b=20 sum = $((a+b)) echo "$sum"
+4. Command substitution 	: current_date=$(date)		ex: echo "$current_date"									$(command) 
+5. Environment variables 	: PATH , HOME , USER , SHELL , PWD   --> echo "$HOME"
+	env or printenv --> Displays environment variables exported to the environment.
+		env displays the environment variables of the current shell/process environment.
+
+6. export --> command is used to turn a local shell variable into an environmentor global variable.
+we have a current terminal which is parent and we have script file 01-Hello-world.sh -- echo "Hello $country" and in terminal we ran country=india 
+without export : The parent keeps the variable private. The child cannot see it.
+		if u run the script it will give only O/p : Hello 			because variable is local and it is private script file cannot  access it 
+with export : The parent shares the variable globally. The child inherits it automatically.
+		if u run the script it will give only O/p : Hello india			because variable is shared globally and can  access it 
+when u close the current terminal all the export variables will be wipped and it is temporary
+If u want to export it permanently --> echo 'export MY_API_KEY="secret123"' >> ~/.bashrc
+
+If you want a variable to be set automatically for future shell sessions
+
+--> it can be accessed in particular terminal where u ran export command if u open another terminal and run the value shown as empty because env displays the environment variables of the current shell/process environment
+
+7. ${variablename} --> it s useful when u want to append or combining text to the variable value -->  Ex: name="Arun"    echo "${name} is an Engineer"  o/p : Arun is an Engineer
+
+
+8. Local variable inside a function : 
+	deploy() {
+		local environment="prod"
+		echo "$environment"
+	}
+	deploy
+
+9. Global variable
+	environment="prod"
+	deploy() {
+		echo "$environment"
+	}
+	deploy
+
+Read input into a variable :   read is used to take input from the user.
+10
+	1. read name
+Ex : 	echo "Enter your name:"
+		read name
+		echo "Hello $name"
+		It will reads the value u entered in terminal and prints -- If u enter Arun interminal -- o/p : Hello Arun
+	2.You can combine prompt + read: 
+Ex :      read -p "Enter environment: " environment
+			echo "Deploying to $environment"
+	3. read -s -p "Enter password: " password						-s -- silent input --The characters won't be displayed while typing in terminal	
+	
+11. Default values : 
+	name=""
+	echo "${name:-Arun}"		--> if name variable is empty or unset it will use default value 
+	or 
+	environment="${ENVIRONMENT:-dev}"
+
+12. Required variable : echo "${ENVIRONMENT:?ENVIRONMENT is required}"
+
+13. Check whether variable exists :
+		if [ -z "$name" ]; then																	-z means the string has zero length.
+			echo "Name is empty"
+		fi
+		and 					
+		if [ -n "$name" ]; then																-n means non-zero length.
+			echo "Name is not empty"
+		fi
+
+User-Defined Variables :  app_name="payment-service"   Ex : echo "Hello this is $app_name"
+Special (Positional) Variables : $0, $#, $1, $? etc...
+Shell Variable Operations :
+1. Provide Defaults: ${VAR:-"default"}
+2. Command Substitution:     Ex: current_date=$(date)
 
 02-variables.sh
----------------
+--------------------
 
 #!/bin/bash
 
@@ -72,13 +158,13 @@ PERSON1=Ramesh
 PERSON2=Suresh
 
 echo "$PERSON1 : Hello $PERSON2, Good Morning"
-echo "$PERSON2 : Hi $PERSON1, Good Morning"
+echo "$PERSON2 : Hi $PERSON1, Gooasd Morning"
 echo "$PERSON1 : How are you $PERSON2 ?"
 echo "$PERSON2 : I am fine $PERSON1, How are you ?"
 echo "$PERSON1 : I am also fine $PERSON2, Thanks for asking"
 echo "$PERSON2 : thanks $PERSON1, Will meet again Bye Bye"
 
-if single word value like below  we can use no quotes, or double quotes or single quotes.
+Correct ways  : if single word value like below have space at the end only we can use no quotes, or  single quotes or double quotes.
 PERSON1=Ramesh  
 PERSON2=Suresh
 or
@@ -88,27 +174,45 @@ or
 PERSON1='Ramesh  '
 PERSON2='Suresh'
 
-But if value contains space then we must use double quotes 
-ex : correct way to assign value with space is using double quotes or single quotes.
+But if value contains space b/w words then we must use single or double quotes 
 PERSON1="Ramesh kumar"
 PERSON2="Suresh kumar"
 or
 PERSON1='Ramesh kumar'
 PERSON2='Suresh kumar'
+
+
+Wrong Way to assign variable values and we will get command not found issue 
+In shell env's like Bash it fails because the shell uses the spaces to separate a command from its arguments. 
+PERSON1 = Ramesh  
+PERSON2 = Suresh
+
+command argument1 argument2 is the standard syntax. so when u give PERSON1 = Ramesh  it considered as 1 command and 2 arg's that is 
+PERSON1 -- consider as command
+ =  --> space = space considered as arg1 and Ramesh as arg2  so here Ramesh and = interpreted as 1st and 2nd argument
+ 
 wrong way to assign value with space is using no quotes
 PERSON1=Ramesh Kumar 
 PERSON2=Suresh kumar   --> here kumar treated as command because bo quotes
 
+Variable expansion : means replacing the name of a variable (like $NAME) with its actual stored value (like Ramesh) right before the command runs
+---------------------------
+find-and-replace
 
+How shell treats the single quotes ('') and double quotes ("")
+Single quotes disable the special meaning of every single character inside them. Shell treats everything as plain text which is inside single quotes 
+	No Variable Expansion : 
+	Name="Ramesh"
+	Ex :  'Hello $Name'  --> it will not replace the value in Name place and it will treat as plain text and give same output like in script 
+	No Command Substitution: 'echo $(date)' -- prints same output it will not resolve date and time 
+	No Escaping and Limitation -- we cannot use single quote inside the single quote  ('''')
 
-Example With Variable Expansion
-Double Quotes
-NAME="Arun"
+Double quotes protect text from being split by spaces, but they allow the shell to process specific special characters.
+Above all will be worked here 
+Example :
+NAME=Arun
 echo "Hello $NAME"   --> Output: Hello Arun
 
-Single Quotes
-echo 'Hello $NAME'
-Output: Hello $NAME ---> Because:❌ variable expansion disabled.
 
 Special Characters Example
 Double Quotes
@@ -118,117 +222,340 @@ echo 'Today is $(date)'   ---> Output: Today is $(date)
 
 #space related example:
 # FOR DOUBLE QUOTES AND SINGLE QUOTES
+
 # CORRECT WAY 
 # PERSON1="Ramesh KUMAR"  
 # PERSON2="Suresh KUMAR"
+
 # WRONG WAY  --> NO SPACE BEFORE AND AFTER '='
 # PERSON1 = "Ramesh KUMAR"  
 # PERSON2 = "Suresh KUMAR"
+
+# CORRECT WAY 
+# PERSON1='Ramesh KUMAR'
+# PERSON2='Suresh KUMAR'
+
+# WRONG WAY  --> NO SPACE BEFORE AND AFTER '='
+# PERSON1 = 'Ramesh KUMAR'
+# PERSON2 = 'Suresh KUMAR'
+
 # NO QUOTES CORERECT WAY
 # PERSON1=Ramesh
 # PERSON2=Suresh
+
 # NO QUOTES WRONG WAY
 # PERSON1 = Ramesh
 # PERSON2 = Suresh
 
+
+
 03-variables.sh
+--------------------
 how do u run a commands in shell script and take output
-$(<command>) --> $(date)
+$(command) --> Ex : $(date)
 
-ex #!/bin/bash
+Ex : 
+#!/bin/bash
 DATE=$(date)   
+echo "Todays date is ${DATE}"  #--> use only double quotes no single quotes   ${DATE} or $DATE or $(DATE)
 
-echo "Todays date is ${DATE}"  #--> use only double quotes no single quotes   ${DATE} or $DATE $(DATE)
+#DATE = $(date)   		 --> WRONG
+#DATE = "$(date)"     --> WRONG BUT DATE="$(date)"
 
-#DATE = $(date)    --> WRONG
-#DATE = "$(date)"    --> WRONG BUT DATE="$(date)"
-
-Arguments:
-----------
-now here
-PERSON1=Ramesh  
-PERSON2=Suresh 
+Arguments :  or parameters
+----------------
+Those are the extra pieces of information you pass to a script or a command when you run it
 or 
-DATE=$(date)  --> there may be chance to enter space after = and before = in that case we will get error
-
-now we can do that using arguments
-in shell cmd line --> sh 03-variables.sh ramesh suresh etc.. no of arguments we can pass 
+We can pass the values at terminal while running the scripts instead of giving values in file
+Ex : 
 PERSON1=$1
 PERSON2=$2
-When u run the file sh 04-variables.sh Arun Kumar
+echo "$person1 : Hi $person2, Good Morning."
+echo "$person2 : Hello $person1, Good Morning"
+echo "$person1 : How are you $person2 ?"
+echo "$person2 : I'm Fine, How are you $person1 ?"
+echo "$person1 : Good, I'm learing Shell. What about you ?"
+echo "$person2 : I already completed that tool last week"
 
-password is visible:
----------------------
+Run the script by passing arguments :  sh 04-variables.sh Arun Kumar
+
+If we want to hide the password while typing on terminal we can use like below -s :
+Ex : 05-variable.sh 
 echo "enter ur username :"
 read -s USERNAME
 echo "pls enter ur password:"
 read -s PASSWORD
 
 in terminal if we enter username and password that cannot be seen/visible on terminal with "-s option : Silent mode or hidden input"
-read PASSWORD    -> displayed on screen what u entered
-read -s PASSWORD -> not displayed on screen what u entered
+read PASSWORD    -> displayed input value on screen
+read -s PASSWORD -> doesn't display input value on screen 
 
-"read -s is used for silent input in shell scripting. It disables terminal echo, so the characters typed by the user are not displayed on the screen. It is commonly used for reading passwords and other sensitive information securely."
+read -s is used for silent input in shell scripting. It disables terminal echo, so the characters typed by the user are not displayed on the screen. It is commonly used for reading passwords and other sensitive information securely.
 
 
-Data Types:
-----------
+====================================================================================================================================================================
+
+Data Types :
+----------------
 Shell scripting does NOT support strict data types like Java, Python, or C.In Bash, everything is treated as a ✅ String by default
 Ex: 
 NAME="Arun"
 AGE=25
 SALARY=50000  Internally Bash treats all of them as String
 
-1)String
-NAME="Arun"
-echo $NAME  --> output : Arun
+1)String : Used for text
+Ex :	name="Arun"
+		echo $name  --> output : Arun
 
 2)Integer / Numeric Values
-AGE=25      --> bash treated as string, but arithmetic operations convert it automatically.
-echo $((AGE+5))        output : 25
+Ex : 
+	age=25      														--> bash treated as string, but arithmetic operations convert it automatically.
+	echo $((age+5))        output : 30				$(())  in this braces value will be treated as numerically
+	or
+	a=23
+	b=24  
+	sum=$((a+b))
+	echo $sum
 
-in this integer case : when u give numbers 100 200 it will give total count 
-but if u give sh <filename> hfhfh 100 --> o/p :100 and hfhfh considered as 0 
-but if u give sh <filename> hfhfh hdhdj --> o/p :0 and hfhfh and Vhdhdj both considered as 0 
+in this integer case : when u give numbers 100 200 it will give total count in numbers 
+but if u give sh <filename> hfhfh 100 --> o/p :100 and 0 			--> hfhfh considered as 0 
+but if u give sh <filename> hfhfh hdhdj --> o/p :0                         --> hfhfh and Vhdhdj both considered as 0 
 
-3)Arrays
+3) Float/Decimal 
+Ex : a=10 b=20
+		result=$((a+b))   -- will not perform decimal arithmetic and Error will be thrown 
+	Correct way : result=$(echo "$a + $b" | bc)				bc -- basic calculator basically it is a command line caluculator and it handles decimal values 
+	
+4) Boolean 
+	is_running=true
+	if $is_running; then
+		echo "Application is running"
+	fi
+
+
+5)Arrays
+Ex : 
 FRUITS=("Apple" "Mango" "Banana")
-echo ${FRUITS[0]}     --> Apple
-echo ${FRUITS[1]}     --> Mango
-echo ${FRUITS[2]}     --> Banana
-to get all -> echo ${FRUITS[@]} o/p : Apple Mango Banana
+echo ${FRUITS[0]}     --> o/p : Apple
+echo ${FRUITS[1]}     --> o/p : Mango
+echo ${FRUITS[2]}     --> o/p : Banana
+echo ${FRUITS[@]}    --> o/p : Apple Mango Banana
 
-Integer Declaration : declare -i AGE=25 --> Now Bash treats it as integer for calculations.
+EX :
+
+#!/bin/bash
+
+NUMBER1=$1
+NUMBER2=$2
+
+echo "Total amount is  $(($NUMBER1 + $NUMBER2))" 
+
+echo "All args passed : $@"
+echo "no of args passed : $#"
+echo "script name : $0"
+echo "exit status : $?"
+
+
+Integer Declaration : 
+declare -i AGE=25 --> Now Bash treats it as integer for calculations.
 declare -p NAME --> output : declare -- NAME="Arun"
 
+====================================================================================================================================================================
 
+Conditions :
+----------------
+In Bash shell scripting, conditions are used with if, elif, else, and case.
 
-Conditions:
-----------
-in java 
+Like in java we dont have direct symbols 
 if(age > 18){
    // execute
 }
 
-but in shell script
-if [ $number -gt 18 ]      --> space after open brace [ and space before close brace ] must if u dont give error
+Types of conditions :
+---------------------------
+
+1. Numeric conditions : 
+-eq   	--> Equal
+-ne 	 	--> Not Equal 
+-gt 		--> Greater than  
+-ge		--> Greater than or equal 
+-lt   		--> Less than      
+-le   		--> Less than or equal
+
+if [ $age -gt 18  ]; then    -- this line we can define like this
+or 
+if [ $age -gt 18  ]
+then
+	echo
+fi
+
+1. if condition
+#!/bin/bash
+age=25
+if [ $age -lt 12 ]; then 
+	echo "age is less"
+fi
+or
+a=10 b=20
+if [ $a -lt $b ]; then
+    echo "a is less than b"
+fi
+or
+if [ $number -gt 18 ]      
 then
 	 echo "Given number $number is greater than 100"
 else
 	 echo "Given number $number is less than 100"
 fi
 
+2.if-else
+#!/bin/bash 
+age=23
+if [ $age -gt 18  ]; then
+	echo "Age is More"
+else
+	echo "Age is less"
+fi
+
+3. if-elif-else
+
+#!/bin/bash 
+marks=75
+if [ $marks -ge 80 ];then
+	echo "Excellent Performance"
+elif [ $marks -gt 70 ] ; then 
+	echo "Good Marks"
+else	
+	echo "Need improvement"
+if 
+	
+2. String conditions :
+=   		--> Equal
+!=		--> Not equal
+to check if a string is empty or not
+-z			--> String is empty								-z - Zero length    			 		It returns true if the string has 0 characters
+-n		--> String is not empty						-n - Non-zero length    		It returns true if the string has 1 or more characters
+
+1. Equal and Not Equal Examples (replace != in place of = for not equal condition opposite to equal )
+env="prod"
+if [ "$env" = "prod" ]													-- if we keep then in double quotesbest practice 
+then 
+	echo "Current environment is $env"
+if 
+
+2. String is empty  -z 
+name=""
+if [ -z "$name" ];then
+	echo "name is empty"
+fi
+
+name="Arun"
+if [ -n "$name" ];then
+	echo "name is empty"
+fi
+
+3. Multiple conditions :  && and || 
+Ex : && example 
+age=25 country="india"
+if [ "$age" -gt 15 ] && [ "$country" = "india" ]; then 
+	echo "Age is correct and he is from India"
+else 
+	echo "Age is correct but he is from India"
+
+|| example 
+env="dev"
+if [ "$env" = "dev" ] || [ "$env" = "test" ]; then
+    echo "Non-production environment"
+fi
+
+4.File conditions :
+-f			--> Checks for file exists or not
+-d		--> Checks for directory exists or not 
+-e			--> Checks for any File or directory exists or not 
+-s			--> Exists and has size > 0   -- checks file exists or not and only checks for files not directories
+
+-r,-w,-x are file test operators used inside conditional brackets to check the permissions of a file or directory
+-r			--> Readable		--> Check for file exists and is readable
+-w		--> Writable		--> Returns true if the file exists and is writable
+-x			--> Executable	--> Returns true if the file exists and is executable
+
+Ex : 
+if [ -f "/app/configfile.log" ];then
+	echo "Config file exists"
+else 
+	echo "config file is missing"
+fi
+
+if [ -d "./app" ];then
+	echo "Config file exists"
+else
+	echo "Config file missing"
+fi
+etc....	
+
+Checking command success : In Linux, commands return an exit status
+0 					→ success
+Non-zero 	→ failure    i.e., may be 1 or other number 
+
+systemctl is-active nginx 
+if $? -eq 0 ]; then																							better approach -- if systemctl is-active nginx; then
+	echo "Service is active"
+else 
+	echo "Service is not active"
+fi 	
+
+[[ ]] vs [ ]
+[ "$env" = "prod" ] and 
+[[ "$env" = "prod" ]]
+
+diff b/w -eq and = and == in if conditions 
+-eq 		--> numeric comparison						--> Use -eq when variables contain numbers.
+=			--> string comparison 							--> Use = when comparing text.
+== 		--> string comparison in Bash			--> == is commonly used with [[ ]].It also supports pattern matching
+
+env="prod"
+
+if [[ "$env" == "prod" ]]; then
+    echo "Production"
+fi
+
+pattern matching :
+------------------------
+file="app.log"
+
+if [[ "$file" == *.log ]]; then
+    echo "Log file"
+fi
+
+
+Exit status :
+---------------
+In shell script if command fails it does not automatically terminate the script by default Bash continues executing the next command
+
+It returns the exit status of the previous command whether it is successful or not --> 
+0 			--> success and 
+1-255  --> any number in between is failure/error and Different numbers point to different types of errors
+1  	 	--> General Error
+126 	--> Command found, but cannot be executed
+127 	--> Command not execute
+130 	--> terminated by user
+$? --> contains the exit status of the most recently executed command
+Every linux command or script sends back the status to operating system when it finishes the running 
+exit 1   --> Terminate the current script immediately and return exit status 1 to the calling process/operating system.
+	
 09-install-mysql.sh
-------------------
-to check root user or not if u do id u will get 0 
+-------------------------
+to check root user or not if root id u will get 0 
 #id  / id -u   --> if ur root user ur id will be always 0
 
 for normal user u will get 1000 if u do id
 shell script wont stop execution if interpreter found error at some line it continues the execution and show error for other commands as well
 
-To check the previous commnd is success or not we have
-$? --> stores the previous command status 0 - success and other than 0 - failed 
-if success we can contine the script if fail we can exit by usinf exit 1
+To check the previous commnd exit status whether success or not we have
+$? --> stores the previous command status  
+		0 - success  
+		other than 0 - failed 
+if success we can contine the script if it returns 1 or other number we can exit/terminate the script by using exit 1
 
 
 steps:
@@ -245,10 +572,9 @@ steps:
 	if not	
 		show the exact error
 		
-#!/bin//bash
+#!/bin//bash	
 
 ID=$(id -u)
-
 if [ $ID -ne 0 ]
 then
     echo "ERROR :: please run with root user or sudo"
@@ -258,7 +584,6 @@ else
 fi
 
 yum install mysql -y
-
 if [ $? -ne 0 ]
 then
     echo "ERROR :: Installing MYSQL is failed"
@@ -276,22 +601,24 @@ then
 else
     echo "Installing GIT is successful"
 fi
+
+
+====================================================================================================================================================================
 		
-Functions: if there is a repeated task are there we can write function and use the function name 
-----------
-#!/bin//bash
+Functions : if there is a repeated task there we can write code inside a function and use the same function name	 where wver required
+---------------
+function is a reusable block of commands/code that performs a specific task so that o need to write same code multiple times  
 
-ID=$(id -u)
-
-VALIDATE(){                                      this is the function syntax	see functions code and this compare
-    if [ $1 -ne 0 ]
-    then
-        echo "ERROR ::  $2 is failed"
-        exit 1
-    else
-        echo " $2 is successful"
-    fi
+syntax : 
+function_name() {							--> function defination
+    # commands									--> commands which are repeatedly occuring
 }
+function_name      							--> calling a function 
+
+10-functions :
+------------------
+#!/bin//bash
+ID=$(id -u)
 
 if [ $ID -ne 0 ]
 then
@@ -301,110 +628,289 @@ else
     echo "You are a root user, please proceed"
 fi
 
+check(){                                      this is the function syntax	see functions code and this compare
+    if [ $1 -ne 0 ]
+    then
+        echo "ERROR ::  $2 is failed"
+        exit 1
+    else
+        echo " $2 is successful"
+    fi
+}
 yum install mysql -y
-
-VALIDATE $? "Installing MYSQL"
-
+check $? "Installing MYSQL"
 yum install git -y
+check $? "Installing GIT"
 
-VALIDATE $? "Installing GIT"
+====================================================================================================================================================================
 
+Normally when u run script or command by default everything will just print directly to your terminal screen and when u close the terminal those installation messages and errors will be gone forever
+To store or record logs automatically we have output redirections so that we can review later  
 
-
-output redirections:
--------------------
+output redirections :
+---------------------------
 in shell script by default logs will not be recoded/stored when u run the command whether it is success or failure 
 
-1 -- success log will be stored 
-2 -- failure log will be stored 
-& -- both success and failure logs will be reditrected to a log file
+1 -- success log will be stored 		-- stdout
+2 -- failure log will be stored 			-- stderr 
+& -- both success and failure logs will be reditrected to a log file		-- both stdout and stderr 
 
+Examples :
+yum install git 1> success.log or yum install git > success.log 			-->  only stored success message(stdout) if installation failed log not recoreded  1 or nothing we can give
+yum install mysql 2> error.log 																-->  only stored failed message if installation success log not recoreded
+yum install git &> successanderror.log 												--> both success logs and error logs stored 
 
-
-yum install mysql 1> temp.log -->  only stored success message if installation failed log not recoreded 
-yum install mysql 2> temp.log -->  only stored failed message if installation success log not recoreded
-
-and another scenario two commands success output
+> and >> diff :
 yum install mysql 1> temp.log
-yum install git 1> temp.log          --> only git logs will be there because when u run two commands > because of this ysmbol mysql messages overwritten by git
-to skip this we have to give >> append 
-yum install mysql 1>> temp.log
-yum install git 1>> temp.log      --> now both sucees message will be ther 
+yum install git 1> temp.log          --> only git logs will be there because when u run two commands > because of this symbol mysql logs overwritten by git logs
+In above two commands first command stores the successful logs of mysql and when u run 2nd command that is git . Git logs will replaces the mysal logs because we used '>' it will remove existing content/logs and replace new logs 
 
-$0  --> u will get script name 
-$?  --> u will get exit status of a command
-$1  --> first argument
-$2  --> second argument 
-$@  --> all arguments u will get 
-$#  --> if u want to check how many arguments u have passed
+to skip above scenario we have an option called  --->    >> append  
+yum install mysql 1>> temp.log
+yum install git 1>> temp.log      --> now both mysql and git sucees logs will be there because after mysql logs 2nd commnd logs will append the existing content  
 
 log file name --> <scriptname>-date.log
 
+Methods :
+1. When you execute the script, you can redirect the output to a log file using > or >> on the teminal
+sudo ./install.sh > install.log						--> Saves only regular messages (stdout)
+sudo ./install.sh 2> install.log					--> Saves only error messages (stderr)
+sudo ./install.sh > install.log 2>&1			--> Saves both regular messages(stdout) AND error messages(stderr)
+sudo ./install.sh > success.log 2> error.log     --> in this success log will stored in success.log file and error logs will be stored on error.log file 
 
-EX :
+2. Update your script to handle logs automatically 
 
-#!/bin/bash
+See below example  or  11-redirectcmdsoutputtonewfile.sh
 
-NUMBER1=$1
-NUMBER2=$2
+Redirections :
+------------------
+>		Redirects stdout to a file (overwrite)		1 or > both are same 
+							Ex :  ls > success.txt  or sh file.sh > output.txt
+>>	Redirects stdout to a file (append)
+							Ex : command >> success.txt
+2>	Redirects stderr to a file (overwrite)
+							Ex : command 2> err.txt
+2>>	Redirects stderr to a file (append)
+							Ex  : command 2>> err.txt
+&>	Redirects both stdout and stderr to the same file
+							Ex : command &> succand err.txt
+							
+2>&1	Redirects stderr to stdout (combines both outputs)
+Ex : 
 
-echo "Total amount is  $(($NUMBER1 + $NUMBER2))" 
+1. Redirecting stdout and stderr to the Same File 
+	Method 1 : command > output.txt 2>&1
+		 > -- first redirects stdout to output.txt (that is 1's logs), creating the file if it doesn't exist or if exists overwriting existing content
+		2>&1 then redirects stderr(2's logs) to where stdout is currently redirected (output.txt).
 
-echo "All args passed : $@"
-echo "no of args passed : $#"
-echo "script name : $0"
-echo "exit status : $?"
+	Method 2: Using &> :	command &> output.txt
+		 it will redirect both stdout and stderr to the same file and it may not work with older linux distributions like sh 
 
+	Appending stdout and stderr to an Existing File
+				Ex : command >> output.txt 2>&1
 
+2. Redirecting stdout and stderr to Separate Files
+		Ex : command > output.txt 2> error.txt				--> > sends stdout to output.txt and 2> sends stderr to error.txt
+		
+3. By default, when you redirect output, you see nothing in the terminal. If you want to see the output in terminal and save it to a file at a time 
+	1. sh 02-variables.sh | tee out.log   					--> saves output to out.log and displays on the terminal -- overwrites the logs if file already exists 
+	2. sh 02-variables.sh | tee -a out.log				--> append the output to a existing file content
+	3. sh 02-variables.sh 2>&1 | tee output.txt	--> both stderr and stdout 
+	
+< 		Redirects stdin from a file
+<<	Here-document redirection for multi-line input
 
-To redirect output of all commands in a file to the log file:
-------------------------------------------------------------
+Timestamp :
+----------------
 Timestamp=$(date +%F-%H-%M-%S)
-LOG_FILE="/tmp/$0-$Timestamp.log"
-add like below then the terminal op will be stored to a file with log file name above mentionec
-yum install git -y &>> $LOG_FILE  
+
+Date Formats : 
+-------------------
+YYYY-MM-DD		date +"%Y-%m-%d"			or %F
+DD-MM-YYYY		date +"%d-%m-%Y"
+MM/DD/YYYY		date +"%m/%d/%Y"
+
+Timestamp (HH:MM:SS)  date +"%H:%M:%S"
+Full Date & Time  			date +"%Y-%m-%d %H:%M:%S"
+Unix Epoch Timestamp	date +"%s"	1790771505
 
 
+• %Y : 4-digit year (e.g., 2026)
+• %y : 2-digit year (e.g., 26)
 
-to add colors:  11-redirectcmdsoutputtonewfile.sh
--------------
-RED -- \e[31m
-GREEN -- \e[32m
-YELLOW -- \e[33m
-NORMAL -- \e[0m
+• %m : Month as a number (01 to 12)
+• %B : Full month name (e.g., September)
+• %b / %h : Abbreviated month name (e.g., Sep)
 
+• %d : Day of the month (01 to 31)
+• %A : Full weekday name (e.g., Wednesday)
+• %a : Abbreviated weekday name (e.g., Wed)
+
+• %H : Hour in 24-hour format (00 to 23)
+• %M : Minute (00 to 59)
+• %S : Second (00 to 59)
+• %Z : Alphabetic timezone abbreviation (e.g., EST)
+
+To Add colors to text :  
+----------------------------
+RED 			-- \e[31m
+GREEN 		-- \e[32m
+YELLOW  	-- \e[33m
+NORMAL 	-- \e[0m
 
 echo -e "Hi this is Arun, \e[31m From Capgemini"
-Ex:
+
+Ex: 11-redirectcmdsoutputtonewfile.sh
+
+#!/bin/bash
+ID=$(id -u)
+if [ $ID -eq 0 ];then
+    echo "you are a root user..Pls proceed"
+else
+    echo "Error : You are not a root user..pls get root access"
+    exit 1
+fi 
+
+Timestamp=$(date +%F-%H-%M-%S)
+LOG_FILE=/tmp/$0-$(Timestamp).log
 
 R="\e[31m"
 G="\e[32m"
 Y="\e[33m"
-Y="\e[0m"
+N="\e[0m"
 
-
-validate(){
-    if [ $1 -ne 0 ]
-    then
-        echo -e "$R Error :: $2 is failed $N"
+check_function(){
+    if [ $1 -eq 0 ];then
+        echo -e "$G Successfully installed $2 $N"											-e -- enable 
+    else 
+        echo -e "$R Error : Installation failed $2 $N"
         exit 1
-    else
-        echo -e "$G $2 is successful $N"
-    fi
+    fi 
 }
 
-Loops:
-------
-#!/bin/bash
+dnf install git -y  &>> LOG_FILE
+check_function $? "git" 
 
-for i in {1..100}
+dnf install nginx -y    &>> LOG_FILE   
+check_function $? "nginx" 
+
+dnf install mysql -y    &>> LOG_FILE
+check_function $? "mysql" 
+
+To redirect output of all commands into a log file :
+------------------------------------------------------------------
+LOG_FILE="/tmp/$0-$Timestamp.log"
+add like below then the terminal o/p will be stored to a file with log file name above mentioned
+In file o/p redirection we can declare in 2 ways 
+1. directly to file 
+  exec &>> LOG_FILE   -- we dont declare at commands level in file declare only once at top 
+ 
+ 2. dnf install mysql -y    &>> LOG_FILE   -- like this for each command in file 
+
+====================================================================================================================================================================
+
+Loops :
+---------
+used to when u want to execute same block of commands multiple times 
+
+1. for_loop with list 
+
+for variable in list
+do
+    commands
+done
+
+Ex : 
+1. for name in ("Sun" "mon" "mom")
+	do 
+		echo "Hello $name"
+	done 
+or
+2. servers=("web0" "web1" "web2")
+	for vm in ${servers[@]}
+	do	
+		echo "server is $vm"
+	done
+
+2. for loop with numbers
+
+for ((i=1; i<=5; i++) )
+do 
+	echo "current value i is : $i"
+done 
+or
+for i in {1..5}
 do
     echo "Current Number is : $i"
 done
 
-package install
+3. while loop    --> A while loop executes as long as the condition is true.
+Syntax :
+while condition
+do
+    commands
+done
+
+Ex : 
+count=1
+while [ $count -le 5	]
+do 
+	 echo "$count"
+	 count=$((count+1))							--> without +1 it will create infinite loop 
+done 
+
+while ! systemctl is-active nginx 
+do 
+	echo "nginx is not running"
+	sleep 5
+done
+echo "nginx is running"
 
 
+4. until loop : It i sopposite to while... It executes until the condition becomes true.
+	count=1
+	until [ $count -gt 5 ]
+	do
+		echo "$count"
+		count=$((count + 1))
+	done
+
+while  → execute while condition is TRUE
+until   → execute until condition becomes TRUE
+
+5. break : break immediately exits the loop.
+Ex : 
+	for i in {1..10}
+	do 
+		if [ $i -eq 4 ];then
+			break;
+		fi 																	o/p : 1,2,3
+		echo "$i"
+	done 
+
+6. contine : continue skips the current iteration and moves to the next one.
+
+	for i in {1..5}
+	do 
+		if [ $i -eq 4 ];then
+			continue;
+		fi 
+		echo "$i"											o/p : 1,2,3,5
+	done 
+
+7. Loop through files
+for file in /var/log/*.log
+do
+    echo "Processing $file"
+done
+
+8. Loop through command output
+for pod in $(kubectl get pods -o name)
+do
+    echo "Pod: $pod"
+done
+
+Ex : 
 for package in $@
 do
     yum list installed $package &>> $LOG_FILE
@@ -417,60 +923,126 @@ do
     fi
 done
 
+====================================================================================================================================================================
 
+sed editor(stream editor) : 
+-----------------------------------
+It allows us to modify,find,replace, insert, update and delete the text inside files without opening the file.
+when u run this command in terminal it wont open the file and operations will be done on background
+In vim and nano u must manually open the file and edit the text 
 
-
-
-
-
-
-Roboshop Project:
------------------
-
-Mongodb instance:
------------------
-sed editor:(stream line editor) : it wont open file in terminal like vim it will change the content in background
-----------
 insert after/before line/content
 Ex : sed -e '1 a I am learning devops' <filename> --> it will insert/add this line after 1st line in a file
+
+Options :
 1 a --> after/append first line
 2 a --> after 2nd line
 1 i --> before first line
-options:
--e temporary change not permanant .. if u want permanent use -i 
+2 i --> before 2nd line
 
-file content before above cmd execution
-I an arun
+options :
+-e --> temporary change not permanant .. when u run command it will display the edited content but in file still remains same old content which is not replaced 
+-i  --> permanent change and it will save changed data in the file 
+
+Ex : 
+Current file content 
+I am arun
 I am learning terraform
 I am learning git 
+
+Command : sed -e '1 a I am learning linux' file.txt
 
 file content after above cmd execution
-I an arun
-I am learning devops
+I am arun
+I am learning linux
 I am learning terraform
 I am learning git 
 
-insert/change/modify word in a line:
+All three commands will do same o/p
+Command : sed -e '1 a I am learning linux' file.txt			-- with space bw 1 and a 
+or
+Command : sed -e '1a I am learning linux' file.txt			-- without space bw 1 and a 
+or
+Command : sed -e '1a\I am learning linux' file.txt			-- without space and \ in bw 1 and a 
+	
+Insert a line :
+-----------------
+After behaviour :
+Command : sed -e '1 a I am learning linux' file.txt			--> append the given content after 1st line 
+Command : sed -e '2 a I am learning linux' file.txt			--> append the given content after 2nd line 
+etc.. for 3rd so onn...
+
+Before behaviour :
+Command :  sed -e '1 i I am learning lunux' file.txt 		--> it will insert the given line before the 1st line 
+Command :  sed -e '2 i I am learning lunux' file.txt 		--> it will insert the given line before the 2nd line and after 1st line 
+or
+Command :  sed -e '2i\I am learning lunux' file.txt	  --- both ways are correct 
+etc.. for 3rd so onn...
+
+
+insert/change/modify particular word in a line :
+---------------------------------------------------------------
 sed -i 's/<word-to-find>/<word-to-replace>/' <filename> --> by default first occurence in the every line
 sed -i 's/<word-to-find>/<word-to-replace>/g' <filename> --> replace every where
 
+Modify words in a line
+sed -e 's/<word to replace>/<new word>/'
+Ex : 
+sed -e 's/arun/kumar/' file.txt 		    --> On each and every line file has it will update the first occurence word present and remaining words doesnt change (from 2nd to last occurence) on that line 
+sed -e 's/arun/kumar/2'						--> On each and every line Replaces only 2nd occurrence word on each line and remaining words still be there 
+sed -e 's/arun/kumar/g' file.txt 		--> Goes through line-by-line in file On each and every line file has it will update all occurence words present in that line 
+sed -e 's/arun/kumar/2g'					--> On each and every line Replaces the all words present in that line from 2nd occurrence word of line to last occurence word like end of line means except 1st word 
+sed -e 's/arun/kumar/i'						--> makes that word as case-insensitive and change the first occurence word in every line even it is case sensitive 
 
-delete lines
+If i want to replace the word on particular line 
+sed -i '4 s/unix/arun/'		--> It will replace the unix word present on only 4th line ans first occurence because no g we gave remaining lines word will not be replaced 
 
-sed -e '1d' <filename>
+delete lines :  sed 'nd' sample.txt 
+-----------------
+sed -e '1d' <filename>						--> it will delete the 1st line 
+sed -e '$d' <filename>						--> it will delete the last line in a file 
+sed -e '3, 6d' <filename>				--> it will delete the 3rd line to 6th line in a file 
+sed -e '12, $d' file.txt 						--> it will delete the lines from 12th line to last line of a file 
+sed -e '/learning/d' <filename>    --> If want to delete the line which has learning word in a line so that line will be deleted
 
-sed -e '/learning/ d' <filename>   --> learning word in particular line that line will be deleted
+if i want to delete a line which line has learning word but i want to delete the 2nd line means i want to skip the line to delete which has learning word 
+Currently i have this file content :
+I am arun
+I am learning linux
+I am learning terraform
+I am learning git 
+sed -e '2,$ { /learning/d }' <filename>			--> normally it will delete all lines which has learning word but in this case it will delete only 3rd and 4th lines it skips the 2nd line which has learning word 
+o/p : 
+	I am arun
+	I am learning linux
+
+Duplicating the Replaced Line with /p flag
+sed 's/unix/linux/p' geekfile.txt					--> The /p prints the replaced word line twice on the terminal.if word not replaced on any line prints only once 
+sed -n 's/unix/linux/p' geekfile.txt			--> -n prints only replaced word lines once on the terminal
+		-n option suppresses the duplicate rows generated by the /p flag and prints the replaced lines only one time.
+
+Replacing String on a Range of Lines
+sed '1,3 s/unix/linux/' geekfile.txt		--> replace the first occurence of each line from 1-3 lines remaining lines will remain same 
+sed '1,$ s/unix/linux/' geekfile.txt		--> replace the first occurence of each line from 1 to last of file means all lines 
 
 
+SED supports regular expressions :  sed -r 's/\bu\w+/Linux/g' geekfile.txt
 
-idempotency:
-============
-Idempotent : Running the same automation script multiple times will not break the system or create duplicate resources
+===================================================================================================================================================================
 
-catalogue instance:
+idempotency :
 -------------------
-mkdir /app --> if already folder present while running scrit it will give error and exit the script so u can use -p = parent directories
-mkdir -p /app      ---> if folder already exists it will not skip and continue the script& no error and if not present it will create folder
+means Running the exact same script multiple times will give the same output without giving error or duplicates creations 
+
+===================================================================================================================================================================
+
+Roboshop Proj :
+---------------------
+Mongodb.sh  -- done 
+
+catalogue.sh :
+mkdir /app 			--> if already folder exists while running scrit it will give error and exit the script so u can use -p = parent directories
+mkdir -p /app       --> if folder already exists it will not skip and continue the script& no error and if not present it will create folder
 mkdir -p /app/backend/logs --> create logs folder in parent directories
 
 unzip -o <path to store> <url>  --> it will not throw error if files already present it will just owerwrite them without p if files present it will throw error while running script 
@@ -487,58 +1059,108 @@ else
     echo -e "$Y ERROR :: User already exists .. Skipping $N"
 fi
 
+user.sh  -- done 
+cart.sh -- done 
 
-set -e option: means Exit the script immediately if any command returns a non-zero (failure) exit status.
--------------
-if we mention in catalogue file at first line
-id roboshop --> it will create a robooshop user first time(so exit status 0 success) if i run it in 2nd time it will give error and script will fail because exit status is 1 user already exist so immediately exit after that commands will not be executed 
+redis -- done 
+mysql -- done 
+rabbitmq -- done 
+payment -- done 
 
-set -x : Print each command before execution (debug mode).
+Types of packages for diff languages 
+for node js 
+To install nodesjs 				:  dnf install nodejs -y
+Ti install dependencies   :  npm install 
 
-log related:
-------------
+for java
+To install nodesjs 				:  dnf install maven -y
+Ti install dependencies   :  mvn clean package
 
-now we are giving &>> $LOG_FILE every where in a script file insted u can give like below
+for python 
+for java
+To install nodesjs 				:  dnf install python36 gcc python3-devel -y
+Ti install dependencies   :  pip3.6 install -r requirements.txt
+
+
+===================================================================================================================================================================
+
+log related :
+---------------
+we have 3 ways to redirect logs to the file 
+1. Instead of giving exit 1 everywhere we can give set -e or set -i 
+	1. set -e :  Exit/terminate the script immediately if any command returns a non-zero (failure) exit status.
+	we have to mention this first line after shebang code 
+	Ex  : 
+	#!/bin/bash
+	set -e
+	useradd roboshop
+	echo "Installing packages..."
+	dnf install nginx -y
+
+	1st time running the script 
+	user roboshop --> it will create a robooshop user first time(so exit status 0 success) work fine 
+	2nd time running the script :
+	 if i run script again 2nd time it will give error and script will fail because exit status is 1 user already exists so immediately exit after that remaining commands will not be executed 
+
+	2. set -x : Print each command after shell expansion(means after replacing the dynamic values if any below example) before execution (debug mode).
+	Ex :
+	#!/bin/bash
+	set -x
+	name="Arun"
+	echo "Hello $name"						shell expansion -- replace the value 
+
+
+	3. set -e -x  --> it will immediately exit and prints the each command 
+	or 
+	set -ex
+	 or 
+	set -e
+	set -x 
+	we can define any way 
+
+set -e is used to make a Bash script stop when a command returns a non-zero exit status, subject to Bash's conditional exceptions. 
+set -x enables execution tracing, so Bash prints commands as they are executed. 
+I mainly use set -x for debugging and set -e for fail-fast behavior in automation scripts.
+
+
+2. now we are giving &>> $LOG_FILE every where in a script file insted u can give like below
 command1 &>> $LOG_FILE
 command2 &>> $LOG_FILE
 command3 &>> $LOG_FILE
-exec &>> $LOG_FILE 
--------------------
+
+3. instead of giving like above 
+exec &>> $LOG_FILE 		--> in one place we can give 
+
 ALL success and failures output msgs will be stored/sent to a log file ...dont give every where in file one line is enough 
 or 
 This redirects the output of the entire script to the log file.
 or 
 it redirects the standard output and standard error of the entire shell script to a log file.
 
+===================================================================================================================================================================
 
 
+delete old log files :
+--------------------------
 
-delete old log files:
---------------------
+Step : 1 --> we have folder for logs  -- /tmp/shell-script-logs 
+create above dir first if not exists 
+
+step : 2 --> delete old log files more than 14 days and only .log extension files not otherr files 
 
 find . -type f -mtime +14 -name "*.log" -exec rm -rf {} \; --> delete old log files more than 14 days
-or 
-by using while loop
-find . -type f -mtime +14 -name "*.log"
 
 find .   (. --> current directory) --> Search from current directory
 -type f --> Find only files
 -mtime +14 --> Find files modified more than 14 days ago
--name "*.log"Find only files ending with .log
-
-
--exec rm -rf {} \; ---> This executes delete command on every matching file.
-
-Breaking it:
-
--exec --> Run a command on find results.
-
-rm -rf --> Delete file.
-
-{} --> Placeholder for each matched file.
+-name "*.log" --> Find only files ending with .log
+-exec rm -rf {} \; --> This executes delete command on every matching file.
+	Breaking it:
+	-exec --> Run a command on find results.
+	rm -rf --> Delete file.
+	{} --> Placeholder for each matched file.
 
 Example:
-
 find gets:
 
 /app/error.log
@@ -550,9 +1172,11 @@ rm -rf /app/debug.log
 
 \; --> Means: End of exec command
 
+or 
+by using :  find . -type f -mtime +14 -iname "*.log" -elete
+
 --->  if i want to create files with old date we can create using -d option means timestamp
 touch -d 20230513 cart.log   --> file will be create @time of 13 date 05 month and 2023 year 
-
 
 while loop:Execute a block of commands repeatedly as long as the given condition is true.
 
@@ -586,24 +1210,130 @@ done < $File
 
 
 
+while read loops :
+-----------------------
+done < servers.txt 					→ reads data from a file.
+done <<< "$Files_to_delete" → reads data from a variable (here-string).
 
-disk usage:
------------
-df -hT
+9. Suppose servers.txt contains: 
+server1
+server2
+server3
 
-in aws suppose i want to create an disk/volume we have one condition
-we have to create disk in same availability zone as ec2 instance availability zone
-after creating we have to explicity mout it 
+while read -r server
+do
+    echo "Checking $server"
+done < servers.txt 
 
-to check list of available disk 
-1)lsblk
-to get that disk into usage.we need to create file system first
-2)sudo file -s /dev/xvdf     --> we are creating this disk in devices folder in linux
-3)sudo mkfs -t xfs /dev/xvdf
-4)sudo mkdir /data --> creating data folder in root folder
-5)sudo mount /dev/xvdf /data --> we are mounting /dev/xvdf to /data
+Starts a loop. It continues as long as the read command successfully reads a line.
+read 										--> Reads one line of input.
+-r 											--> it prevents backslashes from being treated as escape characters.
+server 									--> variable which temporarily stores the current line ready by read command/word 
+do 											--> Starts the commands that should execute during each iteration.
+echo "Checking $server" 	--> Prints the value currently stored in the server variable.
+done < servers.txt 				--> '<' is input redirection. It tells the shell to provide the contents of servers.txt as input to the loop.
 
-df -hT | grep -v tmp
+
+< 			--> Input redirection	--> Reads each line from a file																					Ex :above
+<<< 	--> Here-string	 			--> Passes a string as input means it reads each line from a variable 				Ex: 15-delete old-log-files.sh
+<< 		--> Here-document 		--> Passes multiple lines of specified text as input								   				Ex: below 
+\| 		--> Pipe 							--> Passes one command's output to another command
+
+while IFS= read -r line
+do
+    echo "Line: $line"
+done <<EOF
+Arun
+Ravi
+Kumar
+EOF
+
+Multiple argumets for while read loop 
+#!/bin/bash 
+
+File="userdetails/details.txt"
+
+if [ -d "$File" ];then
+    echo "dir already exists"
+else 
+    mkdir -p userdetails
+    echo "dir created"
+    echo "Arun:PASS:1" > userdetails/details.txt
+    cat details.txt 
+fi 
+
+pwd
+while IFS=":" read -r username password user_id
+do 
+    echo "username": $username
+    echo "password": $password
+    echo "user_id": $user_id
+done < $File 
+
+
+
+===================================================================================================================================================================
+
+disk usage :
+---------------
+df -hT			--> command used to check disk space usage and display filesystem types in a human-readable format(KB,MB,GB etc..).
+
+In AWS suppose i want to create an disk/volume we have one condition --> we have to create disk in same availability zone as ec2 instance availability zone
+In AWS --> Ec2 --> Volumes --> create volume -->  give size --> select availability zone as EC2 availability zone  --> create volume 
+Click on Volumes --> Actions --> Attach volume --> select ec2 instance id --> Attach 
+
+Ater creating and attaching we have to explicity mout it by logging in to server
+1)lsblk		--> Lists available block devices, disks and partitions attached to the EC2 instance.
+
+Disk is attached to Ec2 but To get that disk into usag. we need to create file system first
+2)sudo file -s /dev/xvdf     --> Check whether a filesystem exists	
+			If no filesystem exists: /dev/xvdf: data 
+			If an XFS filesystem exists:  /dev/xvdf: SGI XFS filesystem data
+3)sudo mkfs -t xfs /dev/xvdf		--> Create a filesystem
+					Creates an XFS filesystem on the disk so Linux can store and manage files on it
+					mkfs – Make filesystem.
+					-t xfs – Specify XFS filesystem type.
+					 /dev/xvdf – Target disk.
+4)sudo mkdir /data 			--> creating a mount diretory and it create this in root filesystem 
+5)sudo mount /dev/xvdf /data --> Mount the disk --> we are mounting /dev/xvdf disk to the /data directory 
+6)df -hT 	--> verify the mount 		--> Now you can see /dev/xvdf mounted on /data.
+
+Does mounting persist after an EC2 reboot  --> No 
+A manual mount using --> sudo mount /dev/xvdf /data -->  does not automatically persist across reboots.
+
+
+So To attach permanently, configure /etc/fstab using filesystem UUID 
+sudo blkid /dev/xvdf		--> get the UUID 
+UUID=1234-abcd  /data  xfs  defaults,nofail  0  2
+or
+1. sudo blkid /dev/xvdf
+2. sudo vi /etc/fstab		--> Edit the filesystem table:
+Add your UUID entry and save
+3. sudo mount -a 
+
+/etc/fstab --> /etc/fstab stands for Filesystem Table.
+					It is a Linux configuration file that tells the operating system which disks/filesystems should be mounted automatically during boo
+
+Interview-ready explanation
+When we attach an EBS volume to an EC2 instance, 
+first I log in to the instance and use lsblk to verify the newly attached disk. 
+Then I use file -s to check whether a filesystem already exists. 
+If it is a new empty disk, I create an XFS filesystem using mkfs -t xfs. Next, I create a mount point such as /data and mount the EBS volume using the mount command. 
+I verify it using df -hT. Finally, I configure /etc/fstab with the filesystem UUID to ensure the mount persists after an EC2 reboot."
+
+
+
+df -hT 	--> 
+df -hT | grep xfs 			--> shows only xfs file systems type
+df -hT | grep tmp 		--> shows only tmp file systems type
+df -hT | grep -v tmp     --> except tmp type files systems it will show remaining all types of disks 
+
+df -hT | grep -v 'tmp|File' --> except tmp type files systems and File System heading 1st row table heading it will show remaining all types of disks 
+
+
+
+
+
 
 to send email
 
@@ -630,56 +1360,38 @@ Thannks & Regards
 Monitoring Team 
 
 
+===================================================================================================================================================================
 
-
-
-
-Crontab:
--------
-Schedule commands or scripts to run automatically at a specific time or interval.
-or
-"Crontab is a Linux scheduler used to automate recurring tasks. Cron daemon runs in the background and executes commands or scripts based on the schedule configured in crontab. It is commonly used for backups, monitoring, log cleanup, and automation jobs.
-
-It is mainly used in DevOps for --> backups,log cleanup,monitoring scripts,reports,automation jobs
+Crontab :
+------------
+It is like a file where we define the task 
+crontab -e — Edit your crontab file
+crontab -l — List your crontab file 
+crontab -r — Remove your crontab file 
 
 Real Example
-
 You created a script: /app/disk-check.sh
-Instead of manually running:
-sh disk-check.sh
+Instead of manually running  -->  sh disk-check.sh
 every day, configure cron --> Run automatically every day at 2 AM/other times --> That is called a cron job.
 
 
 Cron has two parts/components:
-crond service
+cron/crond service
 crontab entries
 
 1)crond service --> Background daemon/service.
 
 Check 				---> systemctl status crond
-Start 				---> systemctl start crond
+Start 				    ---> systemctl start crond
 Enable after reboot ---> systemctl enable crond
 
 2)crontab command
 Open user's cron jobs --> crontab -e    --> open a editor/file u can mention the scrips and timinig
 
-List cron jobs 			 --->crontab -l
-Remove all cron jobs 	 ---> crontab -r
-Edit another user's cron --->crontab -u username -e
+List cron jobs 			        ---> crontab -l
+Remove all cron jobs 	    ---> crontab -r
+Edit another user's cron ---> crontab -u username -e
 Example : crontab -u ec2-user -e
-
-Syntax:
-------
-MIN HOUR DAY MONTH WEEK
-or 
-* * * * * command/script
-| | | | |
-| | | | |
-| | | | +---- Day of week/Weekday (0-7)
-| | | +------ Month/Month (1-12)
-| | +-------- Day of month/Day (1-31)
-| +---------- Hour/Hour (0-23)
-+------------ /Minute (0-59)
 
 Ex:1
 create a old log files using touch command 
@@ -692,50 +1404,10 @@ $crontab -e --> it will open a file and edit that
 * * * * * --> every minute it will run a job and all the files will be deleted in that directory 
 15-delete-old-logs.sh --> delete old log files script 
 
-Examples:
-* * * * * /app/test.sh --> Run Every Minute
-0 2 * * * /backup.sh   --> Run Every Day 2 AM
-*/5 * * * * /health.sh --> Every 5 Minutes
-0 * * * * /script.sh   --> Every Hour
-0 10 * * 0 /backup.sh  --> Every Sunday
-0 0 1 * * /report.sh   --> First Day of Every 
 
-0 9 * * 1-5 /script.sh --> Monday to Friday
-0 8,18 * * * /script.sh --> Multiple Times
-
-Cron Special Strings
-Instead of numbers:
-Keyword	Meaning
-@reboot	After system restart
-@hourly	Every hour
-@daily	Once a day
-@weekly	Once a week
-@monthly	Once a month
-
-Run script after reboot:@reboot /app/start.sh
-
-Cron Logs
-
-Check cron execution:
-
-CentOS/RHEL: tail -f /var/log/cron
-Ubuntu:grep CRON /var/log/syslog
-
-reditrect cron output
-* * * * * /app/script.sh >> /tmp/script.log 2>&1
-
-main config : /etc/crontab
-
-system jobs
-/etc/cron.d/
-/etc/cron.daily/
-/etc/cron.hourly/
-/etc/cron.weekly/
-
-
-Example DevOps Disk Monitoring Cron
+Example: DevOps Disk Monitoring Cron
 Script: /root/disk-alert.sh
-Run every 10 minutes ---> */10 * * * * /root/disk-alert.sh
+Run every 10 minutes    --> */10 * * * * /root/disk-alert.sh
 
 Flow ---> Every 10 minutes -> Check disk -> If usage > 90% -> Send alert
 
@@ -749,22 +1421,12 @@ Troubleshooting Cron
 3. Check logs 			--> tail -f /var/log/cron
 4. Use absolute path	--> /home/ec2-user/script.sh
 
-Instead of:
+Instead of:  script.sh
 
-script.sh
+===================================================================================================================================================================
 
-
-Important commands to remember:
-
-crontab -e        # edit jobs
-
-crontab -l        # list jobs
-
-crontab -r        # remove jobs
-
-
-diff:
-----
+diff :
+------
 $1 $2 $3  → normal arguments (order matters)
 
 getopts  → named options (-u user -p pass)
@@ -915,12 +1577,13 @@ run : sh $greeting -n siva -w good evening
 
 labauto --> this is also a shell script but it is like a command
 
+===================================================================================================================================================================
 
-AWS Command line:
-----------------
+AWS Command line :
+----------------------------
 through command if u want to create ec2
-1st way:
---------
+1st way :
+------------
 First Create user :
 ------------
 IAM --> IAM Users --> Attach policies directly and select (Administrator access)--> next --> create user
@@ -938,7 +1601,7 @@ $ aws ec2 run-instances --image-id <ami-id> --count 1 --instance-type t2.micro -
 --> in above adminstrator access anything can do in aws console
 
 2nd way :
---------
+-------------
 Create a role and attached permissions ans attach that role to ec2 instance
 AWS --> IAM --> Roles --> AWS service --> in service or use case box (EC2) --> next --> u can select policies for the ec2 (now we give AmazonEC2FullAccess) --> next -> u can give role name(EC2RoleForShellScript) --> create role
 
@@ -952,8 +1615,8 @@ run : $ aws ec2 run-instances --image-id <ami-id> --count 1 --instance-type t2.m
 
 
 
-Create Ec2 and route53 All Roboshop instance throuh shell script 
-
+Create Ec2 and route53 All Roboshop instance throuh shell script : 
+----------------------------------------------------------------------------------------
 #!/bin/bash
 #Create roboshop Ec2 instance through Shell script
 AMI_ID=ami-0220d79f3f480ecf5

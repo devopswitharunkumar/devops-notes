@@ -4,21 +4,21 @@ decentralised/distributed vs centralised
 
 when starting shell script :
 ----------------------------
-GIT:
----
-Git is a distributed version control system used to track source code changes, collaborate with multiple team/developers, and manage application code efficiently and maintain version history.
-It supports branching, merging, conflict resolution, rollback, and distributed development workflows, making it a foundational tool in DevOps and CI/CD environments.”
+GIT :
+-------
+Git is a distributed version control system used to track source code changes, collaborate with multiple team/developers, and manage application code efficiently and it maintains the version history and merging and branching etc...
+It supports branching, merging, conflict resolution, rollback, and distributed development workflows, making it a foundational tool in DevOps and CI/CD environments.
 
 
 Real Example
-Suppose:5 developers working on same application
+Suppose  :5 developers working on same application
 Git helps : merge code collaboratively ,track changes,resolve conflicts,rollback issues
 
-Git Architecture:
------------------
-Working Directory  --> Where developers write/modify files in local machine
+Git Architecture :
+-----------------------
+Working Directory  	--> Where developers write/modify files in local machine
        ↓
-Staging Area       --> when we do git add . --> files will come to this staging area (Temporary area before commit.) - files changes red to green after this
+Staging Area       		--> when we do git add . --> files will come to this staging area (Temporary area before commit.) -- files color changes from red to green after this command 
        ↓
 Local Repository   --> Local Repository Stored in: .git directory. whe we do git commit files will come to this  Local Repository
        ↓
@@ -26,20 +26,19 @@ Remote Repository  --> git push -- push the code to the central repo like github
 
 
 it is a popular decentralised version control system 
-version control --> lets say some issue happened in latest version code in this case we can easily switch back to old version by using version tags
-track changes --> who did changes and why they did and what they changed we can see  
+version control 		--> Maintain multiple versions of code so lets say some issue happened in latest version code in that case we can easily roll back to old version by using version tags
+track changes 			--> we can see who did changes and why they did and what they changed 
+collaborate  				--> can collaborate will multiple team mates/ team 
 review the changes --> our team members or managers will review and approve the changes then it will merged to main code 
-backup --> we can create differnet versions of code and maintain
-security --> we cant keep the code changes in employees laptops so that we store in online
-branching --> lets say we have a code in prodution and it is live so we cant change/deploy the code without testing so we push code to differnet branch and test and will update/deploy the latest version in prodution if all are good
-prodution --> main branch code and will create a new branch from master and change and push the code and test(development environments) and deploy(prod env) if all are good
-collaborate  --> will collaborate will multiple team mates
+security 						--> we cant keep the code changes in employees laptops so that we store in online
+branching and merging 	--> lets say we have a code in prodution and it is live so we cant change/deploy the code without testing so we push code to differnet branch and test and will update/deploy the latest version in prodution if all are good
+prodution	 				--> main branch code and will create a new branch from master and change and push the code and test(development environments) and deploy(prod env) if all are good
 
 
 
-Version Control
-Lets say some issue happened in latest version of code in production.
-In this case:✅ we can easily rollback/switch back to older version  of code which is already stable using Git history.
+
+Version Control : we can maintain multiple versions of code 
+Lets say some issue occured in latest version of code in production. In this case: we can easily rollback/switch back to older version  of code which is already stable using Git history.
 Git maintains:commit history,code versions,snapshots of changes
 
 Track Changes
@@ -47,17 +46,17 @@ Git helps us understand: who changed the code,what changes were done,when change
 using: commits,commit messages,git logs we can track 
 ex: git log
 
-
-Review Changes
-Before merging code into main/master branch:✅ team members/reviewers/managers review the code changes.
-Usually done through: Pull Requests (PR) and Merge Requests (MR)
-After approval:
-✅ code gets merged into main branch.
-This improves: code quality,security,stability
+Collaboration
+Multiple developers can work on same project simultaneously using Git.
+Git helps:✅ collaborate safely,✅ avoid overwriting code,✅ merge changes efficiently
+Without Git: ❌ team collaboration becomes very difficult.
 
 Backup 
 Git acts as code backup system.Code stored in remote repositories like: GitHub,GitLab,Bitbucket
 So even if: ❌ employee laptop crashes --> code is safely available in remote repository.
+
+The "Distributed" Superpower (Local Backups)
+With Git, every developer has a full copy of the entire project history on their local computer.If the central server (like GitHub) goes offline or gets deleted, any developer can use their local copy to restore the entire project and its history perfectly.
 
 Security
 We should not keep application code only in developers laptops.
@@ -68,6 +67,13 @@ Branching
 Suppose production application is already live.
 We should NOT directly modify production/main branch code because: ❌ it may break live application.
 So developers: create separate feature/hotfix branch,implement changes,test changes,raise pull request,merge to production main branch after validation
+
+Review Changes
+Before merging code into main/master branch:✅ team members/reviewers/managers review the code changes.
+Usually done through: Pull Requests (PR) and Merge Requests (MR)
+After approval:
+✅ code gets merged into main branch.
+This improves: code quality,security,stability
 
 Production Workflow:
 --------------------
@@ -85,10 +91,7 @@ Production Workflow:
             ↓
 	Deploy to Production
 
-Collaboration
-Multiple developers can work on same project simultaneously using Git.
-Git helps:✅ collaborate safely,✅ avoid overwriting code,✅ merge changes efficiently
-Without Git: ❌ team collaboration becomes very difficult.
+
 
 Distributed Version Control
 Git is called distributed version control system because:
@@ -102,7 +105,31 @@ So developers can:work offline,commit locally,maintain full history
 | `.gitignore` | Ignore unwanted files |
 
 
+Centralized (CVCS) vs Distributed(DVCS) version control system :
+-------------------------------------------------------------------------------------
 
+Centralized  -- SVN tool 
+1. In local computer we will only have working copy but not total local repo which containts total proj in centralised VC
+2. We have to perform operations like commit, update, revert, merge, or branching directly on the remote server from working copy and can see history on remote server and pull and push changes 
+3. we always need internet connectivity to work with this like committing and view past logs and cannot commit code ,cannot create branches etc..
+4. If some thing happens to the main central server or goes down then there is no local backup and cannot continue work and the entire team's history is lost and they have to take backup separetely (Single Point of Failure)
+5. In a Centralised system, you change a file and commit it directly to the server.
+6. In Centralised system will have Pessimistic Locking -- Lock-Modify-Unlock model  -- If Developer A editing a file currently, they lock the file on the central server and Developer B cannot edit that file until Developer A unlocks it. This prevents conflicts but slows down speed.
+
+
+Distributed  -- Git tool 
+1. When you clone a project, you get the complete remote repository copied onto your hard drive as a Local Repository (including all historical logs, branches, and versions).
+2. We can perform operations like commit and merge or revert happens locally b/w working copy and local repo so remote repo is not involved in this stage and remote repo comes in picture when u want to push ur changes and pull other's updated code that is push , pull and fetch 
+3. In this version we can work even in without internet that is offline like committing , check diff's an historyor logs and create new branches and only requires internet when u want to push or pull or fetch
+4. If some this happens to the main central server or goes down every single developer will have identical copy of remote repo i.e., backup(i.e.,local repo) any team member can simply upload their local repository to a new server, and the project is fully restored
+5. In a Distributed system, your file moves through three distinct zones on your local computer before it even reaches the remote server like Working Directory(where u edit and add and remove code ), Staging Area (Index)(we use git add command so what changes we wanted to commit to local) and Local repo (Once you run git commit, the snapshot is permanently saved into your local .git history database)
+6. In Distributed we have Optimistic merging -- Git allows everyone to edit the exact same file at the exact same time offline in their local repos.if they push the code git uses merge concept to merge changes and if multiple evelopers edit the same line then it will show the merge conflict at that time it pauses merge and ask for manual merge or edit the conflict
+
+
+Pessimistic locking  : prevents conflicts by allowing only one developer to modify a locked file at a time. The typical workflow is lock, modify, commit, and unlock.
+		LOCK → MODIFY → COMMIT → UNLOCK
+Optimistic merging : Multiple developers can work simultaneously. If their changes are in same line conflict will be created, we'll resolve the conflict later and if there is no conflict git merges automatically to code
+		CLONE → MODIFY → COMMIT → PUSH → MERGE → RESOLVE CONFLICT IF NEEDED
 
 
 Authenticating to repository:
@@ -110,8 +137,8 @@ Authenticating to repository:
 1)username/password - enter every time
 
 2)For ssh Authentication
-1)in github --> settings --> ssh and GPG keys section --> NEW ssh key --> add public key data (created by usinf ssh-keygen command) --> add ssh
-2)in file explorer --> windows C --> u will find .ssh folder open it -> create config file(without any extension) -> paste below code
+step 1 --> in github --> settings --> ssh and GPG keys section --> NEW ssh key --> add public key data (created by using ssh-keygen command) --> add ssh
+step 2 --> in file explorer --> windows C --> u will find .ssh folder open it -> create config file(without any extension) -> paste below code
 
 #GitHub account
 Host github.com
