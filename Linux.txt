@@ -3303,14 +3303,19 @@ Most important Cron examples :
 0 9 * * 1 /opt/scripts/report.sh     				Every Monday at 9 AM
 0 0 1 * * /opt/scripts/monthly-report.sh 	First day of every month at midnight
 
-Special shortcuts :
-@reboot
-@daily
-@weekly
-@monthly
-@yearly
+0 9 * * 1-5 /script.sh --> Monday to Friday
+0 8,18 * * * /script.sh --> Multiple Times in a day 8 am and 18 pm(i..,6pm)
 
-@reboot /opt/scripts/test.sh     	→  Run when system boots
+Special shortcuts : instead of numbers we can give below 
+Keyword			Meaning
+@reboot		--> After system restart
+@hourly	 		--> Every hour
+@daily			--> Once a day
+@weekly		--> Once a week
+@monthly		--> Once a month
+@yearly			--> Run once every year
+
+@reboot /opt/scripts/test.sh     	→  Run script after system restart/boots
 @hourly /opt/scripts/test.sh     	→  Run once every hour
 @daily /opt/scripts/test.sh      		→  Run once every day
 @weekly /opt/scripts/test.sh     	→  Run once every week
@@ -3320,10 +3325,21 @@ Special shortcuts :
 @daily /opt/scripts/test.sh      		→  equivalent to  0 0 * * * /opt/scripts/test.sh  runs at 12:00 AM (midnight) every day 0 means 12 only 
 
 Store Location :
-
 System crontab 	--> /etc/crontab
 System cron files  --> /etc/cron.d/
 User crontab	--> /var/spool/cron/ or /var/spool/cron/crontabs/
+
+Cron Logs location : 
+CentOS/RHEL: tail -f /var/log/cron
+Ubuntu:grep CRON /var/log/syslog
+
+main config : /etc/crontab
+
+system jobs
+/etc/cron.d/
+/etc/cron.daily/
+/etc/cron.hourly/
+/etc/cron.weekly/
 
 /etc/crontab       
 cat /etc/crontab  --> Its format includes an additional user field
@@ -3373,6 +3389,9 @@ In a mature production environment, though, you'd usually use Prometheus/CloudWa
 Cron + Shell Script : 0 2 * * * find /var/log/app -type f -mtime +7 -delete						-- every day at 2:00 AM
 create a script : /opt/scripts/cleanup-logs.sh
 in that : 0 2 * * * /opt/scripts/cleanup-logs.sh
+
+reditrect cron output to a file 
+* * * * * /app/script.sh >> /tmp/script.log 2>&1
 
 Both Error and output save into same file 
 Cron logging : Suppose we have and u dont want to fail the script silently   --> 0 2 * * * /opt/scripts/backup.sh 
