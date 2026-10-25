@@ -1425,101 +1425,145 @@ Instead of:  script.sh
 
 ===================================================================================================================================================================
 
-diff :
-------
-$1 $2 $3  → normal arguments (order matters)
 
-getopts  → named options (-u user -p pass)
+Command-Line Arguments ($1, $2) and getopts.
 
-getopts/opt args:Read and handle command-line options/arguments passed to a shell script
-----------------
-mainly used when u want to pass options like 
--h
--u
--p
--f
-ex: ls -l -a
+Positional arguments: Pass values directly, such as a person's name or other values on the terminal using $1 and $2 args  (order matters)
+getopts: Pass values on the terminal using options such as -n and -w.  		Ex: -n <value> -w <value>		we can give any options (no order require based on option it will supply value to that variable)
+The order doesn't matter. getopts identifies the options using -n and -w.
+
+Positional Arg's Ex : greeting.sh
+
+PERSON1=$1
+PERSON2=$2
+
+echo "Hi $PERSON1 and $PERSON2"
+
+Run : sh greeting.sh Ramesh Suresh			--> order matters 	Ramesh replaces $1 value and Suresh replaces $2 value 
+
+Problem with positional arguments: You need to remember the sequence of arguments. If you have multiple inputs/arg's, it can become confusing.
+
+getopts : use to read command-line options/arguments and associated values passed to a shell script on terminal
+------------
+mainly used when u want to pass options like  :  -h , -u , -p , -f
+-h -- help 
 
 Basic Syntax:
 -------------
 while getopts "options" variable
 do
     case $variable in
-
         option)
             commands
             ;;
-
-    esac
-
-done
-
-Examples:
----------
-1) optarg and invalid case
-#!/bin/bash
-
-while getopts "u:p:" option
-do
-    case $option in
-
-        u)
-            USERNAME=$OPTARG
-            ;;
-
-        p)
-            PASSWORD=$OPTARG
-            ;;
-			
-		?)
-		 echo "Invalid option"
-		 exit 1
-		 ;;
     esac
 done
 
-echo "Username: $USERNAME"
-echo "Password: $PASSWORD"
+Examples :
+--------------
+Name=""
+Wish=""
 
-run : sh login.sh -u arun -p 12345
-
-while getopts "u:p:" option --> u:p: means Because : after option means it expects an argument.
-means
-u option requires value
-p option requires value
-
-What is OPTARG --> OPTARG stores option value.
-Example: ./script.sh -u ramesh
-inside :  USERNAME=$OPTARG means OPTARG = ramesh	
-
-Example 2:
----------
-Example 2: Options Without Values
-#!/bin/bash
-
-while getopts "hv" option
-do
-
-case $option in
-
-h)
- echo "Help menu"
- ;;
-
-v)
- echo "Version 1.0"
- ;;
-
-esac
+while getopts "n:w:h" opt; do
+	case $opt in
+		n) Name="$OPTARG" ;;
+		w) Wish="$OPTARG" ;;
+		h)usage; exit ;;
+	esac
 done
 
-Run ---> ./script.sh -h
+--> A colon after an option(n:w:h) means that option expects an argument.
+--> when we pass values on the terminal using options those will be stored by opt variable(that is a current variable value stores)
 
-Output: Help menu
-Here: getopts "hv"  --> No colon.
-Meaning:
--h no value required
--v no value required
+What is happening here?
+- If the user enters -n Arun, then opt=n and OPTARG=Arun.
+- If the user enters -w "Good Morning", then opt=w and OPTARG=Good Morning.
+- If the user enters -h, then opt=h and the usage/help function runs.
+
+opt	Stores the option letter (n, w, or h).
+OPTARG	Stores the value associated with an option (Arun, Good Morning).
+
+;; – Ends the current case branch.
+esac – Ends the case statement.
+done -- This ends the while loop.
+
+
+Example :
+-------------
+#!/bin/bash
+NAME=""
+WISHES="Good Evening"
+
+USAGE(){
+	echo "Usage : $(basename "$0") [ -n name ] [ -w wishes ] [ -h ]
+	echo ""
+	echo "Options:"
+	echo "		-n 	specify the name (mandatory)"
+	echo " 	-w 	specify the wish (Optional)"
+	echo " 	-h 	Display the help"
+}
+while getopts ":n:w:h" opt;do
+	case $opt in
+		n)	NAME="$OPTARG" ;;
+		w) 	WISHES="$OPTORG" ;;
+		-h) 	USAGE 
+				exit  1 ;;
+		:)		echo "ERROR : -$OPTARG requires a value"
+				USAGE
+				exit 1 ;; 
+		?)		echo "ERROR : invalid option -$OPTARG "
+				USAGE
+				exit 1 ;; 
+	esac
+done 
+
+if [ -z ""$NAME" ];then
+	echo "ERROR  : -n is mandatory"
+	USAGE
+	exit 1 
+fi 
+
+echo "HI $NAME, $WISHES"
+
+run : sh greeting.sh -n arun -w gd everning
+run : sh greeting.sh -n arun			-- here we didnt gave value it takes default value and if we dont mention/remove those variables ablove it is optional so it doesnt print anything print Hi Arun, that's it
+
+-------
+In the getopts error-handling mechanism, these are special patterns used inside the case statement
+:)			--> missing option argument 
+?)			--> Invalid option				Ex : U have 2 options like -n and -w but if u pass other characters lile -x , -s etc.. throw error
+Why do we write \? instead of just ??
+Because case patterns use shell pattern matching, where ? is a wildcard representing any single character. The backslash escapes it, making it a literal question mark.
+---------
+opt contains the option character.		--> -n or -w 
+OPTARG contains the value associated with that option. (value )		Arun etc..   --> It doesnt store all values together but It stores the value for the option currently being processed. Its value can change in each iteration.
+First iteration 
+opt
+n
+OPTARG
+Arun
+Second iteration
+opt
+w
+OPTARG
+Good Morning
+
+-------
+Can we replace opt and OPTARG with other names?
+yes for opt variable 	--> while getopts ":n:w:h" opt;do			in this we can give anyname		option or opt or choice or scenario ot any word we can give 
+
+Can we change OPTARG 		--> No – it's a special variable...OPTARG is a predefined shell variable used by getopts.You should not rename it.
+But NAME="$MYVALUE" will not automatically receive the option value just because you used MYVALUE. You can copy OPTARG into your own variable if you want
+MYVALUE="$OPTARG"
+--------
+Difference between n:w:h and :n:w:h					--> The difference is how errors are handled.
+Case 1: Without leading colon(n:w:h)		--> Here, Bash uses its default error handling.
+For example, execute: bash greeting.sh -x
+You may see an error message similar to:   greeting.sh: illegal option -- x
+The case statement receives ?, but OPTARG is not reliably available for your own error message in this mode.
+
+Case 2: With leading colon
+getopts ":n:w:h" opt		--> Here, the leading colon enables silent error handling.	It means you handle errors yourself inside the case statement.
 
 
 Real DevOps Example
@@ -1534,35 +1578,24 @@ Script: deploy.sh
 
 while getopts "e:s:v:" option
 do
-case $option in
-
-e)
- ENV=$OPTARG
- ;;
-
-s)
- SERVICE=$OPTARG
- ;;
-
-v)
- VERSION=$OPTARG
- ;;
-
-esac
+	case $option in
+	e)	ENV=$OPTARG ;;
+	s)	SERVICE=$OPTARG ;;
+	v)	VERSION=$OPTARG ;;
+	esac
 done
 
-Output:
+run : sh environment.sh -e dev -s nginx -v v1
 
+Output:
 ENV=dev
-SERVICE=frontend
+SERVICE=nginx
 VERSION=v1
 
+===================================================================================================================================================================
 
-
-
-
-if i want to run a script as a native linux command
----------------------------------------------------
+if i want to run a script as a native linux command :
+-------------------------------------------------------------------
 every time im giving sh <filename>.sh --> i want to run this as a command like cat touch etcc
 in every OS there will be a path --> echo $PATH --> u will get path 
 if u install any software in that path automatically windows/linux system will pickup
@@ -1576,6 +1609,10 @@ now anywhere/any directory in terminal u can run like a command
 run : sh $greeting -n siva -w good evening
 
 labauto --> this is also a shell script but it is like a command
+
+===================================================================================================================================================================
+
+The main purpose is to understand how to pass values to a shell script when executing it, instead of hardcoding those values inside the script.
 
 ===================================================================================================================================================================
 

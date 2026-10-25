@@ -14,7 +14,7 @@ Client  --> A client is a system/application/browser/mobileapp/device that sends
 Server --> A server is a system or software that receives client requests, processes them, and provides data/services/applications/resources or response to the client over a network.
 
 using protocols like HTTP, HTTPS, or TCP/IP.
-HTTP - 80 			--> Sends data in plain text. Anyone on the same network can read or steal passwords and private data. we use mostly inside private VPC and Should only be used to forward (redirect) visitors automatically to the secure Port 443 version of a website
+HTTP - 80 			--> Sends data in plain text format. Anyone on the same network can read or steal passwords and private data. we use mostly inside private VPC and Should only be used to forward (redirect) visitors automatically to the secure Port 443 version of a website
 HTTPS - 443		--> Scrambles data into code that means encrypts. It protects private information from hackers and eavesdroppers and used for all modern web traffic and online payments and logins 
 
 HTTP 	-- Hyper Text Transfer Protocol
@@ -35,7 +35,7 @@ Operating System (OS) :
 --------------------------------
 OS --> windows or Linux 
 
-OS  --> The OS is a software that sits between the physical hardware and the software applications it manages both of them to work together without needing to know low-level hardware details(meaning applications can ask to "save a file" without needing to know how a physical storage drive works) or which is the core software that manages a computer's hardware and software resources
+OS  --> The OS is a software that sits between the physical hardware and software applications.it manages both of them to work together without needing to know low-level hardware details(meaning applications can ask to "save a file" without needing to know how a physical storage drive works) or which is the core software that manages a computer's hardware and software resources
 --> It interacts directly with physical computer parts to controlling the processor cycles, saving data files to your storage disk and Manages computer resources such as allocating CPU, partitioning memory, and tracks storage files.
 --> It creates the stable, isolated environment needed for you to install and run apps like Google Chrome, WhatsApp, or Microsoft Word without them crashing each other.
 --> Provides a User Interface: It Acts as an interactive interface between user and hardware (translating human inputs into system commands)
